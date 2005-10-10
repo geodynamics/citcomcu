@@ -236,7 +236,7 @@ int read_previous_field(E,field,name,abbr)
     /* this last line is the column headers, we need to search for the occurence of abbr to
        find out the column to be read in */
 
-    if(strtok(discard,"|")==NULL) { 
+    if((char *)strtok(discard,"|")==NULL) { 
 	fprintf(E->fp,"Unable to deciphre the columns in the input file");fflush(E->fp);
 	exit(1);
     }
@@ -244,7 +244,7 @@ int read_previous_field(E,field,name,abbr)
     found=0;
     column=1;
 
-    while(found==0 && (token=strtok(NULL,"|")) != NULL) {
+    while(found==0 && (token=(char *)strtok(NULL,"|")) != NULL) {
 	if(strstr(token,abbr)!=0)
 	    found=1;
 	column++;

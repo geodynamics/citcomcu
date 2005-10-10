@@ -782,7 +782,7 @@ int interpret_control_string(interpret,essential,Default,minvalue,maxvalue)
      
     return(0);  /* nothing to interpret */
 
-  if ((substring=strtok(interpret,",")) == NULL)
+  if ((substring=(char *)strtok(interpret,",")) == NULL)
     return(0);  /* nothing to interpret */
     
  
@@ -801,7 +801,7 @@ int interpret_control_string(interpret,essential,Default,minvalue,maxvalue)
        
      }
   
-  if ((substring=strtok(NULL,",")) == NULL) /* minvalue */
+  if ((substring=(char *)strtok(NULL,",")) == NULL) /* minvalue */
     { /* no minimum, no maximum */
       return(1);
     }
@@ -811,7 +811,7 @@ int interpret_control_string(interpret,essential,Default,minvalue,maxvalue)
       sscanf(substring,"%lf",*minvalue);
     }
   
-  if ((substring=strtok(NULL,",")) == NULL) /* maxvalue */
+  if ((substring=(char *)strtok(NULL,",")) == NULL) /* maxvalue */
     { /* no maximum */
       if (DESCRIBE)
 	fprintf(stderr,"minimum but no maximum\n");
