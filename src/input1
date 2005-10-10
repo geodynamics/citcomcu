@@ -4,8 +4,8 @@
 # 1. Input and Output Files Information
 
 	datafile="CASE1/caseA"		# directory and file head for output files.
-#	use_scratch="local"		# output files under current directory.
-	use_scratch="szhong"		# output files onto local disk to each compute node. 
+	use_scratch="local"		# output files under current directory.
+#	use_scratch="szhong"		# output files onto local disk to each compute node. 
 
 	oldfile="CASE1/caseA"		# directory and file head for restart files.
 	restart=0                       # check Convection.c for different options
