@@ -202,9 +202,9 @@ void parallel_shuffle_ele_and_id_bc1();
 void parallel_shuffle_ele_and_id_bc2();
 
  if (E->mesh.periodic_x || E->mesh.periodic_y)
-    parallel_shuffle_ele_and_id_bc2();
+    parallel_shuffle_ele_and_id_bc2(E);
  else
-    parallel_shuffle_ele_and_id_bc1();
+    parallel_shuffle_ele_and_id_bc1(E);
 
   return;
   }
