@@ -1,5 +1,5 @@
 #
-#  Makefile for "citcom" allowing considerable variations
+#  Makefile for "CitcomCU" allowing considerable variations
 #
 
 #
@@ -14,7 +14,7 @@
 #	Individual Machine Variations
 ##############################################################################
 
-COMPRESS= /usr/bin/compress
+COMPRESS=/usr/bin/compress
 LIB_PATH=
 #LIB_LIST= -lmpi
 LIB_LIST=
@@ -25,7 +25,11 @@ LIB= $(LIB_PATH) $(LIB_LIST) -lm
 #	Operating System Variables
 ###################################################################
 
-CC=/usr/local/mpich/bin/mpicc #/usr/lib/cmplrs/cc/gemc_cc
+#CC=/usr/local/mpich/bin/mpicc
+#CC=/opt/mpich/bin/mpicc
+#CC=/usr/lib/cmplrs/cc/gemc_cc
+#CC=$(HOME)/usr/local/mpich/bin/mpicc
+CC=mpicc
 F77=f77
 CPP=
 
@@ -94,8 +98,12 @@ SGILDFLAGS=
 SGIOPTIM=-O -fsingle
 ####################################
 
-LinuxFLAGS=-I/usr/local/mpi/include
+#LinuxFLAGS=-I/usr/local/mpi/include
+#LinuxFLAGS=-I/opt/mpi/include
+#LinuxFLAGS=-I$(HOME)/usr/include
+LinuxFLAGS=
 LinuxLDFLAGS=
+#LinuxOPTIM=-g
 LinuxOPTIM=-O3
 
 ####################################
@@ -104,6 +112,10 @@ PARAGONFLAGS=-nx
 PARAGONLDFLAGS=
 PARAGONOPTIM=-O4
 ####################################
+
+####################################################################
+#	Choose the actual flags for your machine here ...
+####################################################################
 
 FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
 LDFLAGS= $(LinuxLDFLAGS)
@@ -114,7 +126,7 @@ OPTIM= $(LinuxOPTIM)
 #OPTIM= $(SOLARISOPTIM)
 
 ####################################################################
-#	Citcom's files .....
+#	CitcomCU's files .....
 ####################################################################
 
 CFILES= Advection_diffusion.c\
@@ -156,9 +168,21 @@ HEADER = element_definitions.h\
 FFILES=#Blas_lapack_interfaces.F
 
 OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
-#
-global_defs.h: viscosity_descriptions.h advection.h\
-		Convection_variables.h
+
+
+####################################################################
+# Makefile rules follow
+####################################################################
+
+default: citcom.mpi
+
+clean:
+	rm -f *.o
+
+clean-all:
+	rm -f *.o citcom.mpi
+
+global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
 		
 # The following entries can probably be automated from $CFILES etc
 
