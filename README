@@ -4,11 +4,11 @@
                            Shijie Zhong
                          Dept of Physics
                       University of Colorado
-                      Boulder, Colorad 80309
+                      Boulder, Colorado 80309
 
                     szhong@anquetil.colorado.edu
 
-                      1. Background Information.
+                      1. Background information.
 
 This parallel 3D Cartesian/Regional spherical Citcom code was modified 
 from the original Citcom code that was originally developed by L. Moresi
@@ -28,19 +28,22 @@ It is worthwhile to point out that there is an earlier version of Citcom that
 also computes isochemical thermal convection for regional spherical geometry
 [Billen et al., 2003] but with different implementation and formulation. 
 
-                      2. Compile and Run the code.
+                      2. How to compile and run the code.
 
-2.1. Compile the code
+2.1. Compiling the code
 
-Untar the file 3DCart_Rsphere_version.08.2005.tar, you will get 29 C source
-files (i.e., *.c), 4 head files (i.e., *.h), a makefile (i.e., Makefile), 
-and a sample input file (i.e., input1). 
+In the src/ directory of this distribution, you will find 29 C source
+files (*.c), 7 header files (*.h), a makefile (Makefile), and a sample
+input file (input1). 
 
 Before compiling the code, please make sure that your system is installed 
-with MPI. To compile the code and produce an executable citcom.mpi, type
-$make citcom.mpi
+with MPI. You may need to edit the Makefile to specify the location of mpicc
+and set various compiler flags for your specific machine. Then, to compile
+the code and produce an executable citcom.mpi, type
 
-2.2. Run the code
+	$ make citcom.mpi
+
+2.2. Running the code
 
 You may first create directories for storing your output files, before 
 running a calculation. Suppose that you use the sample input file input1,
@@ -54,16 +57,17 @@ nodes.
 
 Then to run a calculation using citcom.mpi with input file input1, the
 number of CPU NP, and machine file mc, type 
-$mpirun -np NP -nolocal -machinefile mc citcom.mpi input1
+
+	$ mpirun -np NP -nolocal -machinefile mc citcom.mpi input1
 
 where mc is a file listing processors to be used for the calculation. The 
 above command running the code may be system-dependent, in particular,
 the options -nolocal and -machinefile. You may need to discuss it with
 your system administrator.
 
-                      3. Getting to know input file
+                      3. Getting to know the input file
 
-The sample input file input1 provides quite some explanations for various
+The sample input file input1 provides some explanations for the various
 input parameters. You may have to start with some simple calculations that
 may only need a few essential parameters and then gradually learn other
 functionalities of the code and their associated parameters.
@@ -73,16 +77,19 @@ here.
 
 Sect. 1. Input and Output Files Information.
 
-The parameters in this section specifies where output and input files 
+The parameters in this section specify where the output and input files 
 are. For example, the first parameter line
-    datafile="CASE1/caseA" 
-tells directory and file head for all the output files. Some output
-files including log files are stored in directory from which you
-run the calculation (often on the head node), and in this example
-case, in subdirectory CASE1 as caseA.log0 and so on. Most other output 
-files (velocity or temperature) are stored in disks on compute nodes
-in directory CASE1 with file head caseA (e.g., caseA.ave.0.10000 and
-so on). For what are output, check Output.c. 
+
+	datafile="CASE1/caseA"
+
+specifies the directory and file head for all the output files.
+Some output files, including log files, are stored in the directory
+from which you run the calculation (often on the head node), and in
+this example case, in subdirectory CASE1 as caseA.log0 and so on.
+Most other output files (velocity or temperature) are stored in
+disks on compute nodes in directory CASE1 with file head caseA
+(e.g., caseA.ave.0.10000 and so on). Refer to Output.c to see
+exactly what data is printed in the output files.
 
 The second parameter "use_scratch" specifies whether output files 
 are stored to compute nodes (recommended mode).
@@ -207,12 +214,13 @@ The dimensional information is not really very useful except when 410-km
 and 670-km phase changes are used (next section). 
 
 Parameters "visc_factor" specifies a factor of viscosity increase with depth
-as a linear function. This is in addition to whatever layered viscosity structure
-we impose in section 5. In the sample input, "visc_factor=1" implies that this
-linear increase with depth does not exist.
+as a linear function. This is in addition to whatever layered viscosity
+structure we impose in section 5. In the sample input, "visc_factor=1" implies
+that this linear increase with depth does not exist.
 
 Parameters "thermexp_factor" and "thermdiff_factor" are the factors of thermal
-expansion decrease and thermal diffusivity increase with depths as linear functions.
+expansion decrease and thermal diffusivity increase with depths as linear
+functions.
 
 Parameters "dispation_number" and "surf_temp" are dissipation number and non-
 dimensional surface temperature. 
@@ -221,8 +229,8 @@ Sect. 7. Phase changes
 
 Parameters "Ra_410" and "Ra_670" are the density drops at 410-km and 670-km
 phase changes in SI unit. The next two parameters are the Clapeyron slopes.
-Parameters "width410" and "width670" are the phase change widths (see Christensen
-and Yuen [1985] for details).
+Parameters "width410" and "width670" are the phase change widths (see
+Christensen and Yuen [1985] for details).
 
 You may need to check Phase_change.c to see how these dimensional numbers 
 get nondimensionalized.
@@ -250,27 +258,29 @@ accuracy of the solutions.
 
                   4. Acknowledgement and citation issues
 
-The developers of the code have spent considerable amount of time in developing
+The developers of this code have spent considerable amount of time in developing
 and testing the code. We would appreciate if you can reference the following 
 two papers for publications that result from using this code.
 
-Zhong, S., Constraints on thermochemical convection of the mantle from plume heat
-     flux, plume excess temperature and upper mantle temperature, J. Geophys. Res., 
-     2005, in review (this reference to be updated).
+Zhong, S., Constraints on thermochemical convection of the mantle from plume
+     heat flux, plume excess temperature and upper mantle temperature,
+     J. Geophys. Res., 2005, in review (this reference to be updated).
+
 Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
      from 3-D dynamic flow models, Earth Planet. Sci. Lett., 138, 15-28, 1996.
 
-                 5. Reference
 
-Billen, M.I., Gurnis, M., and Simons, M., Multiscale dynamic models of the Tonga-
-   Kermadec subduction zone, Geophys. J. Int., 153, 359-388, 2003.
+                 5. References
+
+Billen, M.I., Gurnis, M., and Simons, M., Multiscale dynamic models of the
+     Tonga-Kermadec subduction zone, Geophys. J. Int., 153, 359-388, 2003.
 Christensen, U.R., and Yuen, D.A., Layered convection induced by phase changes,
-   J. Geophys. Res., 90, 10,291-10,300, 1985.
+     J. Geophys. Res., 90, 10,291-10,300, 1985.
 Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
      from 3-D dynamic flow models, Earth Planet. Sci. Lett., 138, 15-28, 1996.
-Zhong, S., Constraints on thermochemical convection of the mantle from plume heat
-     flux, plume excess temperature and upper mantle temperature, J. Geophys. Res.,
-     2005a, in review. 
+Zhong, S., Constraints on thermochemical convection of the mantle from plume
+     heat flux, plume excess temperature and upper mantle temperature,
+     J. Geophys. Res., 2005a, in review. 
 Zhong, S., Dynamics of thermal plumes in 3D isoviscous thermal convection, 
      Geophys. J. Int., 162, 289-300, 2005.
 
