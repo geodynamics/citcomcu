@@ -52,719 +52,764 @@
    aren't & another method is required.
    =============================================== */
 
-void remove_horiz_ave(E,X,H,store_or_not)
-     struct All_variables *E;
-     float *X, *H;
-     int store_or_not;
-
+void remove_horiz_ave(E, X, H, store_or_not)
+	struct All_variables *E;
+	float *X, *H;
+	int store_or_not;
 {
-    int i,j,k,n,ln,nox,noz,noy;
-    void return_horiz_ave();
+	int i, j, k, n, ln, nox, noz, noy;
+	void return_horiz_ave();
 
-    const int dims = E->mesh.nsd;
+	const int dims = E->mesh.nsd;
 
-    nox = E->lmesh.nox;
-    noy = E->lmesh.noy;
-    noz = E->lmesh.noz;
+	nox = E->lmesh.nox;
+	noy = E->lmesh.noy;
+	noz = E->lmesh.noz;
 
-    return_horiz_ave(E,X,H);
+	return_horiz_ave(E, X, H);
 
 /*
     for(i=1;i<=noz;i++)
        fprintf(E->fp,"%d %.5e ave\n",i,H[i]);
 
 */
-    for(i=1;i<=noz;i++)
-      for(k=1;k<=noy;k++)
-        for(j=1;j<=nox;j++)     {
-	   n = i+(j-1)*noz+(k-1)*nox*noz;
-	   X[n] -= H[i];  
-	   }
+	for(i = 1; i <= noz; i++)
+		for(k = 1; k <= noy; k++)
+			for(j = 1; j <= nox; j++)
+			{
+				n = i + (j - 1) * noz + (k - 1) * nox * noz;
+				X[n] -= H[i];
+			}
 
-   return; 
-  }
+	return;
+}
 
-void return_horiz_sum(E,X,H,nn)
-     struct All_variables *E;
-     float *X, *H;
-     int nn;
-{ 
-  const int dims = E->mesh.nsd;
-  int i,j,k,d,nint,noz,nox,noy,el,elz,elx,ely,j1,j2,i1,i2,k1,k2,nproc;
-  int lnode[5], sizeofH, noz2,iroot;
-  float *Have,*temp;
+void return_horiz_sum(E, X, H, nn)
+	struct All_variables *E;
+	float *X, *H;
+	int nn;
+{
+	const int dims = E->mesh.nsd;
+	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
+	int lnode[5], sizeofH, noz2, iroot;
+	float *Have, *temp;
 
-  int *processors;
+	int *processors;
 
-  MPI_Comm world, horizon_p;
-  MPI_Group world_g, horizon_g;
+	MPI_Comm world, horizon_p;
+	MPI_Group world_g, horizon_g;
 
-  processors = (int *)malloc((E->parallel.nprocxy+2)*sizeof(int));
+	processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
 
-       /* determine which processors should get the message from me for 
-	       computing the layer averages */
+	/* determine which processors should get the message from me for 
+	 * computing the layer averages */
 
-  nproc = 0;
-  for (j=0;j<E->parallel.nprocy;j++)
-    for (i=0;i<E->parallel.nprocx;i++)  {
-      d = E->parallel.me_loc[3] + i*E->parallel.nprocz + 
-       		                  j*E->parallel.nprocxz;
-      processors[nproc] =  d;
-      nproc ++;
-      }
+	nproc = 0;
+	for(j = 0; j < E->parallel.nprocy; j++)
+		for(i = 0; i < E->parallel.nprocx; i++)
+		{
+			d = E->parallel.me_loc[3] + i * E->parallel.nprocz + j * E->parallel.nprocxz;
+			processors[nproc] = d;
+			nproc++;
+		}
 
-  if (nproc>1)  {
-    world = MPI_COMM_WORLD;
-    MPI_Comm_group(world, &world_g);
-    MPI_Group_incl(world_g, nproc, processors, &horizon_g);
-    MPI_Comm_create(world, horizon_g, &horizon_p);
+	if(nproc > 1)
+	{
+		world = MPI_COMM_WORLD;
+		MPI_Comm_group(world, &world_g);
+		MPI_Group_incl(world_g, nproc, processors, &horizon_g);
+		MPI_Comm_create(world, horizon_g, &horizon_p);
 
-    MPI_Allreduce(X,H,nn,MPI_FLOAT,MPI_SUM,horizon_p);
+		MPI_Allreduce(X, H, nn, MPI_FLOAT, MPI_SUM, horizon_p);
 
-    MPI_Comm_free (&horizon_p);
-    MPI_Group_free(&horizon_g);
-    MPI_Group_free(&world_g);
+		MPI_Comm_free(&horizon_p);
+		MPI_Group_free(&horizon_g);
+		MPI_Group_free(&world_g);
 
-    }
-  else
-    for (i=0;i<nn;i++)
-      H[i] = X[i];
+	}
+	else
+		for(i = 0; i < nn; i++)
+			H[i] = X[i];
 
-  free ((void *) processors);
-  
-  return; 
-  }
+	free((void *)processors);
+
+	return;
+}
 
 
-void return_horiz_ave(E,X,H)
-     struct All_variables *E;
-     float *X, *H;
-{ 
-  const int dims = E->mesh.nsd;
-  int i,j,k,d,nint,noz,nox,noy,el,elz,elx,ely,j1,j2,i1,i2,k1,k2,nproc;
-  int lnode[5], sizeofH, noz2,iroot;
+void return_horiz_ave(E, X, H)
+	struct All_variables *E;
+	float *X, *H;
+{
+	const int dims = E->mesh.nsd;
+	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
+	int lnode[5], sizeofH, noz2, iroot;
 //  float *Have,*temp;
-  double *Have,*temp;
-  struct Shape_function1 M;
-  struct Shape_function1_dA dGamma;
-  void get_global_1d_shape_fn();
+	double *Have, *temp;
+	struct Shape_function1 M;
+	struct Shape_function1_dA dGamma;
+	void get_global_1d_shape_fn();
 
-  int *processors;
+	int *processors;
 
-  MPI_Comm world, horizon_p;
-  MPI_Group world_g, horizon_g;
+	MPI_Comm world, horizon_p;
+	MPI_Group world_g, horizon_g;
 
 
-  processors = (int *)malloc((E->parallel.nprocxy+2)*sizeof(int));
+	processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
 //  Have = (float *)malloc((2*E->lmesh.noz+2)*sizeof(float));
 //  temp = (float *)malloc((2*E->lmesh.noz+2)*sizeof(float));
-  Have = (double *)malloc((2*E->lmesh.noz+2)*sizeof(double));
-  temp = (double *)malloc((2*E->lmesh.noz+2)*sizeof(double));
+	Have = (double *)malloc((2 * E->lmesh.noz + 2) * sizeof(double));
+	temp = (double *)malloc((2 * E->lmesh.noz + 2) * sizeof(double));
 
-  noz = E->lmesh.noz;
-  noy = E->lmesh.noy;
-  nox = E->lmesh.nox;
-  elz = E->lmesh.elz;
-  elx = E->lmesh.elx;
-  ely = E->lmesh.ely;
-  noz2 = 2*noz;
+	noz = E->lmesh.noz;
+	noy = E->lmesh.noy;
+	nox = E->lmesh.nox;
+	elz = E->lmesh.elz;
+	elx = E->lmesh.elx;
+	ely = E->lmesh.ely;
+	noz2 = 2 * noz;
 
-  for (i=1;i<=elz;i++)  {
-    temp[i] = temp[i+noz] = 0.0;
-    temp[i+1] = temp[i+1+noz] = 0.0;
-    for (j=1;j<=elx;j++)
-      for (k=1;k<=ely;k++)  {
- 	    el = i + (j-1)*elz + (k-1)*elx*elz;
-	    get_global_1d_shape_fn(E,el,&M,&dGamma,0);   
+	for(i = 1; i <= elz; i++)
+	{
+		temp[i] = temp[i + noz] = 0.0;
+		temp[i + 1] = temp[i + 1 + noz] = 0.0;
+		for(j = 1; j <= elx; j++)
+			for(k = 1; k <= ely; k++)
+			{
+				el = i + (j - 1) * elz + (k - 1) * elx * elz;
+				get_global_1d_shape_fn(E, el, &M, &dGamma, 0);
 
-        lnode[1] = i+(j-1)*noz+(k-1)*nox*noz;
-      	lnode[2] = i+j*noz+(k-1)*nox*noz;
-    	lnode[3] = i+j*noz+k*nox*noz;
-    	lnode[4] = i+(j-1)*noz+k*nox*noz;
+				lnode[1] = i + (j - 1) * noz + (k - 1) * nox * noz;
+				lnode[2] = i + j * noz + (k - 1) * nox * noz;
+				lnode[3] = i + j * noz + k * nox * noz;
+				lnode[4] = i + (j - 1) * noz + k * nox * noz;
 
-    	for(d=1;d<=onedvpoints[E->mesh.nsd];d++)
-    	  for(nint=1;nint<=onedvpoints[E->mesh.nsd];nint++)   {
-    	      temp[i] += X[lnode[d]] * E->M.vpt[GMVINDEX(d,nint)] 
-			 * dGamma.vpt[GMVGAMMA(0,nint)];
-    	      temp[i+noz] += E->M.vpt[GMVINDEX(d,nint)] 
-			 * dGamma.vpt[GMVGAMMA(0,nint)]; 
-    	      } 
+				for(d = 1; d <= onedvpoints[E->mesh.nsd]; d++)
+					for(nint = 1; nint <= onedvpoints[E->mesh.nsd]; nint++)
+					{
+						temp[i] += X[lnode[d]] * E->M.vpt[GMVINDEX(d, nint)] * dGamma.vpt[GMVGAMMA(0, nint)];
+						temp[i + noz] += E->M.vpt[GMVINDEX(d, nint)] * dGamma.vpt[GMVGAMMA(0, nint)];
+					}
 
-        if (i==elz)  {
-    	  lnode[1] = 1+i+(j-1)*noz+(k-1)*nox*noz;
-    	  lnode[2] = 1+i+j*noz+(k-1)*nox*noz;
-    	  lnode[3] = 1+i+j*noz+k*nox*noz;
-    	  lnode[4] = 1+i+(j-1)*noz+k*nox*noz;
+				if(i == elz)
+				{
+					lnode[1] = 1 + i + (j - 1) * noz + (k - 1) * nox * noz;
+					lnode[2] = 1 + i + j * noz + (k - 1) * nox * noz;
+					lnode[3] = 1 + i + j * noz + k * nox * noz;
+					lnode[4] = 1 + i + (j - 1) * noz + k * nox * noz;
 
-    	  for(d=1;d<=onedvpoints[E->mesh.nsd];d++)
-    	    for(nint=1;nint<=onedvpoints[E->mesh.nsd];nint++)   {
-    	      temp[i+1] += X[lnode[d]] * E->M.vpt[GMVINDEX(d,nint)] 
-			 * dGamma.vpt[GMVGAMMA(0,nint)];
-    	      temp[i+1+noz] += E->M.vpt[GMVINDEX(d,nint)] 
-			 * dGamma.vpt[GMVGAMMA(0,nint)]; 
-    	      } 
-    	  } 
+					for(d = 1; d <= onedvpoints[E->mesh.nsd]; d++)
+						for(nint = 1; nint <= onedvpoints[E->mesh.nsd]; nint++)
+						{
+							temp[i + 1] += X[lnode[d]] * E->M.vpt[GMVINDEX(d, nint)] * dGamma.vpt[GMVGAMMA(0, nint)];
+							temp[i + 1 + noz] += E->M.vpt[GMVINDEX(d, nint)] * dGamma.vpt[GMVGAMMA(0, nint)];
+						}
+				}
 
-    	}        /* Done one traverse */ 
+			}					/* Done one traverse */
 
-     }        /* Done for i */ 
+	}							/* Done for i */
 
 
-       /* determine which processors should get the message from me for 
-	       computing the layer averages */
+	/* determine which processors should get the message from me for 
+	 * computing the layer averages */
 
-  nproc = 0;
-  for (j=0;j<E->parallel.nprocy;j++)
-    for (i=0;i<E->parallel.nprocx;i++)  {
-      d = E->parallel.me_loc[3] + i*E->parallel.nprocz + 
-       		                  j*E->parallel.nprocxz;
-      processors[nproc] =  d;
-      nproc ++;
-      }
+	nproc = 0;
+	for(j = 0; j < E->parallel.nprocy; j++)
+		for(i = 0; i < E->parallel.nprocx; i++)
+		{
+			d = E->parallel.me_loc[3] + i * E->parallel.nprocz + j * E->parallel.nprocxz;
+			processors[nproc] = d;
+			nproc++;
+		}
 
-  if (nproc>1)  {
-    world = MPI_COMM_WORLD;
-    MPI_Comm_group(world, &world_g);
-    MPI_Group_incl(world_g, nproc, processors, &horizon_g);
-    MPI_Comm_create(world, horizon_g, &horizon_p);
+	if(nproc > 1)
+	{
+		world = MPI_COMM_WORLD;
+		MPI_Comm_group(world, &world_g);
+		MPI_Group_incl(world_g, nproc, processors, &horizon_g);
+		MPI_Comm_create(world, horizon_g, &horizon_p);
 
 //    MPI_Allreduce(temp,Have,noz2+1,MPI_FLOAT,MPI_SUM,horizon_p);
-    MPI_Allreduce(temp,Have,noz2+1,MPI_DOUBLE,MPI_SUM,horizon_p);
+		MPI_Allreduce(temp, Have, noz2 + 1, MPI_DOUBLE, MPI_SUM, horizon_p);
 
-    MPI_Comm_free (&horizon_p);
-    MPI_Group_free(&horizon_g);
-    MPI_Group_free(&world_g);
+		MPI_Comm_free(&horizon_p);
+		MPI_Group_free(&horizon_g);
+		MPI_Group_free(&world_g);
 
-    }
-  else
-    for (i=1;i<=noz2;i++)  {
-      Have[i] = temp[i];
-      }
+	}
+	else
+		for(i = 1; i <= noz2; i++)
+		{
+			Have[i] = temp[i];
+		}
 
-  for (i=1;i<=noz;i++) {
-    if(Have[i+noz] != 0.0) 
-       H[i] = Have[i]/Have[i+noz];
-    }
+	for(i = 1; i <= noz; i++)
+	{
+		if(Have[i + noz] != 0.0)
+			H[i] = Have[i] / Have[i + noz];
+	}
 
-  free ((void *) Have);
-  free ((void *) temp);
-  free ((void *) processors);
-  
-  return; 
-  }
-	   
+	free((void *)Have);
+	free((void *)temp);
+	free((void *)processors);
 
-float return_bulk_value(E,Z,z_thld,average) 
-     struct All_variables *E;
-     float *Z,z_thld;
-     int average;
+	return;
+}
 
-{  
-    void float_global_operation();
 
-    int i,j,k,n,el,elx,ely,elz,i1,i2,j1,j2,k1,k2;
-    float integral;
+float return_bulk_value(E, Z, z_thld, average)
+	struct All_variables *E;
+	float *Z, z_thld;
+	int average;
+{
+	void float_global_operation();
+
+	int i, j, k, n, el, elx, ely, elz, i1, i2, j1, j2, k1, k2;
+	float integral;
 //    float volume,volume1,integral1,integral0;
-    double volume,volume1,integral1,integral0;
-   
-    struct Shape_function GN;
-    struct Shape_function_dx GNx;
-    struct Shape_function_dA dOmega;
-    
-    const int vpts = vpoints[E->mesh.nsd];
-    const int ends = enodes[E->mesh.nsd];
+	double volume, volume1, integral1, integral0;
 
-    volume1=0.0;
-    integral1=0.0;
-     
+	struct Shape_function GN;
+	struct Shape_function_dx GNx;
+	struct Shape_function_dA dOmega;
 
-  elz = E->lmesh.elz;
-  elx = E->lmesh.elx;
-  ely = E->lmesh.ely;
+	const int vpts = vpoints[E->mesh.nsd];
+	const int ends = enodes[E->mesh.nsd];
+
+	volume1 = 0.0;
+	integral1 = 0.0;
 
 
-  for (i1=1;i1<=elz;i1++)  
-        if (E->XP[3][i1]>=z_thld)	{
-    for (j1=1;j1<=elx;j1++)
-      for (k1=1;k1<=ely;k1++)  {
-	el = i1+(j1-1)*elz+(k1-1)*elz*elx;
-
-	  for(j=1;j<=vpts;j++)
-	    for(i=1;i<=ends;i++) {
-		n = E->ien[el].node[i];
-		volume1 += E->N.vpt[GNVINDEX(i,j)] * E->gDA[el].vpt[j];
-		integral1 += Z[n] * E->N.vpt[GNVINDEX(i,j)] * E->gDA[el].vpt[j];
-	    }
-	  }
-
-      }
+	elz = E->lmesh.elz;
+	elx = E->lmesh.elx;
+	ely = E->lmesh.ely;
 
 
-  /*
-    MPI_Allreduce(&volume1  ,&volume  ,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
-    MPI_Allreduce(&integral1,&integral0,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
-    */
+	for(i1 = 1; i1 <= elz; i1++)
+		if(E->XP[3][i1] >= z_thld)
+		{
+			for(j1 = 1; j1 <= elx; j1++)
+				for(k1 = 1; k1 <= ely; k1++)
+				{
+					el = i1 + (j1 - 1) * elz + (k1 - 1) * elz * elx;
 
-    MPI_Allreduce(&volume1  ,&volume  ,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    MPI_Allreduce(&integral1,&integral0,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-     
-    integral = integral0;
+					for(j = 1; j <= vpts; j++)
+						for(i = 1; i <= ends; i++)
+						{
+							n = E->ien[el].node[i];
+							volume1 += E->N.vpt[GNVINDEX(i, j)] * E->gDA[el].vpt[j];
+							integral1 += Z[n] * E->N.vpt[GNVINDEX(i, j)] * E->gDA[el].vpt[j];
+						}
+				}
 
-    if(average && volume != 0.0)
- 	   integral = integral0/volume;
+		}
 
 
-    return((float)integral);
+	/*
+	 * MPI_Allreduce(&volume1  ,&volume  ,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
+	 * MPI_Allreduce(&integral1,&integral0,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
+	 */
+
+	MPI_Allreduce(&volume1, &volume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	MPI_Allreduce(&integral1, &integral0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	integral = integral0;
+
+	if(average && volume != 0.0)
+		integral = integral0 / volume;
+
+
+	return ((float)integral);
 }
 
 
 
-double global_vdot(E,A,B,lev)
-   struct All_variables *E;
-   double *A,*B;
-   int lev;
-
+double global_vdot(E, A, B, lev)
+	struct All_variables *E;
+	double *A, *B;
+	int lev;
 {
-  int i,neq;
-  double prod, temp;
+	int i, neq;
+	double prod, temp;
 
-  neq=E->lmesh.NEQ[lev];
+	neq = E->lmesh.NEQ[lev];
 
-  temp = 0.0;
-  for (i=0;i<neq;i++)  {
-    if (E->parallel.IDD[lev][i])   /* only get the sum from relevant ID */        
-      temp += A[i]*B[i]; 
-    }
+	temp = 0.0;
+	for(i = 0; i < neq; i++)
+	{
+		if(E->parallel.IDD[lev][i])	/* only get the sum from relevant ID */
+			temp += A[i] * B[i];
+	}
 
-  MPI_Allreduce(&temp, &prod,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&temp, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  return (prod);
+	return (prod);
 }
 
 
-double global_pdot(E,A,B,lev)
-   struct All_variables *E;
-   double *A,*B;
-   int lev;
+double global_pdot(E, A, B, lev)
+	struct All_variables *E;
+	double *A, *B;
+	int lev;
 
 {
-  int i,npno;
-  double prod, temp;
+	int i, npno;
+	double prod, temp;
 
-  npno=E->lmesh.NPNO[lev];
+	npno = E->lmesh.NPNO[lev];
 
-  temp = 0.0;
-  for (i=1;i<=npno;i++)
-      temp += A[i]*B[i]; 
+	temp = 0.0;
+	for(i = 1; i <= npno; i++)
+		temp += A[i] * B[i];
 
-  MPI_Allreduce(&temp, &prod,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&temp, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  return (prod);
-  }
+	return (prod);
+}
 
 
-float global_tdot(E,A,B,lev)
-   struct All_variables *E;
-   float *A,*B;
-   int lev;
+float global_tdot(E, A, B, lev)
+	struct All_variables *E;
+	float *A, *B;
+	int lev;
 
 {
-  int i,nno;
-  float prod, temp;
+	int i, nno;
+	float prod, temp;
 
-  nno=E->lmesh.NNO[lev];
+	nno = E->lmesh.NNO[lev];
 
-  temp = 0.0;
-  for (i=1;i<=nno;i++)
-      temp += A[i]*B[i]; 
+	temp = 0.0;
+	for(i = 1; i <= nno; i++)
+		temp += A[i] * B[i];
 
-  MPI_Allreduce(&temp, &prod,1,MPI_FLOAT,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&temp, &prod, 1, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 
-  return (prod);
-  }
+	return (prod);
+}
 
-float Tmax(E,T)
-  struct All_variables *E;
-  float *T;
+float Tmax(E, T)
+	struct All_variables *E;
+	float *T;
 {
-  float global_fmax(),temp,temp1;
-  int i,m;
+	float global_fmax(), temp, temp1;
+	int i, m;
 
-  temp = -10.0;
-  for(i=1;i<=E->lmesh.nno;i++)
-      temp = max(T[i],temp);
+	temp = -10.0;
+	for(i = 1; i <= E->lmesh.nno; i++)
+		temp = max(T[i], temp);
 
-  temp1 = global_fmax(E,temp);
-  return (temp1);
-  }
+	temp1 = global_fmax(E, temp);
+	return (temp1);
+}
 
 
-float global_fmin(E,a)
-   struct All_variables *E;
-   float a;
+float global_fmin(E, a)
+	struct All_variables *E;
+	float a;
 {
-  float temp;
-  MPI_Allreduce(&a, &temp,1,MPI_FLOAT,MPI_MIN,MPI_COMM_WORLD);
-  return (temp);
-  }
+	float temp;
+	MPI_Allreduce(&a, &temp, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
+	return (temp);
+}
 
-float global_fmax(E,a)
-   struct All_variables *E;
-   float a;
+float global_fmax(E, a)
+	struct All_variables *E;
+	float a;
 {
-  float temp;
-  MPI_Allreduce(&a, &temp,1,MPI_FLOAT,MPI_MAX,MPI_COMM_WORLD);
-  return (temp);
-  }
-
-/* ================================================== */
-void sum_across_depth_sph1(E,sphc,sphs)
-struct All_variables *E;
-float *sphc,*sphs;
-{
- int jumpp,total,j,d;
-
- static float *sphcs,*temp;
- static int been_here=0;
- static int *processors,nproc;
-
- static MPI_Comm world, horizon_p;
- static MPI_Group world_g, horizon_g;
-
-if (been_here==0)  {
- processors = (int *)malloc((E->parallel.nprocz+2)*sizeof(int));
- temp = (float *) malloc((E->sphere.hindice*2+3)*sizeof(float));
- sphcs = (float *) malloc((E->sphere.hindice*2+3)*sizeof(float));
-
- nproc = 0;
- for (j=0;j<E->parallel.nprocz;j++) {
-   d =E->parallel.me_sph*E->parallel.nprocz+E->parallel.nprocz-1-j;
-   processors[nproc] =  d;
-   nproc ++;
-   }
-
- if (nproc>0)  {
-    world = MPI_COMM_WORLD;
-    MPI_Comm_group(world, &world_g);
-    MPI_Group_incl(world_g, nproc, processors, &horizon_g);
-    MPI_Comm_create(world, horizon_g, &horizon_p);
-    }
-
- been_here++;
- }
-
- total = E->sphere.hindice*2+3;
-  jumpp = E->sphere.hindice;
-  for (j=0;j<E->sphere.hindice;j++)   {
-      sphcs[j] = sphc[j];
-      sphcs[j+jumpp] = sphs[j];
-     }
-
- if (nproc>0)  {
-
-    MPI_Allreduce(sphcs,temp,total,MPI_FLOAT,MPI_SUM,horizon_p);
-
-    for (j=0;j<E->sphere.hindice;j++)   {
-      sphc[j] = temp[j];
-      sphs[j] = temp[j+jumpp];
-     }
-
-    }
-
-return;
+	float temp;
+	MPI_Allreduce(&a, &temp, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
+	return (temp);
 }
 
 /* ================================================== */
-void sum_across_surface(E,data,total)
-struct All_variables *E;
-float *data;
-int total;
+void sum_across_depth_sph1(E, sphc, sphs)
+	struct All_variables *E;
+	float *sphc, *sphs;
 {
- int j,d;
- float *temp;
- static int been_here=0;
- static int *processors,nproc;
+	int jumpp, total, j, d;
 
- static MPI_Comm world, horizon_p;
- static MPI_Group world_g, horizon_g;
+	static float *sphcs, *temp;
+	static int been_here = 0;
+	static int *processors, nproc;
 
-if (been_here==0)  {
- processors = (int *)malloc((E->parallel.nprocxy+2)*sizeof(int));
+	static MPI_Comm world, horizon_p;
+	static MPI_Group world_g, horizon_g;
 
- nproc = 0;
- for (j=0;j<E->parallel.nprocxy;j++) {
-   d = E->parallel.me_loc[3] + j*E->parallel.nprocz;
-   processors[nproc] =  d;
-   nproc ++;
-   }
+	if(been_here == 0)
+	{
+		processors = (int *)malloc((E->parallel.nprocz + 2) * sizeof(int));
+		temp = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		sphcs = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
 
- if (nproc>0)  {
-    world = MPI_COMM_WORLD;
-    MPI_Comm_group(world, &world_g);
-    MPI_Group_incl(world_g, nproc, processors, &horizon_g);
-    MPI_Comm_create(world, horizon_g, &horizon_p);
-    }
+		nproc = 0;
+		for(j = 0; j < E->parallel.nprocz; j++)
+		{
+			d = E->parallel.me_sph * E->parallel.nprocz + E->parallel.nprocz - 1 - j;
+			processors[nproc] = d;
+			nproc++;
+		}
 
- been_here++;
- }
+		if(nproc > 0)
+		{
+			world = MPI_COMM_WORLD;
+			MPI_Comm_group(world, &world_g);
+			MPI_Group_incl(world_g, nproc, processors, &horizon_g);
+			MPI_Comm_create(world, horizon_g, &horizon_p);
+		}
 
- if (nproc>0)  {
+		been_here++;
+	}
 
-    temp = (float *)malloc((total+1)*sizeof(float));
-    MPI_Allreduce(data,temp,total,MPI_FLOAT,MPI_SUM,horizon_p);
+	total = E->sphere.hindice * 2 + 3;
+	jumpp = E->sphere.hindice;
+	for(j = 0; j < E->sphere.hindice; j++)
+	{
+		sphcs[j] = sphc[j];
+		sphcs[j + jumpp] = sphs[j];
+	}
 
-    for (j=0;j<total;j++)   {
-      data[j] = temp[j];
-      }
+	if(nproc > 0)
+	{
 
-    free((void *)temp);
+		MPI_Allreduce(sphcs, temp, total, MPI_FLOAT, MPI_SUM, horizon_p);
 
-    }
+		for(j = 0; j < E->sphere.hindice; j++)
+		{
+			sphc[j] = temp[j];
+			sphs[j] = temp[j + jumpp];
+		}
 
-return;
+	}
+
+	return;
 }
+
 /* ================================================== */
-void sum_across_surf_sph1(E,sphc,sphs)
-struct All_variables *E;
-float *sphc,*sphs;
+void sum_across_surface(E, data, total)
+	struct All_variables *E;
+	float *data;
+	int total;
 {
- int jumpp,total,j,d;
- static float *sphcs,*temp;
- static int been_here=0;
- static int *processors,nproc;
+	int j, d;
+	float *temp;
+	static int been_here = 0;
+	static int *processors, nproc;
 
- static MPI_Comm world, horizon_p;
- static MPI_Group world_g, horizon_g;
+	static MPI_Comm world, horizon_p;
+	static MPI_Group world_g, horizon_g;
 
-if (been_here==0)  {
- processors = (int *)malloc((E->parallel.nprocxy+2)*sizeof(int));
- temp = (float *) malloc((E->sphere.hindice*2+3)*sizeof(float));
- sphcs = (float *) malloc((E->sphere.hindice*2+3)*sizeof(float));
+	if(been_here == 0)
+	{
+		processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
 
- nproc = 0;
- for (j=0;j<E->parallel.nprocxy;j++) {
-   d = E->parallel.me_loc[3] + j*E->parallel.nprocz;
-   processors[nproc] =  d;
-   nproc ++;
-   }
+		nproc = 0;
+		for(j = 0; j < E->parallel.nprocxy; j++)
+		{
+			d = E->parallel.me_loc[3] + j * E->parallel.nprocz;
+			processors[nproc] = d;
+			nproc++;
+		}
 
- if (nproc>0)  {
-    world = MPI_COMM_WORLD;
-    MPI_Comm_group(world, &world_g);
-    MPI_Group_incl(world_g, nproc, processors, &horizon_g);
-    MPI_Comm_create(world, horizon_g, &horizon_p);
-    }
+		if(nproc > 0)
+		{
+			world = MPI_COMM_WORLD;
+			MPI_Comm_group(world, &world_g);
+			MPI_Group_incl(world_g, nproc, processors, &horizon_g);
+			MPI_Comm_create(world, horizon_g, &horizon_p);
+		}
 
- been_here++;
- }
+		been_here++;
+	}
 
- jumpp = E->sphere.hindice;
- total = E->sphere.hindice*2+3;
- for (j=0;j<E->sphere.hindice;j++)   {
-    sphcs[j] = sphc[j];
-    sphcs[j+jumpp] = sphs[j];
-    }
+	if(nproc > 0)
+	{
 
- if (nproc>0)  {
+		temp = (float *)malloc((total + 1) * sizeof(float));
+		MPI_Allreduce(data, temp, total, MPI_FLOAT, MPI_SUM, horizon_p);
 
-    MPI_Allreduce(sphcs,temp,total,MPI_FLOAT,MPI_SUM,horizon_p);
+		for(j = 0; j < total; j++)
+		{
+			data[j] = temp[j];
+		}
 
-    for (j=0;j<E->sphere.hindice;j++)   {
-      sphc[j] = temp[j];
-      sphs[j] = temp[j+jumpp];
-      }
+		free((void *)temp);
 
-    }
+	}
 
-return;
+	return;
+}
+
+/* ================================================== */
+void sum_across_surf_sph1(E, sphc, sphs)
+	struct All_variables *E;
+	float *sphc, *sphs;
+{
+	int jumpp, total, j, d;
+	static float *sphcs, *temp;
+	static int been_here = 0;
+	static int *processors, nproc;
+
+	static MPI_Comm world, horizon_p;
+	static MPI_Group world_g, horizon_g;
+
+	if(been_here == 0)
+	{
+		processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
+		temp = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		sphcs = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+
+		nproc = 0;
+		for(j = 0; j < E->parallel.nprocxy; j++)
+		{
+			d = E->parallel.me_loc[3] + j * E->parallel.nprocz;
+			processors[nproc] = d;
+			nproc++;
+		}
+
+		if(nproc > 0)
+		{
+			world = MPI_COMM_WORLD;
+			MPI_Comm_group(world, &world_g);
+			MPI_Group_incl(world_g, nproc, processors, &horizon_g);
+			MPI_Comm_create(world, horizon_g, &horizon_p);
+		}
+
+		been_here++;
+	}
+
+	jumpp = E->sphere.hindice;
+	total = E->sphere.hindice * 2 + 3;
+	for(j = 0; j < E->sphere.hindice; j++)
+	{
+		sphcs[j] = sphc[j];
+		sphcs[j + jumpp] = sphs[j];
+	}
+
+	if(nproc > 0)
+	{
+
+		MPI_Allreduce(sphcs, temp, total, MPI_FLOAT, MPI_SUM, horizon_p);
+
+		for(j = 0; j < E->sphere.hindice; j++)
+		{
+			sphc[j] = temp[j];
+			sphs[j] = temp[j + jumpp];
+		}
+
+	}
+
+	return;
 }
 
 /* ==========================================================  */
- void gather_TG_to_me0(E,TG)
- struct All_variables *E;
- float *TG;
- {
+void gather_TG_to_me0(E, TG)
+	struct All_variables *E;
+	float *TG;
+{
 
- void parallel_process_sync();
- int i,j,nsl,idb,ii,to_everyone,from_proc,mst,me;
+	void parallel_process_sync();
+	int i, j, nsl, idb, ii, to_everyone, from_proc, mst, me;
 
- static float *RG[20];
- static int been_here=0;
- const float e_16=1.e-16;
+	static float *RG[20];
+	static int been_here = 0;
+	const float e_16 = 1.e-16;
 
- MPI_Status status[100];
- MPI_Status status1;
- MPI_Request request[100];
+	MPI_Status status[100];
+	MPI_Status status1;
+	MPI_Request request[100];
 
- if (E->parallel.nprocxy==1)   return;
+	if(E->parallel.nprocxy == 1)
+		return;
 
- nsl = E->sphere.nsf+1;
- me = E->parallel.me;
- if (been_here==0)   {
-   been_here++;
-   for (i=1;i<E->parallel.nprocxy;i++) {
-     RG[i] = ( float *)malloc((E->sphere.nsf+1)*sizeof(float));
-     RG[i][0]=0.0;
-     }
-   }
+	nsl = E->sphere.nsf + 1;
+	me = E->parallel.me;
+	if(been_here == 0)
+	{
+		been_here++;
+		for(i = 1; i < E->parallel.nprocxy; i++)
+		{
+			RG[i] = (float *)malloc((E->sphere.nsf + 1) * sizeof(float));
+			RG[i][0] = 0.0;
+		}
+	}
 
 
- idb=0;
- for (i=1;i<=E->parallel.nprocxy;i++)  {
-   to_everyone = E->parallel.nprocz*(i-1) + E->parallel.me_loc[3];
+	idb = 0;
+	for(i = 1; i <= E->parallel.nprocxy; i++)
+	{
+		to_everyone = E->parallel.nprocz * (i - 1) + E->parallel.me_loc[3];
 
-   if (me!=to_everyone)    {  /* send TG */
-     idb++;
-     mst = me;
-     MPI_Isend(TG,nsl,MPI_FLOAT,to_everyone,mst,MPI_COMM_WORLD,&request[idb-1]);
-     }
-   }
+		if(me != to_everyone)
+		{						/* send TG */
+			idb++;
+			mst = me;
+			MPI_Isend(TG, nsl, MPI_FLOAT, to_everyone, mst, MPI_COMM_WORLD, &request[idb - 1]);
+		}
+	}
 
 
 /* parallel_process_sync(); */
 
- ii = 0;
- for (i=1;i<=E->parallel.nprocxy;i++)  {
-   from_proc = E->parallel.nprocz*(i-1) + E->parallel.me_loc[3];
-   if (me!=from_proc)   {    /* me==0 receive all TG and add them up */
-      mst = from_proc;
-      idb++;
-      ii++;
-      MPI_Irecv(RG[ii],nsl,MPI_FLOAT,from_proc,mst,MPI_COMM_WORLD,&request[idb-1]);
-      }
-   }
+	ii = 0;
+	for(i = 1; i <= E->parallel.nprocxy; i++)
+	{
+		from_proc = E->parallel.nprocz * (i - 1) + E->parallel.me_loc[3];
+		if(me != from_proc)
+		{						/* me==0 receive all TG and add them up */
+			mst = from_proc;
+			idb++;
+			ii++;
+			MPI_Irecv(RG[ii], nsl, MPI_FLOAT, from_proc, mst, MPI_COMM_WORLD, &request[idb - 1]);
+		}
+	}
 
- MPI_Waitall(idb,request,status);
+	MPI_Waitall(idb, request, status);
 
- for (i=1;i<E->parallel.nprocxy;i++)
-   for (j=1;j<=E->sphere.nsf; j++)  {
-        if (fabs(TG[j]) < e_16) TG[j] += RG[i][j];
-        }
+	for(i = 1; i < E->parallel.nprocxy; i++)
+		for(j = 1; j <= E->sphere.nsf; j++)
+		{
+			if(fabs(TG[j]) < e_16)
+				TG[j] += RG[i][j];
+		}
 
 /* parallel_process_sync(); */
 
- return;
- }
+	return;
+}
 
 
 /* ==========================================================  */
- void propogator_down_process(E,Tadi)
- struct All_variables *E;
- float *Tadi;
- {
-
- void parallel_process_sync();
- int i,j,noz,idb,ii,to_proc,from_proc,mst,me;
- float temp;
-
- static float *RG[20],*SD;
- static int been_here=0;
- const float e_16=1.e-16;
-
- MPI_Status status[100];
- MPI_Status status1;
- MPI_Request request[100];
-
- if (E->parallel.nprocz==1)   return;
-
- noz = E->lmesh.noz;
- me = E->parallel.me;
- if (been_here==0)   {
-   been_here++;
-   for (i=0;i<E->parallel.nprocz;i++) {
-     RG[i] = ( float *)malloc((4)*sizeof(float));
-     RG[i][0]=0.0;
-     }
-   SD = ( float *)malloc((4)*sizeof(float));
-   SD[0]=0.0;
-   }
-
- SD[1] = Tadi[1];
- SD[2] = Tadi[noz];
-
- idb=0;
- for (i=E->parallel.nprocz-1;i>=0;i--)  {
-     to_proc = i + E->parallel.me_loc[1]*E->parallel.nprocz + E->parallel.me_loc[2]*E->parallel.nprocz*E->parallel.nprocx;
-     if (to_proc!=me)  {
-       idb++;
-       mst = (1+me)*(to_proc+1);
-       MPI_Isend(SD,3,MPI_FLOAT,to_proc,mst,MPI_COMM_WORLD,&request[idb-1]);
-       }
-     }
-
- for (i=E->parallel.nprocz-1;i>=0;i--)  {
-     from_proc = i + E->parallel.me_loc[1]*E->parallel.nprocz + E->parallel.me_loc[2]*E->parallel.nprocz*E->parallel.nprocx;
-     if (from_proc!=me)  {
-       idb++;
-       mst = (1+me)*(from_proc+1);
-       j = from_proc % E->parallel.nprocz;
-       MPI_Irecv(RG[j],3,MPI_FLOAT,from_proc,mst,MPI_COMM_WORLD,&request[idb-1]);
-       }
-     }
-
- MPI_Waitall(idb,request,status);
-
- temp = 0;
- for (i=E->parallel.nprocz-1-E->parallel.me_loc[3];i>0;i--)  {
-     from_proc = E->parallel.me + i;
-     j = from_proc % E->parallel.nprocz;
-     temp = temp + RG[j][1];
-     if(j==E->parallel.nprocz-1)
-	     E->data.T_adi0 =  RG[j][2];
-     }
-
- for (j=1;j<=noz;j++)
-     Tadi[j] = Tadi[j]+temp;
-
-
- E->data.T_adi1 = 0;
- if (E->parallel.me_loc[3]==0)   
-    E->data.T_adi1 = Tadi[1];
- else {
-   for (i=E->parallel.me_loc[3];i>0;i--)  {
-     from_proc = E->parallel.me - i;
-     j = from_proc % E->parallel.nprocz;
-     if(j<E->parallel.me_loc[3]) E->data.T_adi1 += RG[j][1];
-     }
-   E->data.T_adi1 += Tadi[1];
-    }
-
- return;
- }
-
-/* ================================================== */
-double sum_across_depth(E,temp1)
-struct All_variables *E;
-double temp1;
+void propogator_down_process(E, Tadi)
+	struct All_variables *E;
+	float *Tadi;
 {
- int j,d;
- double temp2;
- static int been_here=0;
- static int *processors,nproc;
 
- static MPI_Comm world, vert_p;
- static MPI_Group world_g, vert_g;
+	void parallel_process_sync();
+	int i, j, noz, idb, ii, to_proc, from_proc, mst, me;
+	float temp;
 
-if (been_here==0)  {
- processors = (int *)malloc((E->parallel.nprocz+2)*sizeof(int));
+	static float *RG[20], *SD;
+	static int been_here = 0;
+	const float e_16 = 1.e-16;
 
- for (j=0;j<E->parallel.nprocz;j++) {
-   d = j + E->parallel.me_loc[1]*E->parallel.nprocz
-	 + E->parallel.me_loc[2]*E->parallel.nprocxz;
-   processors[j] =  d;
-   }
+	MPI_Status status[100];
+	MPI_Status status1;
+	MPI_Request request[100];
 
- nproc = E->parallel.nprocz;
- world = MPI_COMM_WORLD;
- MPI_Comm_group(world, &world_g);
- MPI_Group_incl(world_g, nproc, processors, &vert_g);
- MPI_Comm_create(world, vert_g, &vert_p);
+	if(E->parallel.nprocz == 1)
+		return;
 
- been_here++;
- }
+	noz = E->lmesh.noz;
+	me = E->parallel.me;
+	if(been_here == 0)
+	{
+		been_here++;
+		for(i = 0; i < E->parallel.nprocz; i++)
+		{
+			RG[i] = (float *)malloc((4) * sizeof(float));
+			RG[i][0] = 0.0;
+		}
+		SD = (float *)malloc((4) * sizeof(float));
+		SD[0] = 0.0;
+	}
 
- MPI_Allreduce(&temp1,&temp2,1,MPI_DOUBLE,MPI_SUM,vert_p);
+	SD[1] = Tadi[1];
+	SD[2] = Tadi[noz];
 
- return(temp2);
+	idb = 0;
+	for(i = E->parallel.nprocz - 1; i >= 0; i--)
+	{
+		to_proc = i + E->parallel.me_loc[1] * E->parallel.nprocz + E->parallel.me_loc[2] * E->parallel.nprocz * E->parallel.nprocx;
+		if(to_proc != me)
+		{
+			idb++;
+			mst = (1 + me) * (to_proc + 1);
+			MPI_Isend(SD, 3, MPI_FLOAT, to_proc, mst, MPI_COMM_WORLD, &request[idb - 1]);
+		}
+	}
+
+	for(i = E->parallel.nprocz - 1; i >= 0; i--)
+	{
+		from_proc = i + E->parallel.me_loc[1] * E->parallel.nprocz + E->parallel.me_loc[2] * E->parallel.nprocz * E->parallel.nprocx;
+		if(from_proc != me)
+		{
+			idb++;
+			mst = (1 + me) * (from_proc + 1);
+			j = from_proc % E->parallel.nprocz;
+			MPI_Irecv(RG[j], 3, MPI_FLOAT, from_proc, mst, MPI_COMM_WORLD, &request[idb - 1]);
+		}
+	}
+
+	MPI_Waitall(idb, request, status);
+
+	temp = 0;
+	for(i = E->parallel.nprocz - 1 - E->parallel.me_loc[3]; i > 0; i--)
+	{
+		from_proc = E->parallel.me + i;
+		j = from_proc % E->parallel.nprocz;
+		temp = temp + RG[j][1];
+		if(j == E->parallel.nprocz - 1)
+			E->data.T_adi0 = RG[j][2];
+	}
+
+	for(j = 1; j <= noz; j++)
+		Tadi[j] = Tadi[j] + temp;
+
+
+	E->data.T_adi1 = 0;
+	if(E->parallel.me_loc[3] == 0)
+		E->data.T_adi1 = Tadi[1];
+	else
+	{
+		for(i = E->parallel.me_loc[3]; i > 0; i--)
+		{
+			from_proc = E->parallel.me - i;
+			j = from_proc % E->parallel.nprocz;
+			if(j < E->parallel.me_loc[3])
+				E->data.T_adi1 += RG[j][1];
+		}
+		E->data.T_adi1 += Tadi[1];
+	}
+
+	return;
 }
 
+/* ================================================== */
+double sum_across_depth(E, temp1)
+	struct All_variables *E;
+	double temp1;
+{
+	int j, d;
+	double temp2;
+	static int been_here = 0;
+	static int *processors, nproc;
+
+	static MPI_Comm world, vert_p;
+	static MPI_Group world_g, vert_g;
+
+	if(been_here == 0)
+	{
+		processors = (int *)malloc((E->parallel.nprocz + 2) * sizeof(int));
+
+		for(j = 0; j < E->parallel.nprocz; j++)
+		{
+			d = j + E->parallel.me_loc[1] * E->parallel.nprocz + E->parallel.me_loc[2] * E->parallel.nprocxz;
+			processors[j] = d;
+		}
+
+		nproc = E->parallel.nprocz;
+		world = MPI_COMM_WORLD;
+		MPI_Comm_group(world, &world_g);
+		MPI_Group_incl(world_g, nproc, processors, &vert_g);
+		MPI_Comm_create(world, vert_g, &vert_p);
+
+		been_here++;
+	}
+
+	MPI_Allreduce(&temp1, &temp2, 1, MPI_DOUBLE, MPI_SUM, vert_p);
+
+	return (temp2);
+}

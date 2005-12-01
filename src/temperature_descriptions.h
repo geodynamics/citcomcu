@@ -33,15 +33,14 @@
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
-struct TEMP_OPT {
-    void (* update_temperature)();
+struct TEMP_OPT
+{
+	void (*update_temperature) ();
 
-    struct Rect Trects;
-    struct Circ Tcircs;
-    struct Harm Tharms;
-    struct RectBc Trectbcs;
-    struct CircBc Tcircbcs;
-    
-    
+	struct Rect Trects;
+	struct Circ Tcircs;
+	struct Harm Tharms;
+	struct RectBc Trectbcs;
+	struct CircBc Tcircbcs;
+
 } temperature;
-
