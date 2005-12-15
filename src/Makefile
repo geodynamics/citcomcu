@@ -211,7 +211,7 @@ Element_calculations.o: $(HEADER) Element_calculations.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Element_calculations.c
 
 General_matrix_functions.o: $(HEADER) General_matrix_functions.c
-	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)   General_matrix_functions.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  General_matrix_functions.c
 		
 Geometry_cartesian.o: $(HEADER) Geometry_cartesian.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Geometry_cartesian.c
@@ -259,10 +259,10 @@ Solver_conj_grad.o: $(HEADER) Solver_conj_grad.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Solver_conj_grad.c
 	
 Solver_multigrid.o: $(HEADER) Solver_multigrid.c
-	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)   Solver_multigrid.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Solver_multigrid.c
 
 Sphere_harmonics.o: $(HEADER) Sphere_harmonics.c
-	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)   Sphere_harmonics.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Sphere_harmonics.c
 
 Stokes_flow_Incomp.o: $(HEADER) Stokes_flow_Incomp.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Stokes_flow_Incomp.c
@@ -287,4 +287,4 @@ larger:
 
 
 citcom.mpi: $(OBJFILES)  $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS)  -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
+	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
