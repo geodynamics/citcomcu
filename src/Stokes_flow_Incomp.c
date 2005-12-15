@@ -208,7 +208,8 @@ float solve_Ahat_p_fhat(E, V, P, F, imp, steps_max)
 	{
 		fprintf(E->fp, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
 		/**/ fprintf(stderr, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
-	/**/}
+		/**/
+	}
 
 /*   while( (count < *steps_max) && (E->monitor.incompressibility >= E->control.tole_comp || dvelocity >= imp) )  {     
 */ while((count < *steps_max) && (dpressure >= imp || dvelocity >= imp))
