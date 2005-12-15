@@ -1536,7 +1536,7 @@ double determinant(A, n)
 	double A[4][4];
 	int n;
 {
-	double gen_determinant();
+	/* double gen_determinant(); */
 
 	switch (n)
 	{
@@ -1551,14 +1551,15 @@ double determinant(A, n)
 		break;
 	default:
 		return (1);
-/*	return(gen_determinant(A,n)); */
+/*		return(gen_determinant(A,n)); */
 	}
 }
 
 
 /* recursive function to determine matrix determinant */
-
-double gen_determinant(A, n)
+/* TODO: need to modify cofactor() in order to use it.
+ * Note that, currently, this function is never called */
+/*double gen_determinant(A, n)
 	double **A;
 	int n;
 {
@@ -1567,9 +1568,8 @@ double gen_determinant(A, n)
 
 	int i;
 
-
 	if(n == 1)
-		return (A[1][1]);		/* need a way to break the recursion */
+		return (A[1][1]);		// need a way to break the recursion
 
 	det = 0.0;
 	for(i = 1; i <= n; i++)
@@ -1577,6 +1577,7 @@ double gen_determinant(A, n)
 
 	return (det);
 }
+*/
 
 
 float area_of_4node(x1, y1, x2, y2, x3, y3, x4, y4)
