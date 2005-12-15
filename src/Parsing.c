@@ -94,6 +94,7 @@ int VERBOSE = 0;
 int DESCRIBE = 0;
 int BEGINNER = 0;
 
+
 void setup_parser(E, ac, av)
 	struct All_variables *E;
 	int ac;
@@ -197,7 +198,6 @@ void shutdown_parser(E)
 		free(ARGBUF);
 	ARGBUF = NULL;
 	ARGLIST = NULL;
-
 }
 
 
@@ -862,5 +862,4 @@ int interpret_control_string(interpret, essential, Default, minvalue, maxvalue)
 	}
 
 	return (1);
-
 }
