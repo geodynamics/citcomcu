@@ -1010,3 +1010,4 @@ struct All_variables
 
 };
 
+#include "prototypes.h"

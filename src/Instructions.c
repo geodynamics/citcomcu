@@ -94,8 +94,8 @@ void read_instructions(E, argc, argv)
 	if(E->parallel.me == 0)
 		start_time = CPU_time0();
 	Emergency_stop = 0;
-	signal(SIGINT, interuption);
-	signal(SIGTERM, interuption);
+	signal(SIGINT, interruption);
+	signal(SIGTERM, interruption);
 
 	E->control.PID = get_process_identifier();
 
@@ -410,7 +410,7 @@ void allocate_common_vars(E)
 /*  =========================================================  */
 
 
-void interuption()
+void interruption(int signal_number)
 {
 	if(Emergency_stop++)
 		exit(0);

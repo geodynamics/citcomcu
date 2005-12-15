@@ -224,7 +224,7 @@ void PG_timestep_particle(E)
 
 		count++;
 
-		temperatures_conform_bcs(E, E->T);
+		temperatures_conform_bcs(E);
 
 		E->advection.last_sub_iterations = count;
 
@@ -343,7 +343,7 @@ void PG_timestep(E)
 	count++;
 
 
-	temperatures_conform_bcs(E, E->T);
+	temperatures_conform_bcs(E);
 	thermal_buoyancy(E);
 
 	E->advection.last_sub_iterations = count;
