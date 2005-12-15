@@ -580,7 +580,6 @@ void global_derived_values(E)
 		E->mesh.nox = E->mesh.mgunitx * (int)pow(2.0, ((double)E->mesh.levmax)) + 1;
 		E->mesh.noy = E->mesh.mgunity * (int)pow(2.0, ((double)E->mesh.levmax)) + 1;
 		E->mesh.noz = E->mesh.mgunitz * (int)pow(2.0, ((double)E->mesh.levmax)) + 1;
-
 	}
 
 	E->mesh.nnx[1] = E->mesh.nox;
@@ -1021,7 +1020,6 @@ void check_bc_consistency(E)
 			/* Tbc's not applicable below top level */ }
 
 	return;
-
 }
 
 void set_up_nonmg_aliases(E)
@@ -1050,7 +1048,7 @@ void set_up_nonmg_aliases(E)
 	return;
 }
 
-report(E, string)
+void report(E, string)
 	struct All_variables *E;
 	char *string;
 {
@@ -1062,7 +1060,7 @@ report(E, string)
 	return;
 }
 
-record(E, string)
+void record(E, string)
 	struct All_variables *E;
 	char *string;
 {
@@ -1100,7 +1098,6 @@ void common_initial_fields(E)
 	get_viscosity_option(E);
 
 	return;
-
 }
 
 /* ========================================== */

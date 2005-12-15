@@ -50,7 +50,7 @@
 
 extern int Emergency_stop;
 
-main(argc, argv)
+int main(argc, argv)
 	int argc;
 	char **argv;
 {								/* Functions called by main */
@@ -121,7 +121,6 @@ main(argc, argv)
 
 	while(E.control.keep_going && (Emergency_stop == 0))
 	{
-
 		process_heating(&E);
 
 		E.monitor.solution_cycles++;
@@ -168,6 +167,5 @@ main(argc, argv)
 
 	parallel_process_termination();
 
-	return;
-
+	return 0;
 }
