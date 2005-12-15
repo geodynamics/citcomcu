@@ -776,7 +776,7 @@ void get_elt_h(E, el, elt_h, penalty)
 {
 	int aid, i, p, a, b, d, j, k, q, global, got_g;
 	unsigned int type;
-	double elt_g[24][1];
+	higher_precision elt_g[24][1];
 	void get_elt_g();
 
 	for(p = 0; p < 1; p++)
