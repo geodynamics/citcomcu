@@ -50,7 +50,7 @@ void general_stokes_solver(E)
 	void parallel_process_termination();
 
 	float vmag;
-	float *delta_U;
+	double *delta_U;
 	double *force, Udot_mag, dUdot_mag;
 	double CPU_time0(), time;
 	int count, i, j, k;
@@ -69,12 +69,11 @@ void general_stokes_solver(E)
 		for(i = 1; i <= neq; i++)
 			oldU[i] = 0.0;
 		visits++;
-
 	}
 
 	dUdot_mag = 0.0;
 
-	delta_U = (float *)malloc((neq + 2) * sizeof(float));
+	delta_U = (double *)malloc((neq + 2) * sizeof(double));
 
 	/* FIRST store the old velocity field */
 
@@ -128,7 +127,6 @@ if(E->parallel.me==0) {
 			}
 			count++;
 		}						/* end for SDEPV   */
-
 
 	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && E->viscosity.SDEPV);
 
