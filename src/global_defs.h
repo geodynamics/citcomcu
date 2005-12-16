@@ -1010,4 +1010,9 @@ struct All_variables
 
 };
 
+/* To regenerate function prototypes:
+ * 	1. Comment out the #include line below, and save this file
+ * 	2. Run command: cproto -q -p -f 3 *.c > prototypes.h
+ * 	3. Uncomment the #include line below, and save this file
+ */
 #include "prototypes.h"
