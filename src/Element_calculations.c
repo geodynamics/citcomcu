@@ -66,21 +66,10 @@ static double Dm[5][5] = {  {0.0, 0.0, 0.0, 0.0, 0.0},
    Function to get the global H vector (mixed method driving terms)
    ================================================================ */
 
-void assemble_forces(E, penalty)
-	struct All_variables *E;
-	int penalty;
+void assemble_forces(struct All_variables *E, int penalty)
 {
 	double elt_f[24], elt_h[1];
 	int el, p, i, a, a1, a2, a3, e, ii, jj, kk, elx, ely, elz, node, temp_dims;
-	void get_elt_f();
-	void matrix_transform_force();
-	void get_elt_h();
-	void strip_bcs_from_residual();
-
-	void e_exchange_id_dc();
-	void e_exchange_id_di();
-	void exchange_id_d();
-	void exchange_id_d20();
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int ends = enodes[E->mesh.nsd];
@@ -133,20 +122,12 @@ void assemble_forces(E, penalty)
   Function to supply the element k matrix for a given element e.
   ==============================================================  */
 
-void get_elt_k(E, el, elt_k, lev, penalty)
-	struct All_variables *E;
-	int el;
-	double elt_k[24 * 24];
-	int lev;
-	int penalty;
+void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int penalty)
 {
 	double bdbmu[4][4];
 	double bdbl[4][4];
 
-	void print_elt_k();
 	double rtf[4][9], W[9], ra[9], si[9], ct[9];
-	void get_rtf();
-	void construct_c3x3matrix_el();
 	struct Shape_function GN;
 	struct Shape_function_dA dOmega;
 	struct Shape_function_dx GNx;
@@ -299,15 +280,8 @@ void get_elt_k(E, el, elt_k, lev, penalty)
 	 * element or node by node.
 	 * ============================================= */
 
-void assemble_del2_u(E, u, Au, level, strip_bcs)
-	struct All_variables *E;
-	double *u, *Au;
-	int level;
-	int strip_bcs;
+void assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
-	void e_assemble_del2_u();
-	void n_assemble_del2_u();
-
 	if(E->control.NMULTIGRID || E->control.NASSEMBLE)
 		n_assemble_del2_u(E, u, Au, level, strip_bcs);
 	else
@@ -320,24 +294,13 @@ void assemble_del2_u(E, u, Au, level, strip_bcs)
 	 * Assemble del_squared_u vector el by el
 	 * ======================================   */
 
-void e_assemble_del2_u(E, u, Au, level, strip_bcs)
-	struct All_variables *E;
-	double *u, *Au;
-	int level;
-	int strip_bcs;
+void e_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
 	int el, e, i, a, b, a1, a2, a3, ii;
 	double elt_k[24 * 24], U[24], AU[24], alpha = 1.0, beta = 0.0;
 
 	int indx[24];
 	char uplo = 'U';
-
-	void strip_bcs_from_residual();
-	void e_exchange_id_dc();
-	void e_exchange_id_di();
-	void exchange_id_d();
-	void exchange_id_d20();
-	void get_elt_k();
 
 	double U1[24];
 
@@ -387,20 +350,11 @@ void e_assemble_del2_u(E, u, Au, level, strip_bcs)
 	 * Assemble Au using stored, nodal coefficients.
 	 * ====================================================== */
 
-void n_assemble_del2_u(E, u, Au, level, strip_bcs)
-	struct All_variables *E;
-	double *u, *Au;
-	int level;
-	int strip_bcs;
+void n_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
 	int node, e, i, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3;
 
 	double U1, U2, U3, UU;
-	void strip_bcs_from_residual();
-	void n_exchange_id_dc();
-	void n_exchange_id_di();
-	void exchange_id_d();
-	void exchange_id_d20();
 
 	static int been_here = 0;
 
@@ -465,10 +419,7 @@ void n_assemble_del2_u(E, u, Au, level, strip_bcs)
 }
 
 
-void build_diagonal_of_K(E, el, elt_k, level)
-	struct All_variables *E;
-	int level, el;
-	double elt_k[24 * 24];
+void build_diagonal_of_K(struct All_variables *E, int el, double elt_k[24 * 24], int level)
 
 {
 	int a, a1, a2, p;
@@ -498,15 +449,12 @@ void build_diagonal_of_K(E, el, elt_k, level)
 	return;
 }
 
-void build_diagonal_of_Ahat(E)
-	struct All_variables *E;
+void build_diagonal_of_Ahat(struct All_variables *E)
 {
-	double assemble_dAhatp_entry();
-
 	double BU;
 	int e, npno, neq;
 	int level;
-	float time, time0, CPU_time();
+	float time, time0;
 
 	for(level = E->mesh.levmax; level >= E->mesh.levmin; level--)
 	{
@@ -538,14 +486,10 @@ void build_diagonal_of_Ahat(E)
 	 * Assemble a div_u vector element by element
 	 * ==========================================  */
 
-void assemble_div_u(E, U, divU, level)
-	struct All_variables *E;
-	double *U, *divU;
-	int level;
+void assemble_div_u(struct All_variables *E, double *U, double *divU, int level)
 {
 	int e, j1, j2, j3, p, a, b;
 	higher_precision elt_g[24][1];
-	void get_elt_g();
 
 	const int nel = E->lmesh.NEL[level];
 	const int ends = enodes[E->mesh.nsd];
@@ -576,18 +520,10 @@ void assemble_div_u(E, U, divU, level)
 	 * Assemble a grad_P vector element by element
 	 * ==========================================  */
 
-void assemble_grad_p(E, P, gradP, lev)
-	struct All_variables *E;
-	double *P, *gradP;
-	int lev;
+void assemble_grad_p(struct All_variables *E, double *P, double *gradP, int lev)
 {
 	int el, e, i, j1, j2, p, a, nel, neq;
-	void strip_bcs_from_residual();
-	void e_exchange_id_dc();
-	void e_exchange_id_di();
-	void exchange_id_d20();
 	higher_precision elt_g[24][1];
-	void get_elt_g();
 
 	const int ends = enodes[E->mesh.nsd];
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
@@ -626,14 +562,10 @@ void assemble_grad_p(E, P, gradP, lev)
 	return;
 }
 
-double assemble_dAhatp_entry(E, e, level)
-	struct All_variables *E;
-	int e, level;
+double assemble_dAhatp_entry(struct All_variables *E, int e, int level)
 {
 	int i, j, p, a, b, node, ee, element, lnode, npno;
-	void strip_bcs_from_residual();
 	higher_precision elt_g[24][1];
-	void get_elt_g();
 
 	double gradP[81], divU;
 
@@ -688,17 +620,10 @@ double assemble_dAhatp_entry(E, e, level)
   Function to supply the element g matrix for a given element e.
   ==============================================================  */
 
-void get_elt_g(E, el, elt_del, lev)
-	struct All_variables *E;
-	int el;
-	higher_precision elt_del[24][1];
-	int lev;
+void get_elt_g(struct All_variables *E, int el, higher_precision elt_del[24][1], int lev)
 {
-	void get_global_shape_fn();
 	double dGNdash[3];
 	double recip_radius, temp;
-	void get_rtf();
-	void construct_c3x3matrix_el();
 	int p, a, nint, es, d, i, j, k;
 	double ra, ct, si, x[4], rtf[4][9];
 	int lmsize;
@@ -768,16 +693,11 @@ void get_elt_g(E, el, elt_del, lev)
 	 * to imposed velocity boundary conditions, mixed method).
 	 * =============================================================== */
 
-void get_elt_h(E, el, elt_h, penalty)
-	struct All_variables *E;
-	int el;
-	double elt_h[1];
-	int penalty;
+void get_elt_h(struct All_variables *E, int el, double elt_h[1], int penalty)
 {
 	int aid, i, p, a, b, d, j, k, q, global, got_g;
 	unsigned int type;
 	higher_precision elt_g[24][1];
-	void get_elt_g();
 
 	for(p = 0; p < 1; p++)
 		elt_h[p] = 0.0;
@@ -817,11 +737,7 @@ void get_elt_h(E, el, elt_h, penalty)
 	  Function to create the element force vector (allowing for b.c.'s)
 	  ================================================================= */
 
-void get_elt_f(E, el, elt_f, penalty, bcs)
-	struct All_variables *E;
-	int el;
-	double elt_f[24];
-	int penalty, bcs;
+void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, int bcs)
 {
 
 	int aid, i, p, a, b, d, j, k, q, es;
@@ -833,8 +749,6 @@ void get_elt_f(E, el, elt_f, penalty, bcs)
 	double vector[4], magnitude;
 	double tmp, rtf[4][9];
 	double elt_k[24 * 24];
-	void get_rtf();
-	void construct_c3x3matrix_el();
 
 	struct Shape_function GN;
 	struct Shape_function_dA dOmega;
@@ -970,11 +884,7 @@ void get_elt_f(E, el, elt_f, penalty, bcs)
 	 * subroutine to get augmented lagrange part of stiffness matrix
 	 * ================================================================== */
 
-void get_aug_k(E, el, elt_k, level)
-	struct All_variables *E;
-	int el;
-	double elt_k[24 * 24];
-	int level;
+void get_aug_k(struct All_variables *E, int el, double elt_k[24 * 24], int level)
 {
 	int i, j, k, p[9], a, b, nodea, nodeb;
 	double Visc;

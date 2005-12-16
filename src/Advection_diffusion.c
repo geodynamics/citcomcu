@@ -61,11 +61,8 @@ struct el
    ============================================ */
 
 
-void advection_diffusion_parameters(E)
-	struct All_variables *E;
+void advection_diffusion_parameters(struct All_variables *E)
 {
-
-	void std_timestep();
 	/* Set intial values, defaults & read parameters */
 
 	E->advection.temp_iterations = 2;	/* petrov-galerkin iterations: minimum value. */
@@ -109,8 +106,7 @@ void advection_diffusion_parameters(E)
 	return;
 }
 
-void advection_diffusion_allocate_memory(E)
-	struct All_variables *E;
+void advection_diffusion_allocate_memory(struct All_variables *E)
 {
 	int i;
 
@@ -122,24 +118,10 @@ void advection_diffusion_allocate_memory(E)
 	return;
 }
 
-void PG_timestep_particle(E)
-	struct All_variables *E;
+void PG_timestep_particle(struct All_variables *E)
 {
-	void timestep();
-	void predictor();
-	void corrector();
-	void pg_solver();
-	void remove_horiz_ave();
-	void std_timestep();
-	void temperatures_conform_bcs();
-	void Runge_Kutta();
-	void Euler();
+	float T_interior1;
 
-	float global_tdot();
-	void vcopy();
-	float Tmax(), T_interior1;
-
-	int get_v_estimate();
 	int iredo, i, j, psc_pass, count, steps;
 
 	float *DTdot, *Tdot1, *T1, T_maxvaried;
@@ -253,21 +235,10 @@ void PG_timestep_particle(E)
 
 
 
-void PG_timestep(E)
-	struct All_variables *E;
+void PG_timestep(struct All_variables *E)
 {
-	void timestep();
-	void predictor();
-	void corrector();
-	void pg_solver();
-	void remove_horiz_ave();
-	void std_timestep();
-	void temperatures_conform_bcs();
-	float global_tdot();
-	void vcopy();
-	float Tmax(), T_interior1;
+	float T_interior1;
 
-	int get_v_estimate();
 	int iredo, i, j, psc_pass, count, steps;
 
 	float *DTdot, *Tdot1, *T1, T_maxvaried;
@@ -365,9 +336,7 @@ void PG_timestep(E)
    predictor and corrector steps.
    ============================== */
 
-void predictor(E, field, fielddot)
-	struct All_variables *E;
-	float *field, *fielddot;
+void predictor(struct All_variables *E, float *field, float *fielddot)
 {
 	int node;
 	float multiplier;
@@ -384,9 +353,7 @@ void predictor(E, field, fielddot)
 	return;
 }
 
-void corrector(E, field, fielddot, Dfielddot)
-	struct All_variables *E;
-	float *field, *fielddot, *Dfielddot;
+void corrector(struct All_variables *E, float *field, float *fielddot, float *Dfielddot)
 
 {
 	int node;
@@ -415,23 +382,8 @@ void corrector(E, field, fielddot, Dfielddot)
    =================================================== */
 
 
-void pg_solver(E, T, Tdot, DTdot, V, Q0, diff, bc, TBC, FLAGS)
-	struct All_variables *E;
-	float *T, *Tdot, *DTdot;
-	float **V;
-	struct SOURCES Q0;
-	float diff;
-	int bc;
-	float **TBC;
-	unsigned int *FLAGS;
+void pg_solver(struct All_variables *E, float *T, float *Tdot, float *DTdot, float **V, struct SOURCES Q0, float diff, int bc, float **TBC, unsigned int *FLAGS)
 {
-	void get_global_shape_fn();
-	void pg_shape_fn();
-	void element_residual();
-	void e_exchange_node_fc();
-	void exchange_node_f20();
-	void get_rtf();
-
 	int el, e, a, i, a1;
 	double rtf[4][9], Eres[9];	/* correction to the (scalar) Tdot field */
 
@@ -480,13 +432,7 @@ void pg_solver(E, T, Tdot, DTdot, V, Q0, diff, bc, TBC, FLAGS)
    Petrov-Galerkin shape functions for a given element
    =================================================== */
 
-void pg_shape_fn(E, el, PG, V, rtf, diffusion)
-	struct All_variables *E;
-	int el;
-	struct Shape_function *PG;
-	float **V;
-	float diffusion;
-	double rtf[4][9];
+void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, float **V, double rtf[4][9], float diffusion)
 {
 	int i, j;
 	int *ienmatrix;
@@ -595,17 +541,7 @@ void pg_shape_fn(E, el, PG, V, rtf, diffusion)
    Used to correct the Tdot term.
    =========================================  */
 
-void element_residual(E, el, PG, vel, field, fielddot, Q0, Eres, rtf, diff, BC, FLAGS)
-	struct All_variables *E;
-	int el;
-	struct Shape_function PG;
-	float **vel;
-	float *field, *fielddot;
-	struct SOURCES Q0;
-	double Eres[9], rtf[4][9];
-	float diff;
-	float **BC;
-	unsigned int *FLAGS;
+void element_residual(struct All_variables *E, int el, struct Shape_function PG, float **vel, float *field, float *fielddot, struct SOURCES Q0, double Eres[9], double rtf[4][9], float diff, float **BC, unsigned int *FLAGS)
 {
 	int i, j, a, k, node, nodes[4], d, aid, back_front, onedfns;
 	double Q;
@@ -619,8 +555,6 @@ void element_residual(E, el, PG, vel, field, fielddot, Q0, Eres, rtf, diff, BC, 
 	struct Shape_function1 GM;
 	struct Shape_function1_dA dGamma;
 	double temp;
-
-	void get_global_1d_shape_fn();
 
 	const int dims = E->mesh.nsd;
 	const int dofs = E->mesh.dof;
@@ -772,14 +706,11 @@ void element_residual(E, el, PG, vel, field, fielddot, Q0, Eres, rtf, diff, BC, 
    =====================================================  */
 
 
-void std_timestep(E)
-	struct All_variables *E;
+void std_timestep(struct All_variables *E)
 {
 	static int been_here = 0;
 	static float diff_timestep, root3, root2;
 	int i, d, n, nel;
-
-	float global_fmin();
 
 	float adv_timestep;
 	float ts, uc2, uc3, uc1, uc, size, step;
@@ -849,8 +780,7 @@ void std_timestep(E)
 }
 
 
-void process_heating(E)
-	struct All_variables *E;
+void process_heating(struct All_variables *E)
 {
 
 	int m, e, i, j, ee;
@@ -859,8 +789,6 @@ void process_heating(E)
 	double temp1, temp2, temp3, temp4, temp5, temp6;
 	FILE *fp;
 	char filename[250];
-	void return_horiz_ave();
-	void strain_rate_2_inv();
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];

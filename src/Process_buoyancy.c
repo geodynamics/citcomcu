@@ -49,26 +49,18 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void process_temp_field(E, ii)
-	struct All_variables *E;
-	int ii;
+void process_temp_field(struct All_variables *E, int ii)
 {
-	void heat_flux();
-	void output_temp();
-
 	if(((ii % E->control.record_every) == 0))
 	{
 		heat_flux(E);
-/*
-      output_temp(E,ii);
- */ }
-
+		/* output_temp(E,ii); */
+	}
 	return;
 }
 
 
-void heat_flux(E)
-	struct All_variables *E;
+void heat_flux(struct All_variables *E)
 {
 	int e, ee, i, j, node, lnode;
 	static float *flux;
@@ -76,9 +68,6 @@ void heat_flux(E)
 	static int been_here = 0;
 	double T1[9], VZ[9], u[9], T[9], dTdz[9], area, uT, uT_adv, uT_adv_s;
 	double diff, tempb, tempt, hfb, hft, areab, areat;
-	void return_horiz_sum();
-	void return_horiz_ave();
-	void exchange_node_f20();
 
 	struct Shape_function GN;
 	struct Shape_function_dA dOmega;
@@ -215,14 +204,12 @@ void heat_flux(E)
     Surface heat flux  
    =================== */
 
-void heat_flux1(E)
-	struct All_variables *E;
+void heat_flux1(struct All_variables *E)
 {
 	int e, i, j, node, lnode;
 	float *mass, *flux, *SU, *RU, *inp, *outp;
 	float VZ[9], u[9], T[9], dTdz[9], area, uT;
 	double tempb, tempt, hfb, hft, areab, areat;
-	void return_horiz_sum();
 
 	struct Shape_function GN;
 	struct Shape_function_dA dOmega;
@@ -349,18 +336,14 @@ void heat_flux1(E)
 	return;
 }
 
-void plume_buoyancy_flux(E)
-	struct All_variables *E;
+void plume_buoyancy_flux(struct All_variables *E)
 {
 	int d, nint, el, e, i, j, k, node, lnode[5];
 	float *mass, *flux, *SU, *RU, *inp, *outp;
 	float VZ[9], u[9], T[9], dTdz[9], area, uT;
-	void return_horiz_sum();
 
 	struct Shape_function1 M;
 	struct Shape_function1_dA dGamma;
-	void get_global_1d_shape_fn();
-
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int vpts = vpoints[dims];

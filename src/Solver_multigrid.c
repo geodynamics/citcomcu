@@ -48,13 +48,8 @@ static double weightIJ[5][5] = {  {0.0, 0.0   , 0.0   , 0.0   , 0.0   },
 /* *INDENT-ON* */
 
 
-void set_mg_defaults(E)
-	struct All_variables *E;
+void set_mg_defaults(struct All_variables *E)
 {
-	void assemble_forces_iterative();
-	void solve_constrained_flow_iterative();
-	void mg_allocate_vars();
-
 	E->solver_allocate_vars = mg_allocate_vars;
 	E->build_forcing_term = assemble_forces_iterative;
 	E->solve_stokes_problem = solve_constrained_flow_iterative;
@@ -64,17 +59,22 @@ void set_mg_defaults(E)
 	return;
 }
 
-void mg_allocate_vars(E)
-	struct All_variables *E;
+void mg_allocate_vars(struct All_variables *E)
 {
 	return;
-
 }
 
-void project_vector(E, start_lev, AU, AD, ic)
-	struct All_variables *E;
-	int start_lev, ic;
-	double *AU, *AD;			/* data on upper/lower mesh  */
+
+/* project_vector
+ *	double *AU - data on upper/lower mesh
+ *	double *AD - data on upper/lower mesh
+ */
+void project_vector(
+	struct All_variables *E,
+	int start_lev,
+	double *AU,
+	double *AD,
+	int ic)
 {
 	int i, j;
 	int el, node, e1;
@@ -82,8 +82,7 @@ void project_vector(E, start_lev, AU, AD, ic)
 	int eqn2, eqn_minus2;
 	int eqn3, eqn_minus3;
 	double amplifier, average1, average2, average3, w;
-	float CPU_time(), time;
-	void exchange_id_d20();
+	float time;
 
 	const int sl_minus = start_lev - 1;
 	const int neq_minus = E->lmesh.NEQ[start_lev - 1];
@@ -166,13 +165,12 @@ void project_vector(E, start_lev, AU, AD, ic)
    it much either.
    ======================================================================================= */
 
-
-void interp_vector(E, start_lev, AD, AU)
-	struct All_variables *E;
-	int start_lev;
-	double *AD, *AU;			/* data on upper/lower mesh  */
+/* interp_vector
+ *	double *AD - data on upper/lower mesh
+ *	double *AU - data on upper/lower mesh
+ */
+void interp_vector(struct All_variables *E, int start_lev, double *AD, double *AU)
 {
-	void un_inject_vector();
 	int i, j, k;
 	float x1, x2;
 	float n1, n2;
@@ -299,10 +297,12 @@ void interp_vector(E, start_lev, AD, AU)
 }
 
 /* ==================================================== */
-void project_scalar_e(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	float *AU, *AD;				/* data on upper/lower mesh  */
+
+/* project_scalar_e
+ * 	float *AU - data on upper/lower mesh
+ * 	float *AD - data on upper/lower mesh
+ */
+void project_scalar_e(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
 	int i, j, m;
 	int el, node, e;
@@ -334,15 +334,15 @@ void project_scalar_e(E, start_lev, AU, AD)
 }
 
 /* ==================================================== */
-void project_scalar(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	float *AU, *AD;				/* data on upper/lower mesh  */
+/* project_scalar
+ * 	float *AU - data on upper/lower mesh
+ * 	float *AD - data on upper/lower mesh
+ */
+void project_scalar(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
 	int i, j, m;
 	int el, node, node1;
 	float average, w;
-	void exchange_node_f20();
 
 	const int sl_minus = start_lev - 1;
 	const int nno_minus = E->lmesh.NNO[start_lev - 1];
@@ -391,24 +391,12 @@ void project_scalar(E, start_lev, AU, AD)
     levels in the problem. (no gaps for vbcs)
     ==============================================  */
 
-void project_viscosity(E)
-	struct All_variables *E;
+void project_viscosity(struct All_variables *E)
 {
 	int lv, i, j, k, el, sl_minus;
 
-	void inject_scalar();
-	void project_scalar();
-	void project_scalar_e();
-	void inject_scalar_e();
-	void visc_from_gint_to_nodes();
-	void visc_from_nodes_to_gint();
-	void visc_from_gint_to_ele();
-	void visc_from_ele_to_gint();
-
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
-
-
 
 	float *viscU, *viscD;
 
@@ -445,16 +433,15 @@ void project_viscosity(E)
 
 	free((void *)viscU);
 	free((void *)viscD);
-
-
 	return;
 }
 
 
-void inject_node_fvector(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	float **AU, **AD;			/* data on upper/lower mesh  */
+/* inject_node_fvector
+ *	float **AU - data on upper/lower mesh
+ *	float **AD - data on upper/lower mesh
+ */
+void inject_node_fvector(struct All_variables *E, int start_lev, float **AU, float **AD)
 {
 	int i;
 	int el, ex, ey, ez, d;
@@ -492,10 +479,11 @@ void inject_node_fvector(E, start_lev, AU, AD)
    just dropping values not at shared grid points.
    ===================================================== */
 
-void inject(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	double *AU, *AD;			/* data on upper/lower mesh  */
+/* inject
+ * 	double *AU - data on upper/lower mesh
+ * 	double *AD - data on upper/lower mesh
+ */
+void inject(struct All_variables *E, int start_lev, double *AU, double *AD)
 {
 	int i;
 	int el, node_coarse, node_fine;
@@ -536,23 +524,23 @@ void inject(E, start_lev, AU, AD)
 	return;
 }
 
+
 /* =====================================================
    Function to inject data from high to low grid (i.e.
    just dropping values not at shared grid points.
    ===================================================== */
 
-void un_inject_vector(E, start_lev, AD, AU)
-	struct All_variables *E;
-	int start_lev;
-	double *AU, *AD;			/* data on upper/lower mesh  */
+/* un_inject_vector
+ * 	double *AD - data on upper/lower mesh
+ * 	double *AU - data on upper/lower mesh
+ */
+void un_inject_vector(struct All_variables *E, int start_lev, double *AD, double *AU)
 {
 	int i;
 	int el, node, node_plus;
 	int eqn1, eqn_plus1;
 	int eqn2, eqn_plus2;
 	int eqn3, eqn_plus3;
-
-
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
@@ -601,10 +589,12 @@ void un_inject_vector(E, start_lev, AD, AU)
 	return;
 }
 
-void inject_scalar(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	float *AU, *AD;				/* data on upper/lower mesh  */
+
+/* inject_scalar
+ * 	float *AU - data on upper/lower mesh
+ * 	float *AD - data on upper/lower mesh
+ */
+void inject_scalar(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
 	int i, m, el, node_coarse, node_fine, sl_minus, eqn, eqn_coarse;
 
@@ -632,10 +622,12 @@ void inject_scalar(E, start_lev, AU, AD)
 	return;
 }
 
-void inject_scalar_e(E, start_lev, AU, AD)
-	struct All_variables *E;
-	int start_lev;
-	float *AU, *AD;				/* data on upper/lower mesh  */
+
+/* inject_scalar_e
+ * 	float *AU - data on upper/lower mesh
+ * 	float *AD - data on upper/lower mesh
+ */
+void inject_scalar_e(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
 	int i, j, m;
 	int el, node, e;

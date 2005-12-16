@@ -51,9 +51,7 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void output_velo_related(E, file_number)
-	struct All_variables *E;
-	int file_number;
+void output_velo_related(struct All_variables *E, int file_number)
 {
 	int el, els, i, j, k, ii, m, node, fd;
 	int nox, noz, noy, nfx, nfz, nfy1, nfy2, size1, size2;
@@ -62,8 +60,6 @@ void output_velo_related(E, file_number)
 	static int been_here = 0;
 	float vs;
 
-	void get_surface_velo();
-	void get_ele_visc();
 	const int nno = E->mesh.nno;
 
 	if(been_here == 0)
@@ -165,9 +161,7 @@ void output_velo_related(E, file_number)
 	return;
 }
 
-void output_velo_related_binary(E, file_number)
-	struct All_variables *E;
-	int file_number;
+void output_velo_related_binary(struct All_variables *E, int file_number)
 {
 	int el, els, i, j, k, ii, m, node, fd;
 	int nox, noz, noy, nfx, nfz, nfy1, nfy2, size1, size2;
@@ -175,8 +169,6 @@ void output_velo_related_binary(E, file_number)
 	static float *SV, *EV;
 	static int been_here = 0;
 
-	void get_surface_velo();
-	void get_ele_visc();
 	const int nno = E->lmesh.nno;
 /*
   if (been_here==0 && E->control.restart==0) {
@@ -227,9 +219,7 @@ void output_velo_related_binary(E, file_number)
 
 /* ====================================================================== */
 
-void output_temp(E, file_number)
-	struct All_variables *E;
-	int file_number;
+void output_temp(struct All_variables *E, int file_number)
 {
 	int nno, i, j, fd;
 	static int *temp1;
@@ -284,8 +274,7 @@ void output_temp(E, file_number)
 
 /* ====================================================================== */
 
-void process_restart(E)
-	struct All_variables *E;
+void process_restart(struct All_variables *E)
 {
 	int fileid[20];
 	int i, j, k, ii, size2;
@@ -366,11 +355,7 @@ void process_restart(E)
 /*   ======================================================================
     ======================================================================  */
 
-void print_field_spectral_regular(E, TG, sphc, sphs, proc_loc, filen)
-	struct All_variables *E;
-	float *TG, *sphc, *sphs;
-	int proc_loc;
-	char *filen;
+void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen)
 {
 	FILE *fp, *fp1;
 	char output_file[255];
@@ -382,7 +367,6 @@ void print_field_spectral_regular(E, TG, sphc, sphs, proc_loc, filen)
 	minx = 1.e26;
 	if(E->parallel.me == proc_loc)
 	{
-
 		sprintf(output_file, "%s.%s_intp", E->control.data_file, filen);
 		fp = fopen(output_file, "w");
 		for(i = E->sphere.nox; i >= 1; i--)
@@ -414,7 +398,6 @@ void print_field_spectral_regular(E, TG, sphc, sphs, proc_loc, filen)
 
 		fclose(fp1);
 	}
-
 
 	return;
 }

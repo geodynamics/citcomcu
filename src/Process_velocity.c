@@ -48,15 +48,8 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void process_new_velocity(E, ii)
-	struct All_variables *E;
-	int ii;
+void process_new_velocity(struct All_variables *E, int ii)
 {
-	void output_velo_related();
-	void get_STD_topo();
-	void get_CBF_topo();
-	void averages();
-
 	static int been_here = 0;
 
 	if(been_here == 0)
@@ -69,17 +62,13 @@ void process_new_velocity(E, ii)
 
 	if(((ii % E->control.record_every) == 0))
 	{
-
-/*
-      get_CBF_topo(E,E->slice.tpg,E->slice.tpgb);  
-*/
+		/* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
 
 		get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
 
 		averages(E);
 
 		output_velo_related(E, ii);	/* also topo */
-
 	}
 
 	return;
@@ -87,9 +76,7 @@ void process_new_velocity(E, ii)
 
 /* ===============================================   */
 
-void get_surface_velo(E, SV)
-	struct All_variables *E;
-	float *SV;
+void get_surface_velo(struct All_variables *E, float *SV)
 {
 
 	int el, els, i, m, node, lev;
@@ -117,9 +104,7 @@ void get_surface_velo(E, SV)
 
 /* ===============================================   */
 
-void get_ele_visc(E, EV)
-	struct All_variables *E;
-	float *EV;
+void get_ele_visc(struct All_variables *E, float *EV)
 {
 	int el, j, lev;
 
@@ -141,9 +126,7 @@ void get_ele_visc(E, EV)
 }
 
 
-void get_surf_stress(E, SXX, SYY, SZZ, SXY, SXZ, SZY)
-	struct All_variables *E;
-	float *SXX, *SYY, *SZZ, *SXY, *SXZ, *SZY;
+void get_surf_stress(struct All_variables *E, float *SXX, float *SYY, float *SZZ, float *SXY, float *SXZ, float *SZY)
 {
 	int i, node, stride;
 
@@ -174,15 +157,10 @@ void get_surf_stress(E, SXX, SYY, SZZ, SXY, SXZ, SZY)
 	return;
 }
 
-void averages(E)
-	struct All_variables *E;
+void averages(struct All_variables *E)
 {
-
 	int lev, i, j, el;
 	float *temp, z_thld;
-	void return_horiz_ave();
-	void plume_buoyancy_flux();
-	float return_bulk_value();
 
 	lev = E->mesh.levmax;
 

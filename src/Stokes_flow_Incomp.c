@@ -47,31 +47,20 @@ extern int Emergency_stop;
 /* Master loop for pressure and (hence) velocity field */
 
 
-void solve_constrained_flow_iterative(E)
-	struct All_variables *E;
+void solve_constrained_flow_iterative(struct All_variables *E)
 {
 	double *D1;
 	double *u;
 	double *R, *Bp;
 	double residual_ddash;
 	double vmag;
-	double global_vdot(), global_pdot();
 
 	static int been_here = 0;
-
-	float solve_Ahat_p_fhat();
-	void assemble_del2_u();
-	void assemble_grad_p();
-	void assemble_div_u();
-	void v_from_vector();
-	void p_to_nodes();
-	void strip_bcs_from_residual();
-	void velocities_conform_bcs();
 
 	int steps, cycles;
 	int i, j, k, doff, vel_cycles_previous, vel_calls_previous;
 
-	double time, CPU_time0();
+	double time;
 
 	const int npno = E->lmesh.npno;
 	const int gnpno = E->mesh.npno;
@@ -91,9 +80,7 @@ void solve_constrained_flow_iterative(E)
 	been_here = 1;
 
 	v_from_vector(E, E->V, E->U);
-	/* p_to_nodes(E,E->P,E->NP,E->mesh.levmax);   
-	 * 
-	 */
+	/* p_to_nodes(E,E->P,E->NP,E->mesh.levmax); */  
 
 	return;
 }
@@ -102,11 +89,7 @@ void solve_constrained_flow_iterative(E)
 
 /*  ==========================================================================  */
 
-float solve_Ahat_p_fhat(E, V, P, F, imp, steps_max)
-	struct All_variables *E;
-	double *V, *P, *F;
-	double imp;
-	int *steps_max;
+float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F, double imp, int *steps_max)
 {
 	int i, j, k, ii, count, convergent, valid, problems, lev, lev_low, npno, neq, steps;
 	int gnpno, gneq;
@@ -118,20 +101,9 @@ float solve_Ahat_p_fhat(E, V, P, F, imp, steps_max)
 	double alpha, delta, s2dotAhat, r0dotr0, r1dotz1;
 	double residual, initial_residual, last_residual, res_magnitude, v_res;
 
-	double global_vdot(), global_pdot();
-	double *dvector();
-
-	float CPU_time();
-	double time0, time, CPU_time0();
+	double time0, time;
 	static double timea;
 	float dpressure, dvelocity, tole_comp;
-
-
-	void assemble_div_u();
-	void assemble_del2_u();
-	void assemble_grad_p();
-	void strip_bcs_from_residual();
-	int solve_del2_u();
 
 	const int dims = E->mesh.nsd;
 	const int n = loc_mat_size[E->mesh.nsd];
@@ -315,15 +287,10 @@ float solve_Ahat_p_fhat(E, V, P, F, imp, steps_max)
 	return (residual);
 }
 
+
 /*  ==========================================================================  */
 
-
-
-
-void v_from_vector(E, V, F)
-	struct All_variables *E;
-	float **V;
-	double *F;
+void v_from_vector(struct All_variables *E, float **V, double *F)
 {
 	int node, d;
 	unsigned int type;

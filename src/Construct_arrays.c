@@ -48,8 +48,7 @@
   it should be done through a pre-calculated lookup table.
   ======================================================== */
 
-void construct_ien(E)
-	struct All_variables *E;
+void construct_ien(struct All_variables *E)
 {
 	int lev, p, q, r, rr, e1, e2, i, a, node, node2, e;
 	int element, start, nel, nno;
@@ -133,8 +132,7 @@ void construct_ien(E)
   Function to make the ID array for above case
   ============================================ */
 
-void construct_id(E)
-	struct All_variables *E;
+void construct_id(struct All_variables *E)
 {
 	int i, j, k, kk, i1, i2, j1, j2, k1, k2;
 	int eqn_count, node, eqn_countd;
@@ -196,7 +194,6 @@ void construct_id(E)
 	E->lmesh.neq = E->lmesh.NEQ[E->mesh.levmax];	/*  Total NUMBER of independent variables  */
 
 
-
 	lev = E->mesh.levmax;
 	if(E->control.verbose)
 	{
@@ -216,8 +213,7 @@ void construct_id(E)
   Function to construct  the LM array from the ID and IEN arrays 
   ========================================================== */
 
-void construct_lm(E)
-	struct All_variables *E;
+void construct_lm(struct All_variables *E)
 {
 	int i, a, e;
 	int lev, eqn_no;
@@ -277,10 +273,9 @@ void construct_lm(E)
  * ===================================================== */
 
 
-void construct_node_maps(E)
-	struct All_variables *E;
+void construct_node_maps(struct All_variables *E)
 {
-	float initial_time, CPU_time();
+	float initial_time;
 
 	int el, n, nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke, dims2;
 	int doff, nox, noy, noz, noxz, node1, eqn1, loc1, count, found, element;
@@ -351,8 +346,7 @@ void construct_node_maps(E)
 }
 
 
-void construct_node_ks(E)
-	struct All_variables *E;
+void construct_node_ks(struct All_variables *E)
 {
 	int lev, level, i, j, k, e;
 	int node, node1, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3, found, element, index, pp, qq;
@@ -364,13 +358,6 @@ void construct_node_ks(E)
 
 	higher_precision *B1, *B2, *B3;
 	int *C;
-
-	void get_elt_k();
-	void get_aug_k();
-	void build_diagonal_of_K();
-	void e_exchange_id_di();
-	void e_exchange_id_dc();
-	void exchange_id_d20();
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int ends = enodes[dims];
@@ -540,8 +527,7 @@ void construct_node_ks(E)
    masks and other indicators.
    ============================================  */
 
-void construct_masks(E)			/* Add lid/edge masks/nodal weightings */
-	struct All_variables *E;
+void construct_masks(struct All_variables *E)	/* Add lid/edge masks/nodal weightings */
 {
 	int i, j, k, l, node, el, elt;
 	int lev, elx, elz, ely, nno, nox, noz, noy;
@@ -632,8 +618,7 @@ void construct_masks(E)			/* Add lid/edge masks/nodal weightings */
      build the sub-element reference matrices
      ==========================================   */
 
-void construct_sub_element(E)
-	struct All_variables *E;
+void construct_sub_element(struct All_variables *E)
 {
 	int i, j, k, l;
 	int lev, elx, elz, ely, elzu, elxu, elt, eltu;
@@ -665,19 +650,9 @@ void construct_sub_element(E)
 }
 
 
-void construct_elt_ks(E)
-	struct All_variables *E;
+void construct_elt_ks(struct All_variables *E)
 {
 	int e, el, lev, j, k, ii;
-	void get_elt_k();
-	void matrix_transform_K();
-	void get_aug_k();
-	void build_diagonal_of_K();
-
-	void e_exchange_id_di();
-	void e_exchange_id_dc();
-	void exchange_id_d();
-	void exchange_id_d20();
 
 	const int dims = E->mesh.nsd;
 	const int n = loc_mat_size[E->mesh.nsd];
@@ -731,12 +706,9 @@ void construct_elt_ks(E)
 
 
 
-void construct_elt_gs(E)
-	struct All_variables *E;
+void construct_elt_gs(struct All_variables *E)
 {
 	int el, lev, a;
-	void get_elt_g();
-	void matrix_transform_g();
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int ends = enodes[dims];
@@ -755,11 +727,8 @@ void construct_elt_gs(E)
 
 
 
-void construct_mat_group(E)
-	struct All_variables *E;
+void construct_mat_group(struct All_variables *E)
 {
-	int weak_zones();
-	int layers();
 	float rz_botm, rz_top, x3, t_b, slope1, slope2;
 	float *Xtmp[4];
 
@@ -847,19 +816,8 @@ void construct_mat_group(E)
 
 /* routine for constructing stiffness and node_maps */
 
-void construct_stiffness_B_matrix(E)
-	struct All_variables *E;
+void construct_stiffness_B_matrix(struct All_variables *E)
 {
-	void vcopy();
-	void build_diagonal_of_K();
-	void build_diagonal_of_Ahat();
-	void project_viscosity();
-	void construct_node_maps();
-	void construct_node_ks();
-	void construct_elt_ks();
-	void construct_elt_gs();
-	void rebuild_BI_on_boundary();
-
 	static int been_here = 0;
 	static int been_here0 = 0;
 
@@ -914,16 +872,13 @@ void construct_stiffness_B_matrix(E)
 }
 
 
-void rebuild_BI_on_boundary(E)
-	struct All_variables *E;
+void rebuild_BI_on_boundary(struct All_variables *E)
 {
 	int m, level, i, j;
 	int eqn1, eqn2, eqn3;
 
 	higher_precision *B1, *B2, *B3;
 	int *C;
-
-	void exchange_id_d20();
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 

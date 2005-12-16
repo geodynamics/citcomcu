@@ -41,13 +41,8 @@
 
 /* ========================================== */
 
-void velocity_boundary_conditions(E)
-	struct All_variables *E;
+void velocity_boundary_conditions(struct All_variables *E)
 {
-	void velocity_refl_vert_bc();
-	void velocity_imp_vert_bc();
-	void horizontal_bc();
-	void velocity_apply_periodic_bcs();
 	int lv;
 	int node, d;
 
@@ -126,15 +121,8 @@ void velocity_boundary_conditions(E)
 
 /* ========================================== */
 
-void temperature_boundary_conditions(E)
-	struct All_variables *E;
+void temperature_boundary_conditions(struct All_variables *E)
 {
-	void temperature_refl_vert_bc();
-	void temperatures_conform_bcs();
-	void horizontal_bc();
-	void temperature_apply_periodic_bcs();
-	void temperature_imposed_vert_bcs();
-	void temperature_imposed_botm_bcs();
 	int node;
 
 	if(E->mesh.bottbc == 1)
@@ -182,8 +170,7 @@ void temperature_boundary_conditions(E)
 
 /* ========================================== */
 
-void velocity_refl_vert_bc(E)
-	struct All_variables *E;
+void velocity_refl_vert_bc(struct All_variables *E)
 {
 	int i, j, ii, jj;
 	int node1, node2;
@@ -325,15 +312,14 @@ void velocity_refl_vert_bc(E)
 	return;
 }
 
-void temperature_refl_vert_bc(E)
-	struct All_variables *E;
+void temperature_refl_vert_bc(struct All_variables *E)
 {
 	int i, j;
 	int node1, node2;
 	const int dims = E->mesh.nsd;
 
 	/* Temps and bc-values  at top level only */
-/* fixed temperature at x=0 */
+	/* fixed temperature at x=0 */
 
 	if(E->parallel.me_loc[1] == 0 || E->parallel.me_loc[1] == E->parallel.nprocx - 1)
 		for(j = 1; j <= E->lmesh.noy; j++)
@@ -379,10 +365,7 @@ void temperature_refl_vert_bc(E)
 }
 
 
-void temperature_imposed_botm_bcs(E, BC, dirn)
-	struct All_variables *E;
-	int dirn;
-	float *BC[];
+void temperature_imposed_botm_bcs(struct All_variables *E, float *BC[], int dirn)
 {
 	int i, j, node, rowl;
 	const int dims = E->mesh.nsd;
@@ -413,15 +396,7 @@ void temperature_imposed_botm_bcs(E, BC, dirn)
 /*  =========================================================  */
 
 
-void horizontal_bc(E, BC, ROW, dirn, value, mask, onoff, level)
-	struct All_variables *E;
-	float *BC[];
-	int ROW;
-	int dirn;
-	float value;
-	unsigned int mask;
-	char onoff;
-	int level;
+void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, float value, unsigned int mask, char onoff, int level)
 
 {
 	int i, j, node, rowl;
@@ -465,8 +440,7 @@ void horizontal_bc(E, BC, ROW, dirn, value, mask, onoff, level)
 }
 
 
-void velocity_apply_periodic_bcs(E)
-	struct All_variables *E;
+void velocity_apply_periodic_bcs(struct All_variables *E)
 {
 	int n1, n2, level;
 	int i, j, ii, jj;
@@ -477,8 +451,7 @@ void velocity_apply_periodic_bcs(E)
 	return;
 }
 
-void temperature_apply_periodic_bcs(E)
-	struct All_variables *E;
+void temperature_apply_periodic_bcs(struct All_variables *E)
 {
 	int n1, n2, e1, level;
 	int i, j, ii, jj;
@@ -491,10 +464,7 @@ void temperature_apply_periodic_bcs(E)
 
 
 
-void strip_bcs_from_residual(E, Res, level)
-	struct All_variables *E;
-	double *Res;
-	int level;
+void strip_bcs_from_residual(struct All_variables *E, double *Res, int level)
 {
 	int i;
 
@@ -516,8 +486,7 @@ void strip_bcs_from_residual(E, Res, level)
 	return;
 }
 
-void temperatures_conform_bcs(E)
-	struct All_variables *E;
+void temperatures_conform_bcs(struct All_variables *E)
 {
 	int node;
 	unsigned int type;
@@ -561,9 +530,7 @@ void temperatures_conform_bcs(E)
 }
 
 
-void velocities_conform_bcs(E, U)
-	struct All_variables *E;
-	double *U;
+void velocities_conform_bcs(struct All_variables *E, double *U)
 {
 	int node, d;
 
@@ -589,8 +556,7 @@ void velocities_conform_bcs(E, U)
 }
 
 
-void equalize_id_ien_lm(E)
-	struct All_variables *E;
+void equalize_id_ien_lm(struct All_variables *E)
 {
 
 	if(E->mesh.periodic_x && E->parallel.nprocx == 1)

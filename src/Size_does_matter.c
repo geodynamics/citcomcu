@@ -48,9 +48,7 @@
 #include <mpi.h>
 
 
-void twiddle_thumbs(yawn, scratch_groin)
-	struct All_variables *yawn;
-	int scratch_groin;
+void twiddle_thumbs(struct All_variables *yawn, int scratch_groin)
 {								/* Do nothing, just sit back and relax.
 								 * Take it easy for a while, maybe size
 								 * doesn't matter after all. There, there
@@ -59,19 +57,12 @@ void twiddle_thumbs(yawn, scratch_groin)
 	return;
 }
 
-void get_global_shape_fn(E, el, pressure, rtf, sphere, level)
-	struct All_variables *E;
-	int el;
-	int pressure, level, sphere;
-	double rtf[4][9];
+void get_global_shape_fn(struct All_variables *E, int el, int pressure, double rtf[4][9], int sphere, int level)
 {
 	int i, j, k, d, e;
 	double scale1, scale2, scale3;
 	double area;
 	double jacobian;
-	double determinant();
-	double cofactor();
-	void form_rtf_bc();
 
 	double LGNX[4][9];
 
@@ -187,13 +178,8 @@ void get_global_shape_fn(E, el, pressure, rtf, sphere, level)
 }
 
 
-void form_rtf_bc(k, x, rtf, bc)
-	int k;
-	double x[4], rtf[4][9], bc[4][4];
+void form_rtf_bc(int k, double x[4], double rtf[4][9], double bc[4][4])
 {
-
-	double myatan();
-
 	rtf[3][k] = 1.0 / sqrt(x[1] * x[1] + x[2] * x[2] + x[3] * x[3]);
 	rtf[1][k] = acos(x[3] * rtf[3][k]);
 	rtf[2][k] = myatan(x[2], x[1]);
@@ -213,13 +199,10 @@ void form_rtf_bc(k, x, rtf, bc)
 
 
 
-void get_rtf(E, el, pressure, rtf, lev)
-	struct All_variables *E;
-	int lev, el, pressure;
-	double rtf[4][9];
+void get_rtf(struct All_variables *E, int el, int pressure, double rtf[4][9], int lev)
 {
 	int i, j, k, d, e;
-	double myatan(), x[4];
+	double x[4];
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int ends = enodes[dims];
@@ -263,14 +246,9 @@ void get_rtf(E, el, pressure, rtf, lev)
 	return;
 }
 
-void construct_c3x3matrix_el(E, el, cc, ccx, lev, pressure)
-	struct All_variables *E;
-	struct CC *cc;
-	struct CCX *ccx;
-	int lev, el, pressure;
+void construct_c3x3matrix_el(struct All_variables *E, int el, struct CC *cc, struct CCX *ccx, int lev, int pressure)
 {
 	int a, i, j, k, d, e, es, nel_surface;
-	double cofactor(), myatan();
 	double x[4], u[4][4], ux[3][4][4], ua[4][4];
 	double costt, cosff, sintt, sinff, rr, tt, ff;
 
@@ -460,11 +438,7 @@ void construct_c3x3matrix_el(E, el, cc, ccx, lev, pressure)
 
 /*   ======================================================================
      ======================================================================  */
-void get_global_1d_shape_fn(E, el, GM, dGammax, top)
-	struct All_variables *E;
-	int el, top;
-	struct Shape_function1 *GM;
-	struct Shape_function1_dA *dGammax;
+void get_global_1d_shape_fn(struct All_variables *E, int el, struct Shape_function1 *GM, struct Shape_function1_dA *dGammax, int top)
 {
 	int i, k, d, e, ii;
 	int dirn, locn, node;
@@ -472,9 +446,6 @@ void get_global_1d_shape_fn(E, el, GM, dGammax, top)
 	double scale[4];
 
 	double jacobian;
-	double determinant();
-	double cofactor();
-	double **dmatrix();
 	const int oned = onedvpoints[E->mesh.nsd];
 
 
@@ -551,11 +522,7 @@ void get_global_1d_shape_fn(E, el, GM, dGammax, top)
 	return;
 }
 
-void get_global_1d_shape_fn1(E, el, GM, dGammax, top)
-	struct All_variables *E;
-	int el, top;
-	struct Shape_function1 *GM;
-	struct Shape_function1_dA *dGammax;
+void get_global_1d_shape_fn1(struct All_variables *E, int el, struct Shape_function1 *GM, struct Shape_function1_dA *dGammax, int top)
 {
 	int i, k, d, e, ii;
 	int dirn, locn, node[5];
@@ -563,9 +530,6 @@ void get_global_1d_shape_fn1(E, el, GM, dGammax, top)
 	double scale[4];
 
 	double jacobian;
-	double determinant();
-	double cofactor();
-	double **dmatrix();
 
 	double avet, aver, dxda[4][4], cof[4][4], xx[4][5];
 
@@ -642,14 +606,10 @@ void get_global_1d_shape_fn1(E, el, GM, dGammax, top)
     ========================================== */
 
 
-void mass_matrix(E)
-	struct All_variables *E;
+void mass_matrix(struct All_variables *E)
 {
 	int k, n[9], node, el, i, nint, e, lv;
-	void get_global_shape_fn();
-	void e_exchange_node_fc();
-	void exchange_node_f20();
-	double myatan(), temp[9], area, centre[4], rtf[4][9];
+	double temp[9], area, centre[4], rtf[4][9];
 	float dx1, dx2, dx3, xlowmean, normlow, normhigh, xhighmean;
 	struct Shape_function GN;
 	struct Shape_function_dA dOmega;

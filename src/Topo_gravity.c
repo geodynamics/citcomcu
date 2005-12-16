@@ -64,17 +64,9 @@ extern float Zj0[1000], Zj1[1000];
 
 
 
-void get_CBF_topo(E, H, HB)		/* call this only for top and bottom processors */
-	struct All_variables *E;
-	float *H, *HB;
+/* call this only for top and bottom processors */
+void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 {
-	void get_elt_k();
-	void get_elt_g();
-	void get_elt_f();
-	void matrix_transform_g();
-	void get_global_1d_shape_fn();
-	void exchange_node_f20();
-
 	int el, elb, els, node, nodeb, nodes, i, j, k, l, m, n, count;
 	int nodel, nodem, nodesl, nodesm, lnsf, nel2;
 
@@ -301,23 +293,14 @@ void get_CBF_topo(E, H, HB)		/* call this only for top and bottom processors */
 
 }
 
-void get_STD_topo(E, tpg, tpgb, ii)
-	struct All_variables *E;
-	float *tpg;
-	float *tpgb;
-	int ii;
+void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 {
-
-	void get_surf_stress();
-	void get_global_shape_fn();
-	void exchange_node_f20();
 	int i, j, k, e, nel2, snode, node;
 
 	float *SZZ, *SXX, *SYY, *SXY, *SXZ, *SZY, VZ[9], VY[9], VX[9], Szz, Sxx, Syy, Sxy, Sxz, Szy;
 	float Vzz[9], Vxx[9], Vyy[9], Vxy[9], Vxz[9], Vzy[9];
 	float pre[9], el_volume, tww[9], Visc, a, b;
 	double rtf[4][9];
-	void get_rtf();
 
 	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
 	const int vpts = vpoints[dims];

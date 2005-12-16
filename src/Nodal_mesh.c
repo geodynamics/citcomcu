@@ -50,8 +50,7 @@ extern int Emergency_stop;
 
    =================================================  */
 
-void node_locations(E)
-	struct All_variables *E;
+void node_locations(struct All_variables *E)
 {
 	int lev, nodel, i, j, k, ii, d, node;
 	float x00, *XX[4], *XG[4], dx[4], dxx[40], dx1, dx2;
@@ -59,11 +58,6 @@ void node_locations(E)
 	double rad_conv;
 
 	const int dims = E->mesh.nsd;
-
-	void pre_interpolation();
-	void inject_scalar();
-	void inject_node_fvector();
-	void parallel_process_termination();
 
 	rad_conv = M_PI / 180;
 
@@ -283,10 +277,8 @@ void node_locations(E)
 	return;
 }
 
-void pre_interpolation(E)
-	struct All_variables *E;
+void pre_interpolation(struct All_variables *E)
 {
-
 	int i, j, k, e;
 
 	for(j = 1; j <= E->lmesh.rnoz; j++)
@@ -314,10 +306,7 @@ void pre_interpolation(E)
 
 
 
-void dlogical_mesh_to_real(E, data, level)
-	struct All_variables *E;
-	double *data;
-	int level;
+void dlogical_mesh_to_real(struct All_variables *E, double *data, int level)
 
 {
 	int i, j, n1, n2;
@@ -359,10 +348,7 @@ void dlogical_mesh_to_real(E, data, level)
 }
 
 
-void flogical_mesh_to_real(E, data, level)
-	struct All_variables *E;
-	float *data;
-	int level;
+void flogical_mesh_to_real(struct All_variables *E, float *data, int level)
 {
 	int i, j, n1, n2;
 
@@ -402,15 +388,9 @@ void flogical_mesh_to_real(E, data, level)
 	return;
 }
 
-void p_to_nodes(E, P, PN, lev)
-	struct All_variables *E;
-	double *P;
-	float *PN;
-	int lev;
+void p_to_nodes(struct All_variables *E, double *P, float *PN, int lev)
 {
 	int e, element, node, j;
-	void e_exchange_node_fc();
-	void exchange_node_f20();
 
 	for(node = 1; node <= E->lmesh.NNO[lev]; node++)
 		PN[node] = 0.0;
@@ -432,11 +412,7 @@ void p_to_nodes(E, P, PN, lev)
 }
 
 
-void p_to_centres(E, PN, P, lev)
-	struct All_variables *E;
-	float *PN;
-	double *P;
-	int lev;
+void p_to_centres(struct All_variables *E, float *PN, double *P, int lev)
 {
 	int p, element, node, j;
 	double weight;
@@ -454,12 +430,8 @@ void p_to_centres(E, PN, P, lev)
 }
 
 
-void v_to_intpts(E, VN, VE, lev)
-	struct All_variables *E;
-	float *VN, *VE;
-	int lev;
+void v_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
 {
-
 	int e, i, j, k;
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
@@ -474,10 +446,7 @@ void v_to_intpts(E, VN, VE, lev)
 		}
 }
 
-void v_to_nodes(E, VE, VN, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void v_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 {
 	int e, i, j, k, n;
 	const int nsd = E->mesh.nsd;
@@ -497,12 +466,8 @@ void v_to_nodes(E, VE, VN, lev)
 	return;
 }
 
-void visc_to_intpts(E, VN, VE, lev)
-	struct All_variables *E;
-	float *VN, *VE;
-	int lev;
+void visc_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
 {
-
 	int e, i, j, k;
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
@@ -516,14 +481,11 @@ void visc_to_intpts(E, VN, VE, lev)
 				VE[(e - 1) * vpts + i] += log(VN[E->IEN[lev][e].node[j]]) * E->N.vpt[GNVINDEX(j, i)];
 			VE[(e - 1) * vpts + i] = exp(VE[(e - 1) * vpts + i]);
 		}
-
+	return;
 }
 
 
-void visc_to_nodes(E, VE, VN, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void visc_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 {
 	int e, i, j, k, n;
 	const int nsd = E->mesh.nsd;
@@ -543,15 +505,12 @@ void visc_to_nodes(E, VE, VN, lev)
 				temp_visc += E->TW[lev][n] * log(E->N.vpt[GNVINDEX(j, i)] * VE[(e - 1) * vpts + i]);
 			VN[n] += exp(temp_visc);
 		}
+	
 	return;
 }
 
-void visc_from_ele_to_gint(E, VN, VE, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void visc_from_ele_to_gint(struct All_variables *E, float *VN, float *VE, int lev)
 {
-
 	int m, e, i, j, k, n;
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
@@ -567,10 +526,7 @@ void visc_from_ele_to_gint(E, VN, VE, lev)
 }
 
 
-void visc_from_gint_to_ele(E, VE, VN, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void visc_from_gint_to_ele(struct All_variables *E, float *VE, float *VN, int lev)
 {
 	int m, e, i, j, k, n;
 	const int nsd = E->mesh.nsd;
@@ -588,23 +544,18 @@ void visc_from_gint_to_ele(E, VE, VN, lev)
 		VN[e] = temp_visc;
 	}
 
-
 	return;
 }
 
 
 
-void visc_from_gint_to_nodes(E, VE, VN, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void visc_from_gint_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 {
 	int m, e, i, j, k, n;
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
 	const int ends = enodes[nsd];
 	double temp_visc;
-	void exchange_node_f20();
 
 	for(i = 1; i <= E->lmesh.NNO[lev]; i++)
 		VN[i] = 0.0;
@@ -628,14 +579,10 @@ void visc_from_gint_to_nodes(E, VE, VN, lev)
 	for(n = 1; n <= E->lmesh.NNO[lev]; n++)
 		VN[n] *= E->MASS[lev][n];
 
-
 	return;
 }
 
-void visc_from_nodes_to_gint(E, VN, VE, lev)
-	struct All_variables *E;
-	float *VE, *VN;
-	int lev;
+void visc_from_nodes_to_gint(struct All_variables *E, float *VN, float *VE, int lev)
 {
 
 	int m, e, i, j, k, n;

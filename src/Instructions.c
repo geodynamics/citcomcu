@@ -48,42 +48,9 @@
 
 int Emergency_stop;
 
-void read_instructions(E, argc, argv)
-	struct All_variables *E;
-	int argc;
-	char **argv;
+void read_instructions(struct All_variables *E, int argc, char **argv)
 {
-	int get_process_identifier();
-
-	void allocate_common_vars();
-	void common_initial_fields();
-	void read_initial_settings();
-	void global_default_values();
-	void global_derived_values();
-	void construct_masks();
-	void construct_shape_functions();
-	void construct_id();
-	void construct_lm();
-	void construct_sub_element();
-	void mass_matrix();
-	void construct_node_ks();
-	void construct_node_maps();
-	void construct_ien();
-	void construct_mat_group();
-	void interuption();
-	void set_up_nonmg_aliases();
-	void check_bc_consistency();
-	void node_locations();
-	void parallel_domain_decomp1();
-	void parallel_shuffle_ele_and_id();
-	void parallel_communication_routs();
-	void parallel_process_termination();
-	void setup_plume_problem();
-	void qualize_id_ien_lm();
-
-	void setup_parser();
-
-	double start_time, CPU_time0();
+	double start_time;
 
 	int *temp, i;
 
@@ -183,13 +150,12 @@ void read_instructions(E, argc, argv)
 
 	shutdown_parser(E);
 
-
-/*if (E->parallel.me==0)
-  fprintf (stderr,"done instruction\n");
-    parallel_process_termination();
-
-  exit(8);
+/*	if (E->parallel.me==0)
+		fprintf (stderr,"done instruction\n");
+	parallel_process_termination();
+	exit(8);
 */
+
 	return;
 }
 
@@ -199,12 +165,8 @@ void read_instructions(E, argc, argv)
    common to all problems follow ...
    ===================================  */
 
-void allocate_common_vars(E)
-	struct All_variables *E;
+void allocate_common_vars(struct All_variables *E)
 {
-	double **dmatrix();
-	float **fmatrix();
-	void set_up_nonmg_aliases();
 	int nox, noy, noz, i, j, l, nno_l, npno_l, nozl, nnov_l, nxyz;
 
 	E->mesh.fnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(float);
@@ -252,7 +214,6 @@ void allocate_common_vars(E)
 	E->expansivity = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
 
 
-
 	for(i = 1; i <= E->mesh.nsd; i++)
 	{
 		E->TB[i] = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
@@ -280,7 +241,7 @@ void allocate_common_vars(E)
 	E->XRG[3] = (double *)malloc((E->lmesh.rnoz + 1) * sizeof(double));
 	E->RG[3] = (int *)malloc((E->lmesh.rnoz + 1) * sizeof(int));
 
-/* set up memory for different grids  */
+	/* set up memory for different grids  */
 	for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
 	{
 		for(j = 1; j <= E->mesh.nsd; j++)
@@ -419,8 +380,7 @@ void interruption(int signal_number)
 }
 
 
-void global_default_values(E)
-	struct All_variables *E;
+void global_default_values(struct All_variables *E)
 {
 	FILE *fp;
 
@@ -552,8 +512,7 @@ void global_default_values(E)
 }
 
 
-void global_derived_values(E)
-	struct All_variables *E;
+void global_derived_values(struct All_variables *E)
 {
 	int d, lx, lz, ly, i, nox, noz, noy;
 	char logfile[100];
@@ -671,16 +630,8 @@ void global_derived_values(E)
 }
 
 
-void read_initial_settings(E)
-	struct All_variables *E;
+void read_initial_settings(struct All_variables *E)
 {
-	void set_convection_defaults();
-	void set_2dc_defaults();
-	void set_3dc_defaults();
-	void set_cg_defaults();
-	void set_mg_defaults();
-	void set_3ds_defaults();
-	void viscosity_parameters();
 	char tmp_string[100];
 
 	/* first the problem type (defines subsequent behaviour) */
@@ -987,8 +938,7 @@ void read_initial_settings(E)
 	return;
 }
 
-void check_bc_consistency(E)
-	struct All_variables *E;
+void check_bc_consistency(struct All_variables *E)
 {
 	int i, lev;
 
@@ -1022,8 +972,7 @@ void check_bc_consistency(E)
 	return;
 }
 
-void set_up_nonmg_aliases(E)
-	struct All_variables *E;
+void set_up_nonmg_aliases(struct All_variables *E)
 {								/* Aliases for functions only interested in the highest mg level */
 	int i;
 
@@ -1048,9 +997,7 @@ void set_up_nonmg_aliases(E)
 	return;
 }
 
-void report(E, string)
-	struct All_variables *E;
-	char *string;
+void report(struct All_variables *E, char *string)
 {
 	if(E->control.verbose && E->parallel.me == 0)
 	{
@@ -1060,9 +1007,7 @@ void report(E, string)
 	return;
 }
 
-void record(E, string)
-	struct All_variables *E;
-	char *string;
+void record(struct All_variables *E, char *string)
 {
 	if(E->control.verbose)
 	{
@@ -1083,13 +1028,8 @@ void record(E, string)
    ============================================================= */
 
 
-void common_initial_fields(E)
-	struct All_variables *E;
+void common_initial_fields(struct All_variables *E)
 {
-	void initial_pressure();
-	void initial_velocity();
-	void read_viscosity_option();
-
 	report(E, "Initialize pressure field");
 	initial_pressure(E);
 	report(E, "Initialize velocity field");
@@ -1102,8 +1042,7 @@ void common_initial_fields(E)
 
 /* ========================================== */
 
-void initial_pressure(E)
-	struct All_variables *E;
+void initial_pressure(struct All_variables *E)
 {
 	int i, node, ii;
 
@@ -1113,8 +1052,7 @@ void initial_pressure(E)
 	return;
 }
 
-void initial_velocity(E)
-	struct All_variables *E;
+void initial_velocity(struct All_variables *E)
 {
 	int i, node, ii;
 
@@ -1124,7 +1062,6 @@ void initial_velocity(E)
 		E->V[2][i] = 0.0;
 		E->V[3][i] = 0.0;
 	}
-
 
 	return;
 }

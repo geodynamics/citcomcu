@@ -45,12 +45,10 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void viscosity_parameters(E)
-	struct All_variables *E;
+void viscosity_parameters(struct All_variables *E)
 {
 	int i, l;
 	float temp;
-	void parallel_process_termination();
 
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
@@ -128,11 +126,8 @@ void viscosity_parameters(E)
 	return;
 }
 
-void get_viscosity_option(E)
-	struct All_variables *E;
+void get_viscosity_option(struct All_variables *E)
 {
-	void viscosity_for_system();
-
 	/* general, essential default */
 
 	input_string("Viscosity", E->viscosity.STRUCTURE, NULL);	/* Which form of viscosity */
@@ -162,40 +157,25 @@ void get_viscosity_option(E)
 /* ============================================ */
 
 
-void viscosity_for_system(E)
-	struct All_variables *E;
+void viscosity_for_system(struct All_variables *E)
 {
-	void get_system_viscosity();
-	void twiddle_thumbs();
-
 	if(!E->viscosity.update_allowed)
 	{
 		get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
 	}
+
 	get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
-
-
 
 	return;
 }
 
 
-void get_system_viscosity(E, propogate, evisc, visc)
-	struct All_variables *E;
-	int propogate;
-	float *visc, *evisc;
+void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, float *visc)
 {
-	void visc_from_mat();
-	void visc_from_T();
-	void visc_from_S();
-	void apply_viscosity_smoother();
-	void construct_mat_group();
-
 	int i, j;
 	float *visc_old, *evisc_old;
 
 	const int vpts = vpoints[E->mesh.nsd];
-
 
 
 	if(E->viscosity.TDEPV)
@@ -233,19 +213,13 @@ void get_system_viscosity(E, propogate, evisc, visc)
 }
 
 
-void apply_viscosity_smoother(E, visc, evisc)
-	struct All_variables *E;
-	float *visc, *evisc;
+void apply_viscosity_smoother(struct All_variables *E, float *visc, float *evisc)
 
 {
-	void p_to_centres();
-	void p_to_nodes();
-
 	double *ViscCentre;
 	int i;
 
 	ViscCentre = (double *)malloc((E->lmesh.nno + 10) * sizeof(double));
-
 
 	for(i = 1; i <= E->viscosity.smooth_cycles; i++)
 	{
@@ -253,17 +227,13 @@ void apply_viscosity_smoother(E, visc, evisc)
 		p_to_nodes(E, ViscCentre, visc, E->mesh.levmax);
 	}
 
-
 	free((void *)ViscCentre);
 
 	return;
 }
 
-void visc_from_mat(E, Eta, EEta)
-	struct All_variables *E;
-	float *Eta, *EEta;
+void visc_from_mat(struct All_variables *E, float *Eta, float *EEta)
 {
-
 	int i, j, k, l, z, jj, kk;
 
 	for(i = 1; i <= E->lmesh.nel; i++)
@@ -275,12 +245,8 @@ void visc_from_mat(E, Eta, EEta)
 	return;
 }
 
-void visc_from_T(E, Eta, EEta, propogate)
-	struct All_variables *E;
-	float *Eta, *EEta;
-	int propogate;
+void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
-
 	int i, j, k, l, z, e, jj, kk, imark;
 	float c1, c2, c3, zero, e_6, one, eta0, Tave, depth, temp, tempa, TT[9];
 	double ztop, zbotm, zz, visc1, area1, temp1, temp2, temp3, temp4;
@@ -292,8 +258,6 @@ void visc_from_T(E, Eta, EEta, propogate)
 	const int ends = enodes[E->mesh.nsd];
 	const int nel = E->lmesh.nel;
 	const int noz = E->lmesh.noz;
-	void propogator_down_process();
-	void return_horiz_ave();
 
 	one = 1.0;
 	zero = 0.0;
@@ -461,24 +425,20 @@ void visc_from_T(E, Eta, EEta, propogate)
 
 
 /*
-          fprintf(E->fp,"aaa\n"); 
-        for(i=1;i<=nel;i++)   
-          fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]); 
+	fprintf(E->fp,"aaa\n"); 
+	for(i=1;i<=nel;i++)   
+		fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]); 
 */
 
 	return;
 }
 
-void visc_from_S(E, Eta, EEta, propogate)
-	struct All_variables *E;
-	float *Eta, *EEta;
-	int propogate;
+void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
 	static int visits = 0;
 	float one, two, scale, stress_magnitude, depth, exponent1;
 	float *eedot;
 
-	void strain_rate_2_inv();
 	int e, l, z, jj, kk;
 
 	const int vpts = vpoints[E->mesh.nsd];
@@ -512,13 +472,8 @@ void visc_from_S(E, Eta, EEta, propogate)
 }
 
 
-void strain_rate_2_inv(E, EEDOT, SQRT)
-	struct All_variables *E;
-	float *EEDOT;
-	int SQRT;
+void strain_rate_2_inv(struct All_variables *E, float *EEDOT, int SQRT)
 {
-	void get_rtf();
-
 	double edot[4][4], dudx[4][4], rtf[4][9];
 	float VV[4][9], Vxyz[9][9];
 
@@ -637,9 +592,7 @@ void strain_rate_2_inv(E, EEDOT, SQRT)
 
 
 
-int layers(E, x3)
-	struct All_variables *E;
-	float x3;
+int layers(struct All_variables *E, float x3)
 {
 	int llayers = 0;
 
@@ -654,22 +607,18 @@ int layers(E, x3)
 }
 
 
-int weak_zones(E, node, t_b)	/* very tentative */
-	struct All_variables *E;
-	int node;
-	float t_b;
-{
 
+int weak_zones(struct All_variables *E, int node, float t_b) /* very tentative */
+{
 	int wweak_zones;
 
-
 	wweak_zones = 0;
-	return (wweak_zones);
+	return wweak_zones;
 }
 
-float boundary_thickness(E, H)
-	struct All_variables *E;
-	float *H;
+
+
+float boundary_thickness(struct All_variables *E, float *H)
 {
 	float thickness;
 	int i, j;

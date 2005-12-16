@@ -95,18 +95,12 @@ int DESCRIBE = 0;
 int BEGINNER = 0;
 
 
-void setup_parser(E, ac, av)
-	struct All_variables *E;
-	int ac;
-	char **av;
+void setup_parser(struct All_variables *E, int ac, char **av)
 {
-	void unique_copy_file();
-
 	FILE *fp;
 	char *pl, *pn, *pv;
 	char t1, t2, line[MAXLINE], name[MAXNAME], value[MAXVALUE];
 	int i, j, k;
-
 
 	/* should get file length & cpp &c before any further parsing */
 
@@ -186,11 +180,10 @@ void setup_parser(E, ac, av)
 	DESCRIBE = j;
 	BEGINNER = k;
 
+	return;
 }
 
-void shutdown_parser(E)
-	struct All_variables *E;
-
+void shutdown_parser(struct All_variables *E)
 {
 	if(ARGLIST != NULL)
 		free(ARGLIST);
@@ -200,9 +193,8 @@ void shutdown_parser(E)
 	ARGLIST = NULL;
 }
 
-
-add_to_parameter_list(name, value)	/* add an entry to arglist, expanding memory */
-	register char *name, *value;	/* if necessary */
+/* add an entry to arglist, expanding memory if necessary */
+int add_to_parameter_list(register char *name, register char *value)
 {
 	struct arglist *alptr;
 	int len;
@@ -248,8 +240,7 @@ add_to_parameter_list(name, value)	/* add an entry to arglist, expanding memory 
 	NLIST++;
 }
 
-compute_parameter_hash_table(s)
-	register char *s;
+int compute_parameter_hash_table(register char *s)
 {
 	register int h;
 
@@ -267,12 +258,8 @@ compute_parameter_hash_table(s)
 	return (h);
 }
 
-int input_int(name, value, interpret)
-	char *name;
-	int *value;
-	char *interpret;
+int input_int(char *name, int *value, char *interpret)
 {
-	int interpret_control_string();
 	struct arglist *alptr;
 	int h, found;
 	char *str;
@@ -336,13 +323,11 @@ int input_int(name, value, interpret)
 		}
 	}
 
-	return (found);
+	return found;
 }
 
-int input_string(name, value, Default)	/* in the case of a string default=NULL forces input */
-	char *name;
-	char *value;
-	char *Default;
+/* in the case of a string default=NULL forces input */
+int input_string(char *name, char *value, char *Default)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -386,18 +371,15 @@ int input_string(name, value, Default)	/* in the case of a string default=NULL f
 	if(VERBOSE)
 		fprintf(stderr, "%25s: (string) = %s (%s)\n", name, (found ? value : "not found"), (Default != NULL ? Default : "no default"));
 
-	return (found);
+	return found;
 }
 
-int input_boolean(name, value, interpret)	/* supports name=on/off too */
-	char *name;
-	int *value;
-	char *interpret;
+/* supports name=on/off too */
+int input_boolean (char *name, int *value, char *interpret)
 {
 	char *sptr;
 	struct arglist *alptr;
 	int h, hno, hyes, found;
-	int interpret_control_string();
 	char line[MAXLINE], *str, *noname;
 
 	int essential;
@@ -461,10 +443,7 @@ int input_boolean(name, value, interpret)	/* supports name=on/off too */
 	return (found);
 }
 
-int input_float(name, value, interpret)
-	char *name;
-	float *value;
-	char *interpret;
+int input_float(char *name, float *value, char *interpret)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -531,10 +510,7 @@ int input_float(name, value, interpret)
 	return (found);
 }
 
-int input_double(name, value, interpret)
-	char *name;
-	double *value;
-	char *interpret;
+int input_double(char *name, double *value, char *interpret)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -603,10 +579,8 @@ int input_double(name, value, interpret)
 }
 
 
-int input_int_vector(name, number, value)
-	char *name;
-	int number;
-	int *value;					/* comma-separated list of ints */
+/* value is a comma-separated list of ints */
+int input_int_vector(char *name, int number, int *value)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -654,10 +628,8 @@ int input_int_vector(name, number, value)
 
 
 
-int input_char_vector(name, number, value)
-	char *name;
-	int number;
-	char *value;				/* comma-separated list of ints */
+/* value is a comma-separated list of ints */
+int input_char_vector(char *name, int number, char *value)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -703,10 +675,8 @@ int input_char_vector(name, number, value)
 	return (found);
 }
 
-int input_float_vector(name, number, value)
-	char *name;
-	int number;
-	float *value;				/* comma-separated list of floats */
+/* value is a comma-separated list of floats */
+int input_float_vector(char *name, int number, float *value)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -752,13 +722,11 @@ int input_float_vector(name, number, value)
 	if(VERBOSE)
 		fprintf(stderr, "%25s: (float vector) = %s\n", name, str);
 
-	return (found);
+	return found;
 }
 
-int input_double_vector(name, number, value)
-	char *name;
-	int number;
-	double *value;				/* comma-separated list of floats */
+/* value is a comma-separated list of doubles */
+int input_double_vector(char *name, int number, double *value)
 {
 	char *sptr;
 	struct arglist *alptr;
@@ -802,15 +770,12 @@ int input_double_vector(name, number, value)
 	if(VERBOSE)
 		fprintf(stderr, "%25s: (double vector) = %s\n", name, str);
 
-	return (found);
+	return found;
 }
 
 /* =================================================== */
 
-int interpret_control_string(interpret, essential, Default, minvalue, maxvalue)
-	char *interpret;
-	int *essential;
-	double **Default, **minvalue, **maxvalue;
+int interpret_control_string(char *interpret, int *essential, double **Default, double **minvalue, double **maxvalue)
 {
 	char *substring;
 
@@ -861,5 +826,5 @@ int interpret_control_string(interpret, essential, Default, minvalue, maxvalue)
 		sscanf(substring, "%lf", *maxvalue);
 	}
 
-	return (1);
+	return 1;
 }

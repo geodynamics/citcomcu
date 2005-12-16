@@ -40,21 +40,16 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void phase_change(E, B6, B_b6, B4, B_b4)
-	struct All_variables *E;
-	float *B6, *B_b6, *B4, *B_b4;
+void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4)
 {
 	int i, j, k, n, ns, m;
 	double e_pressure, pt5, one, temp1;
 	float *Xtmp[4];
 	static int been_here = 0;
 	static float *H;
-	void return_horiz_ave();
-	double sum_across_depth();
 
 	if(been_here == 0)
 	{
-
 		H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
 
 		E->control.width670 = E->monitor.length_scale / E->control.width670;
@@ -71,7 +66,6 @@ void phase_change(E, B6, B_b6, B4, B_b4)
 
 		fprintf(E->fp, "%g %g %g %g %g %g %g %g\n", E->control.clapeyron410, E->control.clapeyron670, E->control.Ra_410, E->control.Ra_670, E->control.transT410, E->control.transT670, E->control.width410, E->control.width670);
 		fflush(E->fp);
-
 	}
 
 
@@ -137,7 +131,6 @@ void phase_change(E, B6, B_b6, B4, B_b4)
 
 	if(E->monitor.solution_cycles % (10 * E->control.record_every) == 0)
 	{
-
 		ns = 0;
 		for(k = 1; k <= E->lmesh.noy; k++)
 			for(j = 1; j <= E->lmesh.nox; j++)

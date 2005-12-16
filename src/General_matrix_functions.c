@@ -68,8 +68,7 @@ static int total_cycles[MAX_LEVELS];
   Note: ANSII consistency requires some additional features !
   =====================================================================  */
 
-double **dmatrix(nrl, nrh, ncl, nch)
-	int nrl, nrh, ncl, nch;
+double **dmatrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i, nrow = nrh - nrl + 1, ncol = nch - ncl + 1;
 	double **m;
@@ -91,8 +90,7 @@ double **dmatrix(nrl, nrh, ncl, nch)
 }
 
 
-float **fmatrix(nrl, nrh, ncl, nch)
-	int nrl, nrh, ncl, nch;
+float **fmatrix(int nrl, int nrh, int ncl, int nch)
 {
 	int i, nrow = nrh - nrl + 1, ncol = nch - ncl + 1;
 	float **m;
@@ -114,9 +112,7 @@ float **fmatrix(nrl, nrh, ncl, nch)
 }
 
 
-void dfree_matrix(m, nrl, nrh, ncl, nch)
-	double **m;
-	int nrl, nrh, ncl, nch;
+void dfree_matrix(double **m, int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	for(i = nrh; i >= nrl; i--)
@@ -125,9 +121,7 @@ void dfree_matrix(m, nrl, nrh, ncl, nch)
 	return;
 }
 
-void ffree_matrix(m, nrl, nrh, ncl, nch)
-	float **m;
-	int nrl, nrh, ncl, nch;
+void ffree_matrix(float **m, int nrl, int nrh, int ncl, int nch)
 {
 	int i;
 	for(i = nrh; i >= nrl; i--)
@@ -140,56 +134,44 @@ void ffree_matrix(m, nrl, nrh, ncl, nch)
   Functions to allocate/remove space for variable sized vector.
   =============================================================  */
 
-double *dvector(nl, nh)
-	int nl, nh;
+double *dvector(int nl, int nh)
 {
 	double *v;
 	v = (double *)malloc((unsigned)(nh - nl + 1) * sizeof(double));
 	return (v - nl);
 }
 
-float *fvector(nl, nh)
-	int nl, nh;
+float *fvector(int nl, int nh)
 {
 	float *v;
 	v = (float *)malloc((unsigned)(nh - nl + 1) * sizeof(float));
 	return (v - nl);
 }
 
-void dfree_vector(v, nl, nh)
-	double *v;
-	int nl, nh;
+void dfree_vector(double *v, int nl, int nh)
 {
 	free((char *)(v + nl));
 }
 
-void ffree_vector(v, nl, nh)
-	float *v;
-	int nl, nh;
+void ffree_vector(float *v, int nl, int nh)
 {
 	free((char *)(v + nl));
 }
 
-int *sivector(nl, nh)
-	int nl, nh;
+int *sivector(int nl, int nh)
 {
 	int *v;
 	v = (int *)malloc((unsigned)(nh - nl + 1) * sizeof(int));
 	return (v - nl);
 }
 
-void sifree_vector(v, nl, nh)
-	int *v;
-	int nl, nh;
+void sifree_vector(int *v, int nl, int nh)
 {
 	free((char *)(v + nl));
 }
 
 
-double pdot(E, A, B, lev)
-	struct All_variables *E;
-	double *A, *B;
-	int lev;
+double pdot(struct All_variables *E, double *A, double *B, int lev)
 
 {
 	double prod;
@@ -202,9 +184,7 @@ double pdot(E, A, B, lev)
 	return (prod);
 }
 
-double pselfdot(E, A)
-	struct All_variables *E;
-	double *A;
+double pselfdot(struct All_variables *E, double *A)
 
 {
 	double prod;
@@ -219,10 +199,7 @@ double pselfdot(E, A)
 
 /* Beware of the alias if A=B on vector machines, use vselfdot instead  */
 
-double vdot(E, A, B, level)
-	struct All_variables *E;
-	double *A, *B;
-	int level;
+double vdot(struct All_variables *E, double *A, double *B, int level)
 {
 	double prod, mprod[1];
 	int i, incx = 1;
@@ -245,10 +222,7 @@ double vdot(E, A, B, level)
 }
 
 
-double vselfdot(E, A, level)
-	struct All_variables *E;
-	double *A;
-	int level;
+double vselfdot(struct All_variables *E, double *A, int level)
 {
 	double prod;
 	int i, n;
@@ -263,10 +237,7 @@ double vselfdot(E, A, level)
 }
 
 
-double vfselfdot(E, A, level)
-	struct All_variables *E;
-	float *A;
-	int level;
+double vfselfdot(struct All_variables *E, float *A, int level)
 {
 	float prod;
 	int i, n;
@@ -282,9 +253,7 @@ double vfselfdot(E, A, level)
 	return (prod);
 }
 
-float fdot(A, B, n1, n2)
-	float *A, *B;
-	int n1, n2;
+float fdot(float *A, float *B, int n1, int n2)
 {
 	float prod;
 	int i;
@@ -297,9 +266,7 @@ float fdot(A, B, n1, n2)
 	return (prod);
 }
 
-float fselfdot(A, n1, n2)
-	float *A;
-	int n1, n2;
+float fselfdot(float *A, int n1, int n2)
 {
 	float prod;
 	int i;
@@ -312,9 +279,7 @@ float fselfdot(A, n1, n2)
 }
 
 
-float dot(E, A, B)
-	struct All_variables *E;
-	float *A, *B;
+float dot(struct All_variables *E, float *A, float *B)
 {
 	float prod = 0.0;
 	float domega;
@@ -331,9 +296,7 @@ float dot(E, A, B)
 	return (prod);
 }
 
-float selfdot(E, A)
-	struct All_variables *E;
-	float *A;
+float selfdot(struct All_variables *E, float *A)
 {
 	double prod = 0.0;
 	double domega;
@@ -350,9 +313,7 @@ float selfdot(E, A)
 	return (prod);
 }
 
-void dvcopy(A, B, a, b)
-	double *A, *B;
-	int a, b;
+void dvcopy(double *A, double *B, int a, int b)
 {
 	int i;
 
@@ -362,9 +323,7 @@ void dvcopy(A, B, a, b)
 	return;
 }
 
-void vcopy(A, B, a, b)
-	float *A, *B;
-	int a, b;
+void vcopy(float *A, float *B, int a, int b)
 {
 	int i;
 
@@ -375,9 +334,7 @@ void vcopy(A, B, a, b)
 }
 
 
-void vprod(R, A, B, a, b)
-	double *R, *A, *B;
-	int a, b;
+void vprod(double *R, double *A, double *B, int a, int b)
 {
 	int i;
 
@@ -387,10 +344,7 @@ void vprod(R, A, B, a, b)
 	return;
 }
 
-float fnmax(E, A, a, b)
-	struct All_variables *E;
-	float *A;
-	int a, b;
+float fnmax(struct All_variables *E, float *A, int a, int b)
 {
 	float maxm = -1.0e32;
 	int i;
@@ -409,29 +363,14 @@ float fnmax(E, A, a, b)
     Iterative solver also using multigrid  ........
     ===========================================================  */
 
-int solve_del2_u(E, d0, F, acc, high_lev, ic)
-	struct All_variables *E;
-	double *d0;
-	double *F;
-	double acc;
-	int high_lev, ic;
+int solve_del2_u(struct All_variables *E, double *d0, double *F, double acc, int high_lev, int ic)
 {
-	void assemble_del2_u();
-	void gauss_seidel();
-	void e_assemble_del2_u();
-	void n_assemble_del2_u();
-	void strip_bcs_from_residual();
-
-	double conj_grad();
-	double multi_grid();
-	double global_vdot(), vdot(), vselfdot();
-
 	static int been_here = 0;
 	static int up_heavy, down_heavy, v_steps_high;
 	int valid, count, cycles, convergent;
 	int i, neq, gneq;
 
-	double CPU_time0(), initial_time, time;
+	double initial_time, time;
 	double residual, prior_residual, r0;
 	static double *D1, *r, *Au;
 
@@ -574,26 +513,18 @@ int solve_del2_u(E, d0, F, acc, high_lev, ic)
 	return (valid);
 }
 
-double multi_grid(E, d1, F, Au, acc, hl)
-	struct All_variables *E;
-	double *d1;
-	double *F;
-	double *Au;
-	double acc;
-	int hl;						/* higher level of two */
+double multi_grid(
+	struct All_variables *E,
+	double *d1,
+	double *F,
+	double *Au,
+	double acc,
+	int hl						/* higher level of two */
+)
 {
 	double residual, AudotAu;
-	void project_vector();
-	void interp_vector();
 	int lev, dlev, ulev, i, j, Vn, Vnmax, ic, cycles;
 	double residuaa, alpha, beta;
-	void gauss_seidel();
-	void element_gauss_seidel();
-	void strip_bcs_from_residual();
-	void parallel_process_sync();
-	void n_assemble_del2_u();
-
-	double global_vdot(), conj_grad();
 
 	FILE *fp;
 	char filename[1000];
@@ -601,7 +532,7 @@ double multi_grid(E, d1, F, Au, acc, hl)
 	const int levmin = E->mesh.levmin;
 	const int levmax = E->mesh.levmax;
 
-	double time, CPU_time0();
+	double time;
 
 	static int been_here = 0;
 	static double *res[MAX_LEVELS], *rhs[MAX_LEVELS], *AU[MAX_LEVELS];
@@ -724,14 +655,7 @@ double multi_grid(E, d1, F, Au, acc, hl)
     ===========================================================  */
 
 
-double conj_grad(E, d0, F, Au, acc, cycles, level)
-	struct All_variables *E;
-	double *d0;
-	double *F;
-	double *Au;
-	double acc;
-	int *cycles;
-	int level;
+double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, double acc, int *cycles, int level)
 {
 	static double *r0, *r1, *r2;
 	static double *z0, *z1, *z2;
@@ -745,12 +669,7 @@ double conj_grad(E, d0, F, Au, acc, cycles, level)
 	double residual;
 	double alpha, beta, dotprod, dotr1z1, dotr0z0;
 
-	double CPU_time0(), time;
-
-	void assemble_del2_u();
-	void strip_bcs_from_residual();
-	double vdot(), vselfdot(), global_vdot();
-	double *dvector();
+	double time;
 
 	const int mem_lev = E->mesh.levmax;
 	const int high_neq = E->lmesh.NEQ[level];
@@ -849,20 +768,10 @@ double conj_grad(E, d0, F, Au, acc, cycles, level)
  */
 
 
-void jacobi(E, d0, F, Ad, acc, cycles, level, guess)
-	struct All_variables *E;
-	double *d0;
-	double *F, *Ad;
-	double acc;
-	int *cycles;
-	int level;
-	int guess;
+void jacobi(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 	static double *r1;
 	static int been_here = 0;
-
-	void assemble_del2_u();
-	void exchange_id_d20();
 
 	int count, steps;
 	int i, j, k, eqn1, eqn2, eqn3;
@@ -967,24 +876,12 @@ void jacobi(E, d0, F, Ad, acc, cycles, level, guess)
    Be careful: no-parallel
    =========================================================================================*/
 
-void element_gauss_seidel(E, d0, F, Ad, acc, cycles, level, guess)
-	struct All_variables *E;
-	double *d0;
-	double *F, *Ad;
-	double acc;
-	int *cycles;
-	int level;
-	int guess;
+void element_gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 	int count, i, j, k, l, m, ns, nc, d, steps, loc;
 	int p1, p2, p3, q1, q2, q3;
 	int e, eq, node, node1;
 	int element, eqn1, eqn2, eqn3, eqn11, eqn12, eqn13;
-
-	void e_assemble_del2_u();
-	void n_assemble_del2_u();
-	void strip_bcs_from_residual();
-	void get_elt_k();
 
 	double U1[24], AD1[24], F1[24];
 	double w1, w2, w3;
@@ -1157,23 +1054,13 @@ void element_gauss_seidel(E, d0, F, Ad, acc, cycles, level, guess)
 	return;
 }
 
-void gauss_seidel1(E, d0, F, Ad, acc, cycles, level, guess)
-	struct All_variables *E;
-	double *d0;
-	double *F, *Ad;
-	double acc;
-	int *cycles;
-	int level;
-	int guess;
+void gauss_seidel1(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 
 	int count, i, j, k, l, m, ns, steps;
 	int *C;
 	int eqn1, eqn2, eqn3;
 
-	void n_assemble_del2_u();
-	void exchange_id_d20();
-	double global_vdot();
 	double UU, U1, U2, U3;
 	static double zeroo = 0.0;
 
@@ -1253,23 +1140,13 @@ void gauss_seidel1(E, d0, F, Ad, acc, cycles, level, guess)
    time (Jacobi at a node). It does the job though.
    ============================================================================ */
 
-void gauss_seidel(E, d0, F, Ad, acc, cycles, level, guess)
-	struct All_variables *E;
-	double *d0;
-	double *F, *Ad;
-	double acc;
-	int *cycles;
-	int level;
-	int guess;
+void gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 
 	int count, i, j, k, l, m, ns, steps;
 	int *C;
 	int eqn1, eqn2, eqn3;
 
-	void n_assemble_del2_u();
-	void exchange_id_d20();
-	double global_vdot();
 	double residual, *r, UU, U1, U2, U3;
 	static double zeroo = 0.0;
 	static int been_here = 0;
@@ -1464,9 +1341,7 @@ void gauss_seidel(E, d0, F, Ad, acc, cycles, level, guess)
 
 }
 
-void print_elt_k(E, a)
-	struct All_variables *E;
-	double a[24 * 24];
+void print_elt_k(struct All_variables *E, double a[24 * 24])
 {
 	int l, ll, n;
 
@@ -1492,13 +1367,9 @@ void print_elt_k(E, a)
 }
 
 
-double cofactor(A, i, j, n)
-	double A[4][4];
-	int i, j, n;
+double cofactor(double A[4][4], int i, int j, int n)
 {
 	int k, l, p, q;
-	double determinant();
-	double **dmatrix();
 	static int been_here = 0;
 	double B[4][4];				/* because of recursive behaviour of det/cofac, need to use
 								 * new copy of B at each 'n' level of this routine */
@@ -1532,12 +1403,8 @@ double cofactor(A, i, j, n)
 
 /* Fast (conditional) determinant for 3x3 or 2x2 ... otherwise calls general routine */
 
-double determinant(A, n)
-	double A[4][4];
-	int n;
+double determinant(double A[4][4], int n)
 {
-	/* double gen_determinant(); */
-
 	switch (n)
 	{
 	case 1:
@@ -1580,8 +1447,7 @@ double determinant(A, n)
 */
 
 
-float area_of_4node(x1, y1, x2, y2, x3, y3, x4, y4)
-	float x1, y1, x2, y2, x3, y3, x4, y4;
+float area_of_4node(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	float area;
 
@@ -1591,11 +1457,8 @@ float area_of_4node(x1, y1, x2, y2, x3, y3, x4, y4)
 }
 
  /*=====================================*/
-double modified_plgndr_a(l, m, t)
-	int l, m;
-	double t;
+double modified_plgndr_a(int l, int m, double t)
 {
-
 	int i, ll;
 	double x, fact1, fact2, fact, pll, pmm, pmmp1, somx2, plgndr;
 	const double three = 3.0;
@@ -1648,8 +1511,7 @@ double modified_plgndr_a(l, m, t)
 }
 
  /* ===================================  */
-double sqrt_multis(jj, ii)
-	int ii, jj;
+double sqrt_multis(int jj, int ii)
 {
 	int i;
 	double sqrt_multisa;
@@ -1665,8 +1527,7 @@ double sqrt_multis(jj, ii)
 
 
  /* ===================================  */
-double multis(ii)
-	int ii;
+double multis(int ii)
 {
 	int i;
 	double multisa;
@@ -1681,8 +1542,7 @@ double multis(ii)
 
 
  /* ===================================  */
-int int_multis(ii)
-	int ii;
+int int_multis(int ii)
 {
 	int i, multisa;
 
@@ -1695,11 +1555,8 @@ int int_multis(ii)
 }
 
 /* =====================================*/
-double plgndr_a(l, m, t)
-	int l, m;
-	double t;
+double plgndr_a(int l, int m, double t)
 {
-
 	int i, ll;
 	double x, fact, pll, pmm, pmmp1, somx2, plgndr;
 	const double two = 2.0;
@@ -1741,12 +1598,10 @@ double plgndr_a(l, m, t)
 }
 
 /* =====================================*/
-double sphere_h(l, m, t, f, ic)
-	int l, m, ic;
-	double t, f;
+double sphere_h(int l, int m, double t, double f, int ic)
 {
 
-	double plgndr_a(), sphere_hamonics;
+	double sphere_hamonics;
 
 	sphere_hamonics = 0.0;
 	if(ic == 0)

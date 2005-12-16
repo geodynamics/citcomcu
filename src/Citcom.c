@@ -50,24 +50,10 @@
 
 extern int Emergency_stop;
 
-int main(argc, argv)
-	int argc;
-	char **argv;
-{								/* Functions called by main */
-	void general_stokes_solver();
-	void read_instructions();
-	void solve_constrained_flow();
-	void solve_derived_velocities();
-	void parallel_process_initilization();
-	void parallel_process_termination();
-	void process_temp_field();
-	void process_heating();
-	void vcopy();
-
-	float dot();
-
+int main(int argc, char **argv)
+{
 	int k, *temp;
-	double CPU_time0(), time, initial_time, start_time;
+	double time, initial_time, start_time;
 
 	struct All_variables E;
 

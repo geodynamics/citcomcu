@@ -46,12 +46,8 @@
 #include "global_defs.h"
 
 
-void parallel_process_initilization(E, argc, argv)
-	struct All_variables *E;
-	int argc;
-	char **argv;
+void parallel_process_initilization(struct All_variables *E, int argc, char **argv)
 {
-
 	E->parallel.me = 0;
 	E->parallel.nproc = 1;
 	E->parallel.me_loc[1] = 0;
@@ -69,9 +65,8 @@ void parallel_process_initilization(E, argc, argv)
 /* ============================================ */
 /* ============================================ */
 
-void parallel_process_termination()
+void parallel_process_termination(void)
 {
-
 	MPI_Finalize();
 	exit(8);
 	return;
@@ -82,10 +77,8 @@ void parallel_process_termination()
 /* ============================================ */
 
 
-void parallel_domain_decomp1(E)
-	struct All_variables *E;
+void parallel_domain_decomp1(struct All_variables *E)
 {
-
 	int i, j, k, nox, noz, noy, me;
 
 	me = E->parallel.me;
@@ -200,13 +193,8 @@ void parallel_domain_decomp1(E)
  exchange info across the boundaries
  ============================================ */
 
-void parallel_shuffle_ele_and_id(E)
-	struct All_variables *E;
+void parallel_shuffle_ele_and_id(struct All_variables *E)
 {
-
-	void parallel_shuffle_ele_and_id_bc1();
-	void parallel_shuffle_ele_and_id_bc2();
-
 	if(E->mesh.periodic_x || E->mesh.periodic_y)
 		parallel_shuffle_ele_and_id_bc2(E);
 	else
@@ -215,10 +203,8 @@ void parallel_shuffle_ele_and_id(E)
 	return;
 }
 
-void parallel_shuffle_ele_and_id_bc1(E)
-	struct All_variables *E;
+void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
 {
-
 	int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
 	int lev, elx, elz, ely, nel, nno, nox, noz, noy;
 
@@ -304,10 +290,8 @@ void parallel_shuffle_ele_and_id_bc1(E)
 
 // for periodic BC 
 //
-void parallel_shuffle_ele_and_id_bc2(E)
-	struct All_variables *E;
+void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
 {
-
 	int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
 	int lev, elx, elz, ely, nel, nno, nox, noz, noy;
 
@@ -392,14 +376,8 @@ void parallel_shuffle_ele_and_id_bc2(E)
  exchange info across the boundaries
  ============================================ */
 
-void parallel_communication_routs(E)
-	struct All_variables *E;
+void parallel_communication_routs(struct All_variables *E)
 {
-	void parallel_communication_routs1();
-	void parallel_communication_routs2();
-	void parallel_communication_routs3();
-	void parallel_communication_routs4();
-
 	if(E->mesh.periodic_x || E->mesh.periodic_y)
 	{
 		parallel_communication_routs2(E);
@@ -413,14 +391,12 @@ void parallel_communication_routs(E)
 			parallel_communication_routs3(E);
 	}
 
-
 	return;
 }
 
 
 
-void parallel_communication_routs1(E)
-	struct All_variables *E;
+void parallel_communication_routs1(struct All_variables *E)
 {
 	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
 	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
@@ -656,9 +632,7 @@ fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E
 
 
 // periodic BC
-
-void parallel_communication_routs2(E)
-	struct All_variables *E;
+void parallel_communication_routs2(struct All_variables *E)
 {
 	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
 	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
@@ -893,8 +867,7 @@ fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E
 	return;
 }
 
-void parallel_communication_routs3(E)
-	struct All_variables *E;
+void parallel_communication_routs3(struct All_variables *E)
 {
 
 	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
@@ -977,8 +950,7 @@ void parallel_communication_routs3(E)
 	return;
 }
 
-void parallel_communication_routs4(E)
-	struct All_variables *E;
+void parallel_communication_routs4(struct All_variables *E)
 {
 	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
 	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
@@ -988,11 +960,8 @@ void parallel_communication_routs4(E)
 }
 
 
-void exchange_number_rec_markers(E)
-	struct All_variables *E;
+void exchange_number_rec_markers(struct All_variables *E)
 {
-
-	void parallel_process_sync();
 	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
 	static int *S[27], *R[27];
 
@@ -1043,11 +1012,8 @@ void exchange_number_rec_markers(E)
  ============================================ */
 
 
-void exchange_markers(E)
-	struct All_variables *E;
+void exchange_markers(struct All_variables *E)
 {
-
-	void parallel_process_sync();
 	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
 
 	static int been_here = 0;
@@ -1102,12 +1068,8 @@ void exchange_markers(E)
   exchange ID related information across boundaries
  ============================================ */
 
-void exchange_id_d20(E, U, lev)
-	struct All_variables *E;
-	double *U;
-	int lev;
+void exchange_id_d20(struct All_variables *E, double *U, int lev)
 {
-	void parallel_process_sync();
 	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
 	static double *S[27], *R[27];
 
@@ -1192,12 +1154,8 @@ void exchange_id_d20(E, U, lev)
 }
 
 
-void exchange_node_f20(E, U, lev)
-	struct All_variables *E;
-	float *U;
-	int lev;
+void exchange_node_f20(struct All_variables *E, float *U, int lev)
 {
-	void parallel_process_sync();
 	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
 	static float *S[27], *R[27];
 
@@ -1283,17 +1241,15 @@ void exchange_node_f20(E, U, lev)
 
 /* ==========================   */
 
-double CPU_time0()
+double CPU_time0(void)
 {
-	double time, MPI_Wtime();
-
+	double time;
 	time = MPI_Wtime();
-
-	return (time);
+	return time;
 }
 
 
-void parallel_process_sync()
+void parallel_process_sync(void)
 {
 	MPI_Barrier(MPI_COMM_WORLD);
 	return;

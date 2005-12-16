@@ -52,13 +52,9 @@
    aren't & another method is required.
    =============================================== */
 
-void remove_horiz_ave(E, X, H, store_or_not)
-	struct All_variables *E;
-	float *X, *H;
-	int store_or_not;
+void remove_horiz_ave(struct All_variables *E, float *X, float *H, int store_or_not)
 {
 	int i, j, k, n, ln, nox, noz, noy;
-	void return_horiz_ave();
 
 	const int dims = E->mesh.nsd;
 
@@ -71,8 +67,8 @@ void remove_horiz_ave(E, X, H, store_or_not)
 /*
     for(i=1;i<=noz;i++)
        fprintf(E->fp,"%d %.5e ave\n",i,H[i]);
-
 */
+
 	for(i = 1; i <= noz; i++)
 		for(k = 1; k <= noy; k++)
 			for(j = 1; j <= nox; j++)
@@ -84,10 +80,7 @@ void remove_horiz_ave(E, X, H, store_or_not)
 	return;
 }
 
-void return_horiz_sum(E, X, H, nn)
-	struct All_variables *E;
-	float *X, *H;
-	int nn;
+void return_horiz_sum(struct All_variables *E, float *X, float *H, int nn)
 {
 	const int dims = E->mesh.nsd;
 	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
@@ -137,9 +130,7 @@ void return_horiz_sum(E, X, H, nn)
 }
 
 
-void return_horiz_ave(E, X, H)
-	struct All_variables *E;
-	float *X, *H;
+void return_horiz_ave(struct All_variables *E, float *X, float *H)
 {
 	const int dims = E->mesh.nsd;
 	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
@@ -148,7 +139,6 @@ void return_horiz_ave(E, X, H)
 	double *Have, *temp;
 	struct Shape_function1 M;
 	struct Shape_function1_dA dGamma;
-	void get_global_1d_shape_fn();
 
 	int *processors;
 
@@ -259,13 +249,8 @@ void return_horiz_ave(E, X, H)
 }
 
 
-float return_bulk_value(E, Z, z_thld, average)
-	struct All_variables *E;
-	float *Z, z_thld;
-	int average;
+float return_bulk_value(struct All_variables *E, float *Z, float z_thld, int average)
 {
-	void float_global_operation();
-
 	int i, j, k, n, el, elx, ely, elz, i1, i2, j1, j2, k1, k2;
 	float integral;
 //    float volume,volume1,integral1,integral0;
@@ -326,10 +311,7 @@ float return_bulk_value(E, Z, z_thld, average)
 
 
 
-double global_vdot(E, A, B, lev)
-	struct All_variables *E;
-	double *A, *B;
-	int lev;
+double global_vdot(struct All_variables *E, double *A, double *B, int lev)
 {
 	int i, neq;
 	double prod, temp;
@@ -349,10 +331,7 @@ double global_vdot(E, A, B, lev)
 }
 
 
-double global_pdot(E, A, B, lev)
-	struct All_variables *E;
-	double *A, *B;
-	int lev;
+double global_pdot(struct All_variables *E, double *A, double *B, int lev)
 
 {
 	int i, npno;
@@ -370,10 +349,7 @@ double global_pdot(E, A, B, lev)
 }
 
 
-float global_tdot(E, A, B, lev)
-	struct All_variables *E;
-	float *A, *B;
-	int lev;
+float global_tdot(struct All_variables *E, float *A, float *B, int lev)
 
 {
 	int i, nno;
@@ -390,11 +366,9 @@ float global_tdot(E, A, B, lev)
 	return (prod);
 }
 
-float Tmax(E, T)
-	struct All_variables *E;
-	float *T;
+float Tmax(struct All_variables *E, float *T)
 {
-	float global_fmax(), temp, temp1;
+	float temp, temp1;
 	int i, m;
 
 	temp = -10.0;
@@ -406,18 +380,14 @@ float Tmax(E, T)
 }
 
 
-float global_fmin(E, a)
-	struct All_variables *E;
-	float a;
+float global_fmin(struct All_variables *E, float a)
 {
 	float temp;
 	MPI_Allreduce(&a, &temp, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
 	return (temp);
 }
 
-float global_fmax(E, a)
-	struct All_variables *E;
-	float a;
+float global_fmax(struct All_variables *E, float a)
 {
 	float temp;
 	MPI_Allreduce(&a, &temp, 1, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
@@ -425,9 +395,7 @@ float global_fmax(E, a)
 }
 
 /* ================================================== */
-void sum_across_depth_sph1(E, sphc, sphs)
-	struct All_variables *E;
-	float *sphc, *sphs;
+void sum_across_depth_sph1(struct All_variables *E, float *sphc, float *sphs)
 {
 	int jumpp, total, j, d;
 
@@ -488,10 +456,7 @@ void sum_across_depth_sph1(E, sphc, sphs)
 }
 
 /* ================================================== */
-void sum_across_surface(E, data, total)
-	struct All_variables *E;
-	float *data;
-	int total;
+void sum_across_surface(struct All_variables *E, float *data, int total)
 {
 	int j, d;
 	float *temp;
@@ -543,9 +508,7 @@ void sum_across_surface(E, data, total)
 }
 
 /* ================================================== */
-void sum_across_surf_sph1(E, sphc, sphs)
-	struct All_variables *E;
-	float *sphc, *sphs;
+void sum_across_surf_sph1(struct All_variables *E, float *sphc, float *sphs)
 {
 	int jumpp, total, j, d;
 	static float *sphcs, *temp;
@@ -605,12 +568,8 @@ void sum_across_surf_sph1(E, sphc, sphs)
 }
 
 /* ==========================================================  */
-void gather_TG_to_me0(E, TG)
-	struct All_variables *E;
-	float *TG;
+void gather_TG_to_me0(struct All_variables *E, float *TG)
 {
-
-	void parallel_process_sync();
 	int i, j, nsl, idb, ii, to_everyone, from_proc, mst, me;
 
 	static float *RG[20];
@@ -682,12 +641,8 @@ void gather_TG_to_me0(E, TG)
 
 
 /* ==========================================================  */
-void propogator_down_process(E, Tadi)
-	struct All_variables *E;
-	float *Tadi;
+void propogator_down_process(struct All_variables *E, float *Tadi)
 {
-
-	void parallel_process_sync();
 	int i, j, noz, idb, ii, to_proc, from_proc, mst, me;
 	float temp;
 
@@ -778,9 +733,7 @@ void propogator_down_process(E, Tadi)
 }
 
 /* ================================================== */
-double sum_across_depth(E, temp1)
-	struct All_variables *E;
-	double temp1;
+double sum_across_depth(struct All_variables *E, double temp1)
 {
 	int j, d;
 	double temp2;

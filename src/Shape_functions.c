@@ -50,10 +50,8 @@
     Function creating shape_fn data in form of a structure
     =======================================================*/
 
-void construct_shape_functions(E)
-	struct All_variables *E;
+void construct_shape_functions(struct All_variables *E)
 {
-	double lpoly(), lpolydash();
 	int i, j, k, d, dd, el;
 	int remapj, remapk;
 
@@ -170,9 +168,12 @@ void construct_shape_functions(E)
 	return;
 }
 
-double lpoly(p, y)
-	int p;						/*   selects lagrange polynomial , 1d: node p */
-	double y;					/*   coordinate in given direction to evaluate poly */
+
+/* lpoly
+ *	p - selects lagrange polynomial, 1d: node p
+ *	y - coordinate in given direction to evaluate poly
+ */
+double lpoly(int p, double y)
 {
 	double value;
 
@@ -188,12 +189,10 @@ double lpoly(p, y)
 		value = 0.0;
 	}
 
-	return (value);
+	return value;
 }
 
-double lpolydash(p, y)
-	int p;
-	double y;
+double lpolydash(int p, double y)
 {
 	double value;
 	switch (p)
@@ -208,5 +207,5 @@ double lpolydash(p, y)
 		value = 0.0;
 	}
 
-	return (value);
+	return value;
 }

@@ -40,19 +40,12 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void general_stokes_solver(E)
-	struct All_variables *E;
+void general_stokes_solver(struct All_variables *E)
 {
-	void construct_stiffness_B_matrix();
-	void velocities_conform_bcs();
-	void assemble_forces();
-	double global_vdot();
-	void parallel_process_termination();
-
 	float vmag;
 	double *delta_U;
 	double *force, Udot_mag, dUdot_mag;
-	double CPU_time0(), time;
+	double time;
 	int count, i, j, k;
 
 	static float *oldU;

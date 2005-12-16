@@ -46,21 +46,8 @@
 #include <stdlib.h>				/* for "system" command */
 #include <strings.h>
 
-void set_convection_defaults(E)
-	struct All_variables *E;
+void set_convection_defaults(struct All_variables *E)
 {
-	void PG_timestep_with_melting();
-	void PG_timestep();
-	void PG_timestep_particle();
-	void PG_process();
-	void read_convection_settings();
-	void convection_derived_values();
-	void convection_allocate_memory();
-	void convection_boundary_conditions();
-	void node_locations();
-	void convection_initial_fields();
-	void twiddle_thumbs();
-
 	input_int("composition", &(E->control.composition), "0");
 
 	if(E->control.composition)
@@ -87,13 +74,11 @@ void set_convection_defaults(E)
 	return;
 }
 
-void read_convection_settings(E)
-	struct All_variables *E;
+void read_convection_settings(struct All_variables *E)
 {
-	void advection_diffusion_parameters();
 	char tmp_string[100], tmp1_string[100];
 
-/* parameters */
+	/* parameters */
 
 	input_float("rayleigh", &(E->control.Atemp), "essential");
 
@@ -146,7 +131,6 @@ void read_convection_settings(E)
 	}
 
 
-
 	advection_diffusion_parameters(E);
 
 	return;
@@ -156,30 +140,21 @@ void read_convection_settings(E)
    Any setup which relates only to the convection stuff goes in here
    ================================================================= */
 
-void convection_derived_values(E)
-	struct All_variables *E;
+void convection_derived_values(struct All_variables *E)
 {
-
 	return;
 }
 
-void convection_allocate_memory(E)
-	struct All_variables *E;
+void convection_allocate_memory(struct All_variables *E)
 {
-	void advection_diffusion_allocate_memory();
-
 	advection_diffusion_allocate_memory(E);
-
 	return;
 }
 
 /* ============================================ */
 
-void convection_initial_fields(E)
-	struct All_variables *E;
+void convection_initial_fields(struct All_variables *E)
 {
-	void convection_initial_temperature();
-	void parallel_process_termination();
 	int i;
 
 	if(E->control.composition)
@@ -208,13 +183,8 @@ void convection_initial_fields(E)
 
 /* =========================================== */
 
-void convection_boundary_conditions(E)
-	struct All_variables *E;
+void convection_boundary_conditions(struct All_variables *E)
 {
-	void velocity_boundary_conditions();
-	void temperature_boundary_conditions();
-	void temperatures_conform_bcs();
-
 	velocity_boundary_conditions(E);	/* universal */
 	temperature_boundary_conditions(E);
 
@@ -227,26 +197,16 @@ void convection_boundary_conditions(E)
    Initialization of fields .....
    =============================== */
 
-void convection_initial_temperature(E)
-	struct All_variables *E;
+void convection_initial_temperature(struct All_variables *E)
 {
 	int ll, mm, i, j, k, p, node, ii;
 	double temp, temp1, temp2, temp3, base, radius, radius2;
-	double drand48();
 	FILE *fp;
-	void remove_horiz_ave();
-	void vcopy();
-	void temperatures_conform_bcs();
-	void thermal_buoyancy();
-	void parallel_process_termination();
-	void convection_initial_markers();
-	void process_restart_tc();
-	double modified_plgndr_a(), x1, y1, z1, con, beta;
+	double x1, y1, z1, con, beta;
 
 	int noz2, nfz, in1, in2, in3, instance, nox, noy, noz;
 	char input_s[200], output_file[255];
 	float weight, para1, plate_velocity, delta_temp, age;
-
 
 	const int dims = E->mesh.nsd;
 
@@ -359,18 +319,13 @@ void convection_initial_temperature(E)
 	return;
 }
 
-void process_restart_tc(E)
-	struct All_variables *E;
+void process_restart_tc(struct All_variables *E)
 {
 
 	int node, i, j, k, p;
 	FILE *fp;
 	float temp1, temp2, temp3, *temp;
 	char input_s[200], output_file[255];
-	void get_C_from_markers();
-	void convection_initial_markers();
-	void convection_initial_markers1();
-	void parallel_process_termination();
 
 	temp = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
 
@@ -506,18 +461,12 @@ void process_restart_tc(E)
 }
 
 
-void convection_initial_markers1(E)
-	struct All_variables *E;
+void convection_initial_markers1(struct All_variables *E)
 {
 	int *element, el, i, j, k, p, node, ii, jj;
 	double x, y, z, r, t, f, dX[4], dx, dr;
 	char input_s[100], output_file[255];
 	FILE *fp;
-	void get_C_from_markers();
-	void parallel_process_termination();
-	int get_element();
-	int in_the_domain();
-	double drand48(), myatan();
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
@@ -612,18 +561,12 @@ void convection_initial_markers1(E)
 	return;
 }
 
-void convection_initial_markers(E)
-	struct All_variables *E;
+void convection_initial_markers(struct All_variables *E)
 {
 	int el, i, j, k, p, node, ii, jj;
 	double x, y, z, r, t, f, dX[4], dx, dr;
 	char input_s[100], output_file[255];
 	FILE *fp;
-	void get_C_from_markers();
-	void parallel_process_termination();
-	int get_element();
-	int in_the_domain();
-	double drand48(), myatan();
 
 	if(E->control.CART3D)
 	{
@@ -684,8 +627,7 @@ void convection_initial_markers(E)
 	return;
 }
 
-void setup_plume_problem(E)
-	struct All_variables *E;
+void setup_plume_problem(struct All_variables *E)
 {
 	int i;
 	FILE *fp;
@@ -759,15 +701,8 @@ void setup_plume_problem(E)
 
 
 
-void PG_process(E, ii)
-	struct All_variables *E;
-	int ii;
+void PG_process(struct All_variables *E, int ii)
 {
-	void remove_horiz_ave();
-	void strain_rate_2_inv();
-	void generic_data_storage();
-	float return_bulk_value();
-
 	float *P, *P2;
 	float visc[9];
 

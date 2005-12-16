@@ -46,13 +46,10 @@
 /*   ======================================================================
     ======================================================================  */
 
-void set_sphere_harmonics(E)
-	struct All_variables *E;
+void set_sphere_harmonics(struct All_variables *E)
 {
 	int node, ll, mm, i, j;
-	double multis(), dth, dfi, sqrt_multis();
-	void construct_interp_net();
-	void compute_sphereh_table();
+	double dth, dfi;
 
 	for(i = 0; i <= E->sphere.llmax; i++)
 		E->sphere.hindex[i] = (int *)malloc((E->sphere.llmax + 3) * sizeof(int));
@@ -146,17 +143,8 @@ void set_sphere_harmonics(E)
 /*   ======================================================================
     ======================================================================  */
 
-void sphere_harmonics_layer(E, T, sphc, sphs, iprint, filen)
-	struct All_variables *E;
-	float **T, *sphc, *sphs;
-	int iprint;
-	char *filen;
+void sphere_harmonics_layer(struct All_variables *E, float **T, float *sphc, float *sphs, int iprint, char *filen)
 {
-	void sphere_expansion();
-	void sphere_interpolate();
-	void parallel_process_termination();
-	void parallel_process_sync();
-	void print_field_spectral_regular();
 	FILE *fp;
 	char output_file[255];
 	int i, node, j, ll, mm, printt, proc_loc;
@@ -200,15 +188,8 @@ void sphere_harmonics_layer(E, T, sphc, sphs, iprint, filen)
   spherical harmonic expansion and graphics 
  =================================================================== */
 
-void sphere_interpolate(E, T, TG)
-	struct All_variables *E;
-	float **T, *TG;
+void sphere_interpolate(struct All_variables *E, float **T, float *TG)
 {
-
-	float sphere_interpolate_point();
-	void gather_TG_to_me0();
-	void parallel_process_termination();
-
 	int ii, jj, es, i, j, m, el, node;
 	double x[4], t, f;
 
@@ -231,15 +212,12 @@ void sphere_interpolate(E, T, TG)
 
 /* =========================================================
   ========================================================= */
-void sphere_expansion(E, TG, sphc, sphs)
-	struct All_variables *E;
-	float *TG, *sphc, *sphs;
+void sphere_expansion(struct All_variables *E, float *TG, float *sphc, float *sphs)
 {
-	int p, i, j, es, mm, ll, rand();
-	double temp, area, t, f, sphere_h();
+	int p, i, j, es, mm, ll;
+	double temp, area, t, f;
 	const double pt25 = 0.25;
 	static int been_here = 0;
-	void sum_across_surf_sph1();
 
 	for(i = 0; i < E->sphere.hindice; i++)
 	{
@@ -281,15 +259,10 @@ void sphere_expansion(E, TG, sphc, sphs)
 }
 
  /* =========================================================== */
-void inv_sphere_harmonics(E, sphc, sphs, TG, proc_loc)
-	struct All_variables *E;
-	float *TG, *sphc, *sphs;
-	int proc_loc;
+void inv_sphere_harmonics(struct All_variables *E, float *sphc, float *sphs, float *TG, int proc_loc)
 {
 	int k, ll, mm, node, i, j, p, noz, snode;
 	float t1, f1, rad;
-	void parallel_process_sync();
-	void gather_TG_to_me0();
 
 	if(E->parallel.me_loc[3] == proc_loc)
 	{
@@ -325,12 +298,10 @@ void inv_sphere_harmonics(E, sphc, sphs, TG, proc_loc)
 }
 
 /* ==================================================*/
-void compute_sphereh_table(E)
-	struct All_variables *E;
+void compute_sphereh_table(struct All_variables *E)
 {
-
 	int rr, node, ends, ll, mm, es, i, j, p;
-	double t, f, plgndr_a(), modified_plgndr_a();
+	double t, f;
 	const double pt25 = 0.25;
 
 	ends = 4;
@@ -384,14 +355,14 @@ void compute_sphereh_table(E)
 	{
 		node = E->sphere.lexs + i + (E->sphere.leys + 1 - 1) * E->sphere.nox;
 		t = E->sphere.sx[1][node];
-/*    fprintf(E->fp_out,"kkk %d %d %d %d %.5e\n",i,node,E->sphere.lexs,E->sphere.leys,t);
- */ for(ll = 0; ll <= E->sphere.llmax; ll++)
+		/* fprintf(E->fp_out,"kkk %d %d %d %d %.5e\n",i,node,E->sphere.lexs,E->sphere.leys,t); */
+		for(ll = 0; ll <= E->sphere.llmax; ll++)
 			for(mm = 0; mm <= ll; mm++)
 			{
 				p = E->sphere.hindex[ll][mm];
 				E->sphere.tableplm_n[i][p] = modified_plgndr_a(ll, mm, t);
-				/*  fprintf(E->fp_out,"%d %d %.5e\n",ll,mm,E->sphere.tableplm_n[i][p]);
-				 */ }
+				/* fprintf(E->fp_out,"%d %d %.5e\n",ll,mm,E->sphere.tableplm_n[i][p]); */
+			}
 	}
 
 	return;

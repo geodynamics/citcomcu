@@ -55,17 +55,14 @@
 #endif
 
 
-int get_process_identifier()
+int get_process_identifier(void)
 {
 	int pid;
-
 	pid = (int)getpid();
-	return (pid);
+	return pid;
 }
 
-void unique_copy_file(E, name, comment)
-	struct All_variables *E;
-	char *name, *comment;
+void unique_copy_file(struct All_variables *E, char *name, char *comment)
 {
 	char unique_name[500];
 	char command[600];
@@ -77,17 +74,14 @@ void unique_copy_file(E, name, comment)
 		system(command);
 	}
 
+	return;
 }
 
 
-void thermal_buoyancy(E)
-	struct All_variables *E;
+void thermal_buoyancy(struct All_variables *E)
 {
 	int i, j;
 	float *H;
-	void remove_horiz_ave();
-	void phase_change();
-	float boundary_thickness();
 	const double zeroo = 0.0;
 	const int i1 = 670;
 	const int i2 = 670;
@@ -118,8 +112,7 @@ void thermal_buoyancy(E)
 	return;
 }
 
-double SIN_D(x)
-	double x;
+double SIN_D(double x)
 {
 #if defined(__osf__)
 	return sind(x);
@@ -128,8 +121,7 @@ double SIN_D(x)
 #endif
 }
 
-double COT_D(x)
-	double x;
+double COT_D(double x)
 {
 #if defined(__osf__)
 	return cotd(x);
@@ -140,11 +132,7 @@ double COT_D(x)
 
 
 /* non-runaway malloc */
-
-void *Malloc1(bytes, file, line)
-	int bytes;
-	char *file;
-	int line;
+void *Malloc1(int bytes, char *file, int line)
 {
 	void *ptr;
 
@@ -155,7 +143,7 @@ void *Malloc1(bytes, file, line)
 		exit(0);
 	}
 
-	return (ptr);
+	return ptr;
 }
 
 
@@ -175,16 +163,8 @@ void *Malloc1(bytes, file, line)
 
    */
 
-int read_previous_field(E, field, name, abbr)
-	struct All_variables *E;
-	float *field;
-	char *name, *abbr;
+int read_previous_field(struct All_variables *E, float *field, char *name, char *abbr)
 {
-	void fcopy_interpolating();
-	int input_string();
-
-	float cross2d();
-
 	char discard[5001];
 	char *token;
 	char *filename;
@@ -336,7 +316,7 @@ int read_previous_field(E, field, name, abbr)
 	free((void *)filename);
 	free((void *)input_token);
 
-	return (1);
+	return 1;
 }
 
 /* Copy one field to another on a different (but similarly structured) mesh.  The
@@ -348,16 +328,9 @@ int read_previous_field(E, field, name, abbr)
 
 
 
-void fcopy_interpolating(E, X, Z, Y, nx, nz, ny, T, TT)
-	struct All_variables *E;
-	float *X, *Z, *Y;
-	int nx, nz, ny;
-	float *T, *TT;
+void fcopy_interpolating(struct All_variables *E, float *X, float *Z, float *Y, int nx, int nz, int ny, float *T, float *TT)
 {
-	float cross2d();
-	void p_to_nodes();
-	void p_to_centres();
-	double CPU_time0(), time;
+	double time;
 
 	double *P;
 
@@ -490,9 +463,7 @@ void fcopy_interpolating(E, X, Z, Y, nx, nz, ny, T, TT)
    are positive (are you sure ?), and the axes are ordered 2,3 or 1,3 or 1,2 */
 
 
-float cross2d(x11, x12, x21, x22, D)
-	float x11, x12, x21, x22;
-	int D;
+float cross2d(float x11, float x12, float x21, float x22, int D)
 {
 	if(1 == D)
 		return (x11 * x22 - x12 * x21);
@@ -504,25 +475,14 @@ float cross2d(x11, x12, x21, x22, D)
 }
 
 
-void field_arbitrary_rectangle_file(E, parse_and_apply, RECT, name, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	int parse_and_apply;
-	struct Rect *RECT;
-	char *name;
-	float *field;
-	int BC;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_rectangle_file(struct All_variables *E, int parse_and_apply, struct Rect *RECT, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-
 	char read_string[500];
 	float weight, radius2, weight2;
 	float x1, y1, z1;
 	int in1, in2, in3;
 	int number, node;
 	int combine_option;
-
-	void field_arbitrary_rectangle();
 
 	sprintf(read_string, "%s_rect", name);
 	input_int(read_string, &(RECT->numb), "0");
@@ -551,15 +511,8 @@ void field_arbitrary_rectangle_file(E, parse_and_apply, RECT, name, field, BC, b
 	return;
 }
 
-void field_arbitrary_rectangle(E, RECT, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	struct Rect *RECT;
-	float *field;
-	int BC;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_rectangle(struct All_variables *E, struct Rect *RECT, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-
 	float weight, radius2, weight2;
 	float x1, y1, z1;
 	int in1, in2, in3;
@@ -637,24 +590,14 @@ void field_arbitrary_rectangle(E, RECT, field, BC, bcbitf, bcmask_on, bcmask_off
 }
 
 
-void field_arbitrary_circle_file(E, parse_and_apply, CIRC, name, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	int parse_and_apply;
-	struct Circ *CIRC;
-	char *name;
-	float *field;
-	int BC;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_circle_file(struct All_variables *E, int parse_and_apply, struct Circ *CIRC, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-
 	char read_string[500];
 	float weight, radius2, weight2;
 	float x1, y1, z1;
 	int in1;
 	int number, node;
 	int combine_option;
-	void field_arbitrary_circle();
 
 	sprintf(read_string, "%s_circ", name);
 	input_int(read_string, &(CIRC->numb), "0");
@@ -679,15 +622,8 @@ void field_arbitrary_circle_file(E, parse_and_apply, CIRC, name, field, BC, bcbi
 	return;
 }
 
-void field_arbitrary_circle(E, CIRC, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	struct Circ *CIRC;
-	float *field;
-	int BC;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_circle(struct All_variables *E, struct Circ *CIRC, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-
 	char read_string[500];
 	float weight, radius2, weight2;
 	float x1, y1, z1;
@@ -764,18 +700,9 @@ void field_arbitrary_circle(E, CIRC, field, BC, bcbitf, bcmask_on, bcmask_off)
 }
 
 
-void field_arbitrary_harmonic_file(E, parse_and_apply, HARM, name, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	int parse_and_apply;
-	struct Harm *HARM;
-	char *name;
-	int BC;
-	float *field;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_harmonic_file(struct All_variables *E, int parse_and_apply, struct Harm *HARM, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
 	char read_string[500];
-	void field_arbitrary_harmonic();
 	int i;
 
 	sprintf(read_string, "%s_harm", name);
@@ -823,15 +750,8 @@ void field_arbitrary_harmonic_file(E, parse_and_apply, HARM, name, field, BC, bc
 	return;
 }
 
-void field_arbitrary_harmonic(E, HARM, field, BC, bcbitf, bcmask_on, bcmask_off)
-	struct All_variables *E;
-	struct Harm *HARM;
-	float *field;
-	int BC;
-	unsigned int *bcbitf;
-	unsigned int bcmask_on, bcmask_off;
+void field_arbitrary_harmonic(struct All_variables *E, struct Harm *HARM, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-
 	float weight, radius2, weight2;
 	float x1, y1, z1;
 	int in1, in2, in3;
@@ -897,7 +817,6 @@ void field_arbitrary_harmonic(E, HARM, field, BC, bcbitf, bcmask_on, bcmask_off)
 		}
 	}
 
-
 	return;
 }
 
@@ -905,8 +824,7 @@ void field_arbitrary_harmonic(E, HARM, field, BC, bcbitf, bcmask_on, bcmask_off)
   my version of arc tan
  =================================================*/
 
-double myatan(y, x)
-	double y, x;
+double myatan(double y, double x)
 {
 	double fi;
 
@@ -915,5 +833,5 @@ double myatan(y, x)
 	if(fi < 0.0)
 		fi += 2 * M_PI;
 
-	return (fi);
+	return fi;
 }

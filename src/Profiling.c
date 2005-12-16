@@ -53,7 +53,7 @@
    Function to return currently elapsed CPU usage
    =============================================== */
 
-float CPU_time()
+float CPU_time(void)
 {
 #if defined(RUSAGE_STYLE_TIME)
 	struct rusage rusage;
@@ -84,9 +84,8 @@ float CPU_time()
 
 #else /* stupid, break nothing "timer" */
 	static float time;
-
 	time += 0.0001;
 #endif
 
-	return ((float)time);
+	return (float)time;
 }

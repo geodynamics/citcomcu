@@ -58,16 +58,8 @@ static float xxsh[5][3] = {  {0.0,  0.0,  0.0},
 /* *INDENT-ON* */
 
 
-void Runge_Kutta(E, C, V, on_off)
-	struct All_variables *E;
-	float *C, *V[4];
-	int on_off;
+void Runge_Kutta(struct All_variables *E, float *C, float *V[4], int on_off)
 {
-
-	void get_C_from_markers();
-	void velocity_markers();
-	void element_markers();
-	void transfer_markers_processors();
 	double temp1, temp2, temp3;
 
 	int i, j;
@@ -114,18 +106,8 @@ void Runge_Kutta(E, C, V, on_off)
 
 /* ================================================ */
 
-void Euler(E, C, V, on_off)
-	struct All_variables *E;
-	float *C, *V[4];
-	int on_off;
+void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 {
-
-	void get_C_from_markers();
-	void velocity_markers();
-	void element_markers();
-	void transfer_markers_processors();
-	void parallel_process_termination();
-
 	int i, j;
 	double temp1, temp2, temp3;
 
@@ -166,18 +148,8 @@ void Euler(E, C, V, on_off)
 
 /* ================================================ 
  ================================================  */
-void transfer_markers_processors(E, on_off)
-	struct All_variables *E;
-	int on_off;
+void transfer_markers_processors(struct All_variables *E, int on_off)
 {
-
-	int locate_processor();
-	void exchange_markers();
-	void exchange_number_rec_markers();
-	void prepare_transfer_arrays();
-	void unify_markers_array();
-	void parallel_process_termination();
-
 	int i, j, k1, k2, k3, proc, neighbor, no_transferred, no_received;
 	FILE *fp;
 	char output_file[255];
@@ -299,12 +271,9 @@ void transfer_markers_processors(E, on_off)
 	return;
 }
 
-void unify_markers_array(E, no_tran, no_recv)
-	struct All_variables *E;
-	int no_tran, no_recv;
+void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
 	int nsd2, ii, jj, i, j, k, kk, neighbor, no_trans1;
-	void parallel_process_termination();
 
 	nsd2 = E->mesh.nsd * 2;
 
@@ -428,8 +397,7 @@ void unify_markers_array(E, no_tran, no_recv)
 }
 
 
-void prepare_transfer_arrays(E)
-	struct All_variables *E;
+void prepare_transfer_arrays(struct All_variables *E)
 {
 	int j, i, neighbor, k1, k2, k3;
 
@@ -461,9 +429,7 @@ void prepare_transfer_arrays(E)
 
 // like get_element, assuming uniform mesh in x and y
 
-int locate_processor(E, XMC1, XMC2, XMC3)
-	struct All_variables *E;
-	double XMC1, XMC2, XMC3;
+int locate_processor(struct All_variables *E, double XMC1, double XMC2, double XMC3)
 {
 	int proc, m1, m2, m3;
 	const int npx = E->parallel.nprocx - 1;
@@ -498,16 +464,12 @@ int locate_processor(E, XMC1, XMC2, XMC3)
 
 /* ================================================ 
  ================================================  */
-void get_C_from_markers(E, C)
-	struct All_variables *E;
-	float *C;
+void get_C_from_markers(struct All_variables *E, float *C)
 {
-
 	int el, i, imark, j, node;
 	float C1, temp3, temp1, temp2, temp0;
 	static int been_here = 0;
 	static int *element[3];
-	void exchange_node_f20();
 
 	const int elx = E->lmesh.elx;
 	const int elz = E->lmesh.elz;
@@ -572,13 +534,10 @@ void get_C_from_markers(E, C)
 }
 
 /* ================================================ */
-void element_markers(E, con)
-	struct All_variables *E;
-	int con;
+void element_markers(struct All_variables *E, int con)
 {
 	int i, el;
 	double dX[4];
-	int get_element();
 
 	E->advection.markerIX = 1;
 	E->advection.markerIY = 1;
@@ -605,16 +564,12 @@ void element_markers(E, con)
 }
 
 /* ================================================ */
-void velocity_markers(E, V, con)
-	struct All_variables *E;
-	float *V[4];
-	int con;
+void velocity_markers(struct All_variables *E, float *V[4], int con)
 {
 	FILE *fp0;
 	char filename1[100];
 	int eln, elo, i, j, el, n1, n2, n3, n4;
 	double area, XMCold[4], dX[4], weigh1, weigh2, weigh3, weigh4, weigh5, weigh6, weigh7, weigh8;
-	int get_element();
 	static int onf = 0;
 	static int been_here = 0;
 	static double dx, dy;
@@ -699,11 +654,8 @@ for 2D, we do not want to implement this yet
   works for uniform mesh in x and y, but unlimited in z
  ================================================ */
 
-int get_element(E, XMC1, XMC2, XMC3, dX)
-	struct All_variables *E;
-	double XMC1, XMC2, XMC3, dX[4];
+int get_element(struct All_variables *E, double XMC1, double XMC2, double XMC3, double dX[4])
 {
-	void parallel_process_termination();
 	int done, i, i1, i2, ii, j, j1, j2, jj, el;
 	const int nox = E->lmesh.nox;
 	const int noy = E->lmesh.noy;
@@ -769,9 +721,7 @@ int get_element(E, XMC1, XMC2, XMC3, dX)
 }
 
 
-int in_the_domain(E, r, t, f)
-	struct All_variables *E;
-	double t, f, r;
+int in_the_domain(struct All_variables *E, double r, double t, double f)
 {
 	int done, i;
 	const int nno = E->lmesh.nno;
@@ -795,8 +745,7 @@ int in_the_domain(E, r, t, f)
 
 /* ============================================= */
 
-float area_of_4node1(x1, y1, x2, y2, x3, y3, x4, y4)
-	float x1, y1, x2, y2, x3, y3, x4, y4;
+float area_of_4node1(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	float temp1, temp2, area;
 
@@ -813,8 +762,7 @@ float area_of_4node1(x1, y1, x2, y2, x3, y3, x4, y4)
 
 /* ============================================= */
 
-float area_of_3node(x1, y1, x2, y2, x3, y3)
-	float x1, y1, x2, y2, x3, y3;
+float area_of_3node(float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	float area;
 
@@ -826,9 +774,7 @@ float area_of_3node(x1, y1, x2, y2, x3, y3)
 
 /* ============================================= */
 
-float mean_of_3node(a, x1, y1, x2, y2, x3, y3)
-	float x1, y1, x2, y2, x3, y3;
-	int a;
+float mean_of_3node(int a, float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	float mean, xm, ym;
 
@@ -842,9 +788,7 @@ float mean_of_3node(a, x1, y1, x2, y2, x3, y3)
 
 /* ============================================= */
 
-float mean_of_4node(a, x1, y1, x2, y2, x3, y3, x4, y4)
-	float x1, y1, x2, y2, x3, y3, x4, y4;
-	int a;
+float mean_of_4node(int a, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	float mean, xm, ym;
 
@@ -858,9 +802,7 @@ float mean_of_4node(a, x1, y1, x2, y2, x3, y3, x4, y4)
 
 /* ============================================= */
 
-float mean_of_5node(a, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5)
-	float x1, y1, x2, y2, x3, y3, x4, y4, x5, y5;
-	int a;
+float mean_of_5node(int a, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float x5, float y5)
 {
 
 	float mean, xm, ym;
@@ -876,8 +818,7 @@ float mean_of_5node(a, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5)
 
 /* ================================================ */
 
-float dist1(XO, XN)
-	float XO[4], XN[4];
+float dist1(float XO[4], float XN[4])
 {
 
 	float dist2;
