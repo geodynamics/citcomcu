@@ -1,0 +1,235 @@
+2005-12-16 22:34  luis
+
+	* mc/3D/CitcomCU/trunk/src/Advection_diffusion.c,
+	  mc/3D/CitcomCU/trunk/src/Boundary_conditions.c,
+	  mc/3D/CitcomCU/trunk/src/Citcom.c,
+	  mc/3D/CitcomCU/trunk/src/Composition_adv.c,
+	  mc/3D/CitcomCU/trunk/src/Construct_arrays.c,
+	  mc/3D/CitcomCU/trunk/src/Convection.c,
+	  mc/3D/CitcomCU/trunk/src/Drive_solvers.c,
+	  mc/3D/CitcomCU/trunk/src/Element_calculations.c,
+	  mc/3D/CitcomCU/trunk/src/General_matrix_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Geometry_cartesian.c,
+	  mc/3D/CitcomCU/trunk/src/Global_operations.c,
+	  mc/3D/CitcomCU/trunk/src/Instructions.c,
+	  mc/3D/CitcomCU/trunk/src/Nodal_mesh.c,
+	  mc/3D/CitcomCU/trunk/src/Output.c,
+	  mc/3D/CitcomCU/trunk/src/Pan_problem_misc_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Parallel_related.c,
+	  mc/3D/CitcomCU/trunk/src/Parsing.c,
+	  mc/3D/CitcomCU/trunk/src/Phase_change.c,
+	  mc/3D/CitcomCU/trunk/src/Process_buoyancy.c,
+	  mc/3D/CitcomCU/trunk/src/Process_velocity.c,
+	  mc/3D/CitcomCU/trunk/src/Profiling.c,
+	  mc/3D/CitcomCU/trunk/src/Shape_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Size_does_matter.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_conj_grad.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_multigrid.c,
+	  mc/3D/CitcomCU/trunk/src/Sphere_harmonics.c,
+	  mc/3D/CitcomCU/trunk/src/Stokes_flow_Incomp.c,
+	  mc/3D/CitcomCU/trunk/src/Topo_gravity.c,
+	  mc/3D/CitcomCU/trunk/src/Viscosity_structures.c: With help from
+	  cproto, converted source code style to ANSI C from K&R.
+
+2005-12-16 03:08  luis
+
+	* mc/3D/CitcomCU/trunk/src/global_defs.h: Provided instructions
+	  for regenerating function prototypes.
+
+2005-12-16 03:02  luis
+
+	* mc/3D/CitcomCU/trunk/src/prototypes.h: Somehow, cproto promotes
+	  float to double and char to int by default. Disabled such
+	  promotion with -p flag, and regenerated prototypes.h with the
+	  correct function prototypes.
+
+2005-12-15 23:01  luis
+
+	* mc/3D/CitcomCU/trunk/src/Advection_diffusion.c,
+	  mc/3D/CitcomCU/trunk/src/Instructions.c,
+	  mc/3D/CitcomCU/trunk/src/global_defs.h,
+	  mc/3D/CitcomCU/trunk/src/prototypes.h: Added function prototypes
+	  to new file prototypes.h, and modified global_defs.h to include
+	  it. Two bugs were exposed by this. First, eliminated an
+	  extraneous argument to the function calls to
+	  temperatures_conform_bcs() in the Advection_diffusion.c source.
+	  Second, changed the signature of the signal handler in
+	  Instructions.c from (void)(interuption(void)) to
+	  (void)(interruption(int)).
+
+2005-12-15 22:50  luis
+
+	* mc/3D/CitcomCU/trunk/src/Phase_change.c: Enforcing coding
+	  standards for indentation (cf. src/.indent.pro for rules).
+
+2005-12-15 22:48  luis
+
+	* mc/3D/CitcomCU/trunk/src/Stokes_flow_Incomp.c: Minor change.
+
+2005-12-15 21:38  luis
+
+	* mc/3D/CitcomCU/trunk/src/Convection_variables.h,
+	  mc/3D/CitcomCU/trunk/src/advection.h,
+	  mc/3D/CitcomCU/trunk/src/global_defs.h,
+	  mc/3D/CitcomCU/trunk/src/temperature_descriptions.h,
+	  mc/3D/CitcomCU/trunk/src/viscosity_descriptions.h: Enforcing
+	  coding standards for indentation (cf. src/.indent.pro)
+
+2005-12-15 20:09  luis
+
+	* mc/3D/CitcomCU/trunk/src/element_definitions.h: Missing braces
+	  around initializers for array structs node_point[] and offset[]
+
+2005-12-15 03:42  luis
+
+	* mc/3D/CitcomCU/trunk/src/General_matrix_functions.c: Commented
+	  out currently unused function gen_determinant().
+
+2005-12-15 03:03  luis
+
+	* mc/3D/CitcomCU/trunk/src/Element_calculations.c: In get_elt_h(),
+	  the variable elt_g should be an array of type higher_precision,
+	  not type double.
+
+2005-12-15 03:00  luis
+
+	* mc/3D/CitcomCU/trunk/src/Drive_solvers.c: In
+	  general_stokes_solver(), the variable delta_U should be declared
+	  with type (double *).
+
+2005-12-15 02:48  luis
+
+	* mc/3D/CitcomCU/trunk/src/Boundary_conditions.c,
+	  mc/3D/CitcomCU/trunk/src/Parsing.c,
+	  mc/3D/CitcomCU/trunk/src/Process_buoyancy.c,
+	  mc/3D/CitcomCU/trunk/src/Process_velocity.c,
+	  mc/3D/CitcomCU/trunk/src/Profiling.c,
+	  mc/3D/CitcomCU/trunk/src/Shape_functions.c: Enforcing coding
+	  standards for indentation (cf. src/.indent.pro)
+
+2005-12-15 01:33  luis
+
+	* mc/3D/CitcomCU/trunk/src/Citcom.c,
+	  mc/3D/CitcomCU/trunk/src/Instructions.c: Using proper return
+	  types in function definitions.
+
+2005-12-15 00:09  luis
+
+	* mc/3D/CitcomCU/trunk/src/Makefile: Minor spacing alignments.
+
+2005-12-01 13:30  luis
+
+	* mc/3D/CitcomCU/trunk/src/.indent.pro,
+	  mc/3D/CitcomCU/trunk/src/Advection_diffusion.c,
+	  mc/3D/CitcomCU/trunk/src/Citcom.c,
+	  mc/3D/CitcomCU/trunk/src/Composition_adv.c,
+	  mc/3D/CitcomCU/trunk/src/Construct_arrays.c,
+	  mc/3D/CitcomCU/trunk/src/Convection.c,
+	  mc/3D/CitcomCU/trunk/src/Drive_solvers.c,
+	  mc/3D/CitcomCU/trunk/src/Element_calculations.c,
+	  mc/3D/CitcomCU/trunk/src/General_matrix_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Geometry_cartesian.c,
+	  mc/3D/CitcomCU/trunk/src/Global_operations.c,
+	  mc/3D/CitcomCU/trunk/src/Instructions.c,
+	  mc/3D/CitcomCU/trunk/src/Nodal_mesh.c,
+	  mc/3D/CitcomCU/trunk/src/Output.c,
+	  mc/3D/CitcomCU/trunk/src/Pan_problem_misc_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Parallel_related.c,
+	  mc/3D/CitcomCU/trunk/src/Parsing.c,
+	  mc/3D/CitcomCU/trunk/src/Size_does_matter.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_conj_grad.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_multigrid.c,
+	  mc/3D/CitcomCU/trunk/src/Sphere_harmonics.c,
+	  mc/3D/CitcomCU/trunk/src/Stokes_flow_Incomp.c,
+	  mc/3D/CitcomCU/trunk/src/Topo_gravity.c,
+	  mc/3D/CitcomCU/trunk/src/Viscosity_structures.c,
+	  mc/3D/CitcomCU/trunk/src/element_definitions.h,
+	  mc/3D/CitcomCU/trunk/src/temperature_descriptions.h: Enforcing
+	  coding standards for indentation of C source code. Refer to
+	  src/.indent.pro for rules.
+
+2005-12-01 11:15  luis
+
+	* mc/3D/CitcomCU/trunk/src/Makefile: Added commented options to
+	  the variables CC, LinuxFLAGS, LinuxOPTIM Updated some of the
+	  comments and added a default rule that builds citcom.mpi
+
+2005-12-01 11:03  luis
+
+	* mc/3D/CitcomCU/trunk/src/input1: Adjusted indentation, and
+	  aligned comments in input1
+
+2005-12-01 10:34  luis
+
+	* mc/3D/CitcomCU/trunk/README: Fixed a couple of typos and added
+	  some clarifications.
+
+2005-10-26 20:28  luis
+
+	* mc/3D/CitcomCU/trunk/src/Parallel_related.c: Required argument
+	  (E) was missing from parallel_shuffle_*() function calls. The
+	  program crashed when compiled with -g, although somehow it
+	  worked with -O3
+
+2005-10-10 23:25  luis
+
+	* mc/3D/CitcomCU/trunk/src/Pan_problem_misc_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Parsing.c: For some reason, gcc
+	  complains about the output from strtok(). To resolve this, added
+	  (char *) casts to its output.
+
+2005-10-10 22:48  luis
+
+	* mc/3D/CitcomCU/trunk/src/input1: By default, set use_scratch to
+	  "local"
+
+2005-10-10 22:47  luis
+
+	* mc/3D/CitcomCU/trunk/src/input1: 
+
+2005-10-10 22:28  luis
+
+	* mc/3D/CitcomCU, mc/3D/CitcomCU/branches, mc/3D/CitcomCU/tags,
+	  mc/3D/CitcomCU/trunk, mc/3D/CitcomCU/trunk/AUTHORS,
+	  mc/3D/CitcomCU/trunk/COPYING, mc/3D/CitcomCU/trunk/README,
+	  mc/3D/CitcomCU/trunk/src,
+	  mc/3D/CitcomCU/trunk/src/Advection_diffusion.c,
+	  mc/3D/CitcomCU/trunk/src/Boundary_conditions.c,
+	  mc/3D/CitcomCU/trunk/src/Citcom.c,
+	  mc/3D/CitcomCU/trunk/src/Composition_adv.c,
+	  mc/3D/CitcomCU/trunk/src/Construct_arrays.c,
+	  mc/3D/CitcomCU/trunk/src/Convection.c,
+	  mc/3D/CitcomCU/trunk/src/Convection_variables.h,
+	  mc/3D/CitcomCU/trunk/src/Drive_solvers.c,
+	  mc/3D/CitcomCU/trunk/src/Element_calculations.c,
+	  mc/3D/CitcomCU/trunk/src/General_matrix_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Geometry_cartesian.c,
+	  mc/3D/CitcomCU/trunk/src/Global_operations.c,
+	  mc/3D/CitcomCU/trunk/src/Instructions.c,
+	  mc/3D/CitcomCU/trunk/src/Makefile,
+	  mc/3D/CitcomCU/trunk/src/Nodal_mesh.c,
+	  mc/3D/CitcomCU/trunk/src/Output.c,
+	  mc/3D/CitcomCU/trunk/src/Pan_problem_misc_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Parallel_related.c,
+	  mc/3D/CitcomCU/trunk/src/Parsing.c,
+	  mc/3D/CitcomCU/trunk/src/Phase_change.c,
+	  mc/3D/CitcomCU/trunk/src/Process_buoyancy.c,
+	  mc/3D/CitcomCU/trunk/src/Process_velocity.c,
+	  mc/3D/CitcomCU/trunk/src/Profiling.c,
+	  mc/3D/CitcomCU/trunk/src/Shape_functions.c,
+	  mc/3D/CitcomCU/trunk/src/Size_does_matter.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_conj_grad.c,
+	  mc/3D/CitcomCU/trunk/src/Solver_multigrid.c,
+	  mc/3D/CitcomCU/trunk/src/Sphere_harmonics.c,
+	  mc/3D/CitcomCU/trunk/src/Stokes_flow_Incomp.c,
+	  mc/3D/CitcomCU/trunk/src/Topo_gravity.c,
+	  mc/3D/CitcomCU/trunk/src/Viscosity_structures.c,
+	  mc/3D/CitcomCU/trunk/src/Zeros_of_J0_and_J1.h,
+	  mc/3D/CitcomCU/trunk/src/advection.h,
+	  mc/3D/CitcomCU/trunk/src/element_definitions.h,
+	  mc/3D/CitcomCU/trunk/src/global_defs.h,
+	  mc/3D/CitcomCU/trunk/src/input1,
+	  mc/3D/CitcomCU/trunk/src/temperature_descriptions.h,
+	  mc/3D/CitcomCU/trunk/src/viscosity_descriptions.h: Initial
+	  version from Shijie Zhong
+
