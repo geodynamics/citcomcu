@@ -543,7 +543,7 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 
 void element_residual(struct All_variables *E, int el, struct Shape_function PG, float **vel, float *field, float *fielddot, struct SOURCES Q0, double Eres[9], double rtf[4][9], float diff, float **BC, unsigned int *FLAGS)
 {
-	int i, j, a, k, node, nodes[4], d, aid, back_front, onedfns;
+	int i, j, a, k, node, nodes[5], d, aid, back_front, onedfns;
 	double Q;
 	double dT[9];
 	double tx1[9], tx2[9], tx3[9];
