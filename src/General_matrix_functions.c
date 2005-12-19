@@ -1409,16 +1409,13 @@ double determinant(double A[4][4], int n)
 	{
 	case 1:
 		return (A[1][1]);
-		break;
 	case 2:
 		return (A[1][1] * A[2][2] - A[1][2] * A[2][1]);
-		break;
 	case 3:
 		return (A[1][1] * (A[2][2] * A[3][3] - A[2][3] * A[3][2]) - A[1][2] * (A[2][1] * A[3][3] - A[2][3] * A[3][1]) + A[1][3] * (A[2][1] * A[3][2] - A[2][2] * A[3][1]));
-		break;
 	default:
-		return (1);
 /*		return(gen_determinant(A,n)); */
+		return 1;
 	}
 }
 
