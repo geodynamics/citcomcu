@@ -44,7 +44,7 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 #include <stdlib.h>				/* for "system" command */
-#include <strings.h>
+#include <string.h>
 
 void set_convection_defaults(struct All_variables *E)
 {
@@ -200,15 +200,16 @@ void convection_boundary_conditions(struct All_variables *E)
 void convection_initial_temperature(struct All_variables *E)
 {
 	int ll, mm, i, j, k, p, node, ii;
-	double temp, temp1, temp2, temp3, base, radius, radius2;
-	FILE *fp;
+	//double temp, temp1, temp2, temp3, base, radius, radius2;
+	//FILE *fp;
 	double x1, y1, z1, con, beta;
 
-	int noz2, nfz, in1, in2, in3, instance, nox, noy, noz;
-	char input_s[200], output_file[255];
-	float weight, para1, plate_velocity, delta_temp, age;
+	//int noz2, nfz, in1, in2, in3, instance, nox, noy, noz;
+	int noz2, nox, noy, noz;
+	//char input_s[200], output_file[255];
+	//float weight, para1, plate_velocity, delta_temp, age;
 
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 
 	noy = E->lmesh.noy;
 	noz = E->lmesh.noz;
@@ -324,7 +325,7 @@ void process_restart_tc(struct All_variables *E)
 
 	int node, i, j, k, p;
 	FILE *fp;
-	float temp1, temp2, temp3, *temp;
+	float temp1, temp2, *temp;
 	char input_s[200], output_file[255];
 
 	temp = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
@@ -463,10 +464,11 @@ void process_restart_tc(struct All_variables *E)
 
 void convection_initial_markers1(struct All_variables *E)
 {
-	int *element, el, i, j, k, p, node, ii, jj;
+	//int *element, el, i, j, k, p, node, ii, jj;
+	int *element, el, j, node;
 	double x, y, z, r, t, f, dX[4], dx, dr;
-	char input_s[100], output_file[255];
-	FILE *fp;
+	//char input_s[100], output_file[255];
+	//FILE *fp;
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
@@ -514,7 +516,7 @@ void convection_initial_markers1(struct All_variables *E)
 		{
 			x = (drand48() - 0.5) * 2.0;
 			y = drand48();
-//       y = (drand48()-0.5)*2.0;
+//			y = (drand48() - 0.5) * 2.0;
 			z = (drand48() - 0.5) * 2.0;
 			r = sqrt(x * x + y * y + z * z);
 			t = acos(z / r);
@@ -563,10 +565,12 @@ void convection_initial_markers1(struct All_variables *E)
 
 void convection_initial_markers(struct All_variables *E)
 {
-	int el, i, j, k, p, node, ii, jj;
-	double x, y, z, r, t, f, dX[4], dx, dr;
-	char input_s[100], output_file[255];
-	FILE *fp;
+	//int el, i, j, k, p, node, ii, jj;
+	int el, node;
+	//double x, y, z, r, t, f, dX[4], dx, dr;
+	double x, y, z, r, t, f, dX[4];
+	//char input_s[100], output_file[255];
+	//FILE *fp;
 
 	if(E->control.CART3D)
 	{
@@ -630,10 +634,10 @@ void convection_initial_markers(struct All_variables *E)
 void setup_plume_problem(struct All_variables *E)
 {
 	int i;
-	FILE *fp;
+	//FILE *fp;
+	//char output_file[255];
 
 	int l, noz;
-	char output_file[255];
 	double temp, temp1, time_scale, velo_scale;
 
 	noz = E->lmesh.noz;
@@ -704,20 +708,22 @@ void setup_plume_problem(struct All_variables *E)
 void PG_process(struct All_variables *E, int ii)
 {
 	float *P, *P2;
-	float visc[9];
+	//float visc[9];
 
-	int i, j, k, p, a1, nint, n, el;
-	int node, hnode;
-	int this_node, that_node;
+	//int i, j, k, p, a1, nint, n, el;
+	int i, j, n, el;
+	//int node, hnode;
+	//int this_node, that_node;
 
-	struct Shape_function GN;
-	struct Shape_function_dx GNx;
-	struct Shape_function_dA dOmega;
+	//struct Shape_function GN;
+	//struct Shape_function_dx GNx;
+	//struct Shape_function_dA dOmega;
 
 	const int vpts = vpoints[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
 
-	float x1, x2, int1, int2;
+	//float x1, x2, int1, int2;
+	float int1, int2;
 
 	P = (float *)malloc((1 + E->lmesh.nno) * sizeof(double));
 	P2 = (float *)malloc((1 + E->lmesh.nel) * vpts * sizeof(double));

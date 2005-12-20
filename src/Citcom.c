@@ -43,6 +43,7 @@
 
 #include <math.h>
 #include <malloc.h>
+#include <unistd.h>
 #include <sys/types.h>
 
 #include "element_definitions.h"
@@ -52,14 +53,10 @@ extern int Emergency_stop;
 
 int main(int argc, char **argv)
 {
-	int k, *temp;
+	struct All_variables E;
 	double time, initial_time, start_time;
 
-	struct All_variables E;
-
-/*
-  parallel_process_initilization(&E,argc,argv); 
-*/
+/*	parallel_process_initialization(&E,argc,argv); */
 
 	E.parallel.me = 0;
 	E.parallel.nproc = 1;

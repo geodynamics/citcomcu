@@ -60,9 +60,8 @@ static float xxsh[5][3] = {  {0.0,  0.0,  0.0},
 
 void Runge_Kutta(struct All_variables *E, float *C, float *V[4], int on_off)
 {
+	int i;
 	double temp1, temp2, temp3;
-
-	int i, j;
 
 	/*   predicted velocity Vpred at predicted marker positions at t+dt  */
 	velocity_markers(E, V, on_off);
@@ -108,7 +107,7 @@ void Runge_Kutta(struct All_variables *E, float *C, float *V[4], int on_off)
 
 void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 {
-	int i, j;
+	int i;
 	double temp1, temp2, temp3;
 
 	/*   velocity VO at t and x=XMC  */
@@ -150,9 +149,10 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
  ================================================  */
 void transfer_markers_processors(struct All_variables *E, int on_off)
 {
-	int i, j, k1, k2, k3, proc, neighbor, no_transferred, no_received;
-	FILE *fp;
-	char output_file[255];
+	//FILE *fp;
+	//char output_file[255];
+	int i, proc, neighbor, no_transferred, no_received;
+
 	static int been = 0;
 	static int markers;
 
@@ -273,7 +273,9 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 
 void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
-	int nsd2, ii, jj, i, j, k, kk, neighbor, no_trans1;
+	int i, j;
+	int ii, jj, kk;
+	int nsd2, neighbor, no_trans1;
 
 	nsd2 = E->mesh.nsd * 2;
 
@@ -467,15 +469,15 @@ int locate_processor(struct All_variables *E, double XMC1, double XMC2, double X
 void get_C_from_markers(struct All_variables *E, float *C)
 {
 	int el, i, imark, j, node;
-	float C1, temp3, temp1, temp2, temp0;
+	float temp3, temp1, temp0;
 	static int been_here = 0;
 	static int *element[3];
 
-	const int elx = E->lmesh.elx;
-	const int elz = E->lmesh.elz;
-	const int ely = E->lmesh.ely;
-	const int nox = E->lmesh.nox;
-	const int noz = E->lmesh.noz;
+	//const int elx = E->lmesh.elx;
+	//const int elz = E->lmesh.elz;
+	//const int ely = E->lmesh.ely;
+	//const int nox = E->lmesh.nox;
+	//const int noz = E->lmesh.noz;
 	const int nno = E->lmesh.nno;
 	const int nel = E->lmesh.nel;
 	const int dims = E->mesh.nsd;
@@ -566,11 +568,15 @@ void element_markers(struct All_variables *E, int con)
 /* ================================================ */
 void velocity_markers(struct All_variables *E, float *V[4], int con)
 {
-	FILE *fp0;
-	char filename1[100];
-	int eln, elo, i, j, el, n1, n2, n3, n4;
-	double area, XMCold[4], dX[4], weigh1, weigh2, weigh3, weigh4, weigh5, weigh6, weigh7, weigh8;
-	static int onf = 0;
+	//FILE *fp0;
+	//char filename1[100];
+	//int eln, elo, i, j, el, n1, n2, n3, n4;
+
+	int i;
+	int el;
+	double area, dX[4], weigh1, weigh2, weigh3, weigh4, weigh5, weigh6, weigh7, weigh8;
+
+	//static int onf = 0;
 	static int been_here = 0;
 	static double dx, dy;
 
@@ -580,10 +586,9 @@ void velocity_markers(struct All_variables *E, float *V[4], int con)
 		dy = (E->XP[2][E->lmesh.noy] - E->XP[2][1]) / E->lmesh.ely;
 	}
 
-/*
-  sprintf(filename1,"markers%d.%d",E->advection.timesteps,onf);
-  fp0=fopen(filename1,"w"); 
-  onf=(onf==0)?1:0;
+/*	sprintf(filename1,"markers%d.%d",E->advection.timesteps,onf);
+	fp0 = fopen(filename1,"w"); 
+	onf = (onf == 0) ? 1 : 0;
 */
 
 /*  el can also be obtained from CElement[i] and dX can then be
@@ -656,7 +661,10 @@ for 2D, we do not want to implement this yet
 
 int get_element(struct All_variables *E, double XMC1, double XMC2, double XMC3, double dX[4])
 {
-	int done, i, i1, i2, ii, j, j1, j2, jj, el;
+	int el;
+	int i, i1, j1;
+	//int done, i, i1, i2, ii, j, j1, j2, jj, el;
+
 	const int nox = E->lmesh.nox;
 	const int noy = E->lmesh.noy;
 	const int noz = E->lmesh.noz;
@@ -723,7 +731,7 @@ int get_element(struct All_variables *E, double XMC1, double XMC2, double XMC3, 
 
 int in_the_domain(struct All_variables *E, double r, double t, double f)
 {
-	int done, i;
+	int done;
 	const int nno = E->lmesh.nno;
 
 	done = 0;
@@ -747,7 +755,8 @@ int in_the_domain(struct All_variables *E, double r, double t, double f)
 
 float area_of_4node1(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
-	float temp1, temp2, area;
+	float area = 0.0;
+	float temp1, temp2;
 
 	temp1 = 0.5 * (x1 + x2);
 	temp2 = 0.5 * (y1 + y2);

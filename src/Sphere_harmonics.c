@@ -145,11 +145,13 @@ void set_sphere_harmonics(struct All_variables *E)
 
 void sphere_harmonics_layer(struct All_variables *E, float **T, float *sphc, float *sphs, int iprint, char *filen)
 {
-	FILE *fp;
-	char output_file[255];
-	int i, node, j, ll, mm, printt, proc_loc;
-	float minx, maxx, t, f, rad;
-	static int been_here = 0;
+	//FILE *fp;
+	//char output_file[255];
+	//int i, node, j, ll, mm, printt, proc_loc;
+	int printt, proc_loc;
+	//float minx, maxx, t, f, rad;
+	float minx, maxx, rad;
+	//static int been_here = 0;
 	float *TG;
 
 	rad = 180.0 / M_PI;
@@ -190,10 +192,11 @@ void sphere_harmonics_layer(struct All_variables *E, float **T, float *sphc, flo
 
 void sphere_interpolate(struct All_variables *E, float **T, float *TG)
 {
-	int ii, jj, es, i, j, m, el, node;
-	double x[4], t, f;
+	//int ii, jj, es, i, j, m, el, node;
+	int i, j, node;
+	//double x[4], t, f;
 
-	const int ends = 4;
+	//const int ends = 4;
 
 	TG[0] = 0.0;
 	for(i = 1; i <= E->sphere.nox; i++)
@@ -215,9 +218,10 @@ void sphere_interpolate(struct All_variables *E, float **T, float *TG)
 void sphere_expansion(struct All_variables *E, float *TG, float *sphc, float *sphs)
 {
 	int p, i, j, es, mm, ll;
-	double temp, area, t, f;
+	//double temp, area, t, f;
+	double temp, area;
 	const double pt25 = 0.25;
-	static int been_here = 0;
+	//static int been_here = 0;
 
 	for(i = 0; i < E->sphere.hindice; i++)
 	{
@@ -261,8 +265,9 @@ void sphere_expansion(struct All_variables *E, float *TG, float *sphc, float *sp
  /* =========================================================== */
 void inv_sphere_harmonics(struct All_variables *E, float *sphc, float *sphs, float *TG, int proc_loc)
 {
-	int k, ll, mm, node, i, j, p, noz, snode;
-	float t1, f1, rad;
+	//int k, ll, mm, node, i, j, p, noz, snode;
+	int ll, mm, node, i, j, p;
+	//float t1, f1, rad;
 
 	if(E->parallel.me_loc[3] == proc_loc)
 	{

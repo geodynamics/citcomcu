@@ -201,11 +201,13 @@ double pselfdot(struct All_variables *E, double *A)
 
 double vdot(struct All_variables *E, double *A, double *B, int level)
 {
-	double prod, mprod[1];
-	int i, incx = 1;
+	//double prod, mprod[1];
+	double prod;
+	//int i, incx = 1;
+	int i;
 
-	char trans = 'N';
-	double alpha = 1.0;
+	//char trans = 'N';
+	//double alpha = 1.0;
 
 	const int n = E->mesh.NEQ[level];
 
@@ -513,21 +515,18 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F, double acc, int
 	return (valid);
 }
 
-double multi_grid(
-	struct All_variables *E,
-	double *d1,
-	double *F,
-	double *Au,
-	double acc,
-	int hl						/* higher level of two */
-)
+/* multi_grid
+ * 	hl	- higher level of two
+ */
+double multi_grid(struct All_variables *E, double *d1, double *F, double *Au, double acc, int hl)
 {
 	double residual, AudotAu;
 	int lev, dlev, ulev, i, j, Vn, Vnmax, ic, cycles;
-	double residuaa, alpha, beta;
+	//double residuaa, alpha, beta;
+	double alpha;
 
-	FILE *fp;
-	char filename[1000];
+	//FILE *fp;
+	//char filename[1000];
 
 	const int levmin = E->mesh.levmin;
 	const int levmax = E->mesh.levmax;
@@ -658,10 +657,11 @@ double multi_grid(
 double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, double acc, int *cycles, int level)
 {
 	static double *r0, *r1, *r2;
-	static double *z0, *z1, *z2;
+	//static double *z0, *z1, *z2;
+	static double *z0, *z1;
 	static double *p1, *p2;
 	static double *Ap;
-	static double *BI;
+	//static double *BI;
 	static double *shuffle;
 	static int been_here = 0;
 
@@ -669,7 +669,7 @@ double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, dou
 	double residual;
 	double alpha, beta, dotprod, dotr1z1, dotr0z0;
 
-	double time;
+	//double time;
 
 	const int mem_lev = E->mesh.levmax;
 	const int high_neq = E->lmesh.NEQ[level];
@@ -774,13 +774,15 @@ void jacobi(struct All_variables *E, double *d0, double *F, double *Ad, double a
 	static int been_here = 0;
 
 	int count, steps;
-	int i, j, k, eqn1, eqn2, eqn3;
+	//int i, j, k, eqn1, eqn2, eqn3;
+	int i, j, eqn1, eqn2, eqn3;
 	int *C;
 	double U1, U2, U3;
 
 	higher_precision *B1, *B2, *B3;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int neq = E->lmesh.NEQ[level];
 	const int max_eqn = max_eqn_interaction[dims];
 
@@ -878,16 +880,20 @@ void jacobi(struct All_variables *E, double *d0, double *F, double *Ad, double a
 
 void element_gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
-	int count, i, j, k, l, m, ns, nc, d, steps, loc;
+	//int count, i, j, k, l, m, ns, nc, d, steps, loc;
+	int count, i, j, steps;
 	int p1, p2, p3, q1, q2, q3;
-	int e, eq, node, node1;
-	int element, eqn1, eqn2, eqn3, eqn11, eqn12, eqn13;
+	//int e, eq, node, node1;
+	int e, node, node1;
+	//int element, eqn1, eqn2, eqn3, eqn11, eqn12, eqn13;
+	int eqn1, eqn2, eqn3, eqn11, eqn12, eqn13;
 
-	double U1[24], AD1[24], F1[24];
-	double w1, w2, w3;
-	double w11, w12, w13;
+	//double U1[24], AD1[24], F1[24];
+	//double w1, w2, w3;
+	//double w11, w12, w13;
 	double w[24];
-	static double *Ad0, *dd, *elt_k;
+	//static double *Ad0, *dd, *elt_k;
+	static double *dd, *elt_k;
 	static int *vis, been_here = 0;
 
 	const int dims = E->mesh.nsd;
@@ -1057,25 +1063,29 @@ void element_gauss_seidel(struct All_variables *E, double *d0, double *F, double
 void gauss_seidel1(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 
-	int count, i, j, k, l, m, ns, steps;
+	//int count, i, j, k, l, m, ns, steps;
+	int count, i, j, steps;
 	int *C;
-	int eqn1, eqn2, eqn3;
+	//int eqn1, eqn2, eqn3;
+	int eqn1, eqn2;
 
-	double UU, U1, U2, U3;
-	static double zeroo = 0.0;
+	//double UU, U1, U2, U3;
+	double UU;
+	static double zeroo = 0.0; //???
 
-	higher_precision node_k[4][81];
-	higher_precision *temp1, *temp, *B1, *B2, *B3;
+	//higher_precision node_k[4][81];
+	//higher_precision *temp1, *temp, *B1, *B2, *B3;
+	higher_precision *temp, *B1, *B2;
 
 
 	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
-	const int n = loc_mat_size[E->mesh.nsd];
+	//const int ends = enodes[dims];
+	//const int n = loc_mat_size[E->mesh.nsd];
 	const int neq = E->lmesh.NEQ[level];
 	const int nno = E->lmesh.NNO[level];
-	const int nox = E->lmesh.NOX[level];
-	const int noz = E->lmesh.NOY[level];
-	const int noy = E->lmesh.NOZ[level];
+	//const int nox = E->lmesh.NOX[level];
+	//const int noz = E->lmesh.NOY[level];
+	//const int noy = E->lmesh.NOZ[level];
 	const int max_eqn = max_eqn_interaction[dims];
 
 	steps = *cycles;
@@ -1143,27 +1153,29 @@ void gauss_seidel1(struct All_variables *E, double *d0, double *F, double *Ad, d
 void gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, double acc, int *cycles, int level, int guess)
 {
 
-	int count, i, j, k, l, m, ns, steps;
+	//int count, i, j, k, l, m, ns, steps;
+	int count, i, j, steps;
 	int *C;
 	int eqn1, eqn2, eqn3;
 
-	double residual, *r, UU, U1, U2, U3;
+	//double residual, *r, UU, U1, U2, U3;
+	double UU;
 	static double zeroo = 0.0;
 	static int been_here = 0;
 	static higher_precision *temp1, *temp;
 
-	higher_precision node_k[4][81];
+	//higher_precision node_k[4][81];
 	higher_precision *B1, *B2, *B3;
 
 
 	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
-	const int n = loc_mat_size[E->mesh.nsd];
+	//const int ends = enodes[dims];
+	//const int n = loc_mat_size[E->mesh.nsd];
 	const int neq = E->lmesh.NEQ[level];
 	const int nno = E->lmesh.NNO[level];
-	const int nox = E->lmesh.NOX[level];
-	const int noz = E->lmesh.NOY[level];
-	const int noy = E->lmesh.NOZ[level];
+	//const int nox = E->lmesh.NOX[level];
+	//const int noz = E->lmesh.NOY[level];
+	//const int noy = E->lmesh.NOZ[level];
 	const int max_eqn = max_eqn_interaction[dims];
 
 	steps = *cycles;
@@ -1370,7 +1382,8 @@ void print_elt_k(struct All_variables *E, double a[24 * 24])
 double cofactor(double A[4][4], int i, int j, int n)
 {
 	int k, l, p, q;
-	static int been_here = 0;
+	//static int been_here = 0;
+	
 	double B[4][4];				/* because of recursive behaviour of det/cofac, need to use
 								 * new copy of B at each 'n' level of this routine */
 
@@ -1394,10 +1407,7 @@ double cofactor(double A[4][4], int i, int j, int n)
 		p++;
 	}
 
-
 	return (epsilon[i][j] * determinant(B, n - 1));
-
-
 }
 
 

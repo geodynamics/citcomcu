@@ -54,7 +54,6 @@ void cg_allocate_vars(struct All_variables *E)
 
 void assemble_forces_iterative(struct All_variables *E)
 {
-	int i;
 	assemble_forces(E, 0);
 	strip_bcs_from_residual(E, E->F, E->mesh.levmax);
 	return;

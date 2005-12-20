@@ -49,25 +49,26 @@ extern int Emergency_stop;
 
 void solve_constrained_flow_iterative(struct All_variables *E)
 {
-	double *D1;
-	double *u;
-	double *R, *Bp;
+	//double *D1;
+	//double *u;
+	//double *R, *Bp;
 	double residual_ddash;
-	double vmag;
+	//double vmag;
 
 	static int been_here = 0;
 
-	int steps, cycles;
-	int i, j, k, doff, vel_cycles_previous, vel_calls_previous;
+	//int steps, cycles;
+	int cycles;
+	//int i, j, k, doff, vel_cycles_previous, vel_calls_previous;
 
 	double time;
 
-	const int npno = E->lmesh.npno;
-	const int gnpno = E->mesh.npno;
-	const int nno = E->lmesh.nno;
-	const int dims = E->mesh.nsd;
-	const int neq = E->lmesh.neq;
-	const int gneq = E->mesh.neq;
+	//const int npno = E->lmesh.npno;
+	//const int gnpno = E->mesh.npno;
+	//const int nno = E->lmesh.nno;
+	//const int dims = E->mesh.nsd;
+	//const int neq = E->lmesh.neq;
+	//const int gneq = E->mesh.neq;
 
 	time = CPU_time0();
 
@@ -91,22 +92,27 @@ void solve_constrained_flow_iterative(struct All_variables *E)
 
 float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F, double imp, int *steps_max)
 {
-	int i, j, k, ii, count, convergent, valid, problems, lev, lev_low, npno, neq, steps;
+	//int i, j, k, ii, count, convergent, valid, problems, lev, lev_low, npno, neq, steps;
+	int i, j, count, convergent, valid, problems, lev, npno, neq;
 	int gnpno, gneq;
 
 	static int been_here = 0;
-	double *u;
-	static double *p1, *r1, *r0, *r2, *z0, *z1, *s1, *s2, *Ah, *u1;
-	double *shuffle, *R;
+	//double *u;
+	//static double *p1, *r1, *r0, *r2, *z0, *z1, *s1, *s2, *Ah, *u1;
+	static double *r1, *r0, *r2, *z0, *z1, *s1, *s2, *Ah, *u1;
+	//double *shuffle, *R;
+	double *shuffle;
 	double alpha, delta, s2dotAhat, r0dotr0, r1dotz1;
-	double residual, initial_residual, last_residual, res_magnitude, v_res;
+	//double residual, initial_residual, last_residual, res_magnitude, v_res;
+	double residual, initial_residual, res_magnitude, v_res;
 
 	double time0, time;
 	static double timea;
-	float dpressure, dvelocity, tole_comp;
+	//float dpressure, dvelocity, tole_comp;
+	float dpressure, dvelocity;
 
-	const int dims = E->mesh.nsd;
-	const int n = loc_mat_size[E->mesh.nsd];
+	//const int dims = E->mesh.nsd;
+	//const int n = loc_mat_size[E->mesh.nsd];
 
 	npno = E->lmesh.npno;
 	neq = E->lmesh.neq;
@@ -292,11 +298,12 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
 void v_from_vector(struct All_variables *E, float **V, double *F)
 {
-	int node, d;
-	unsigned int type;
+	int node;
+	//int node, d;
+	//unsigned int type;
 
 	const int nno = E->lmesh.nno;
-	const int dofs = E->mesh.dof;
+	//const int dofs = E->mesh.dof;
 
 	for(node = 1; node <= nno; node++)
 	{

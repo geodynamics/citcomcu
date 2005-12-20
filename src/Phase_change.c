@@ -42,7 +42,8 @@
 
 void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4)
 {
-	int i, j, k, n, ns, m;
+	//int i, j, k, n, ns, m;
+	int i, j, k, n, ns;
 	double e_pressure, pt5, one, temp1;
 	float *Xtmp[4];
 	static int been_here = 0;

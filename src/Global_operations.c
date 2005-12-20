@@ -54,9 +54,8 @@
 
 void remove_horiz_ave(struct All_variables *E, float *X, float *H, int store_or_not)
 {
-	int i, j, k, n, ln, nox, noz, noy;
-
-	const int dims = E->mesh.nsd;
+	//int i, j, k, n, ln, nox, noz, noy;
+	int i, j, k, n, nox, noz, noy;
 
 	nox = E->lmesh.nox;
 	noy = E->lmesh.noy;
@@ -65,8 +64,8 @@ void remove_horiz_ave(struct All_variables *E, float *X, float *H, int store_or_
 	return_horiz_ave(E, X, H);
 
 /*
-    for(i=1;i<=noz;i++)
-       fprintf(E->fp,"%d %.5e ave\n",i,H[i]);
+	for(i = 1; i <= noz; i++)
+		fprintf(E->fp, "%d %.5e ave\n", i, H[i]);
 */
 
 	for(i = 1; i <= noz; i++)
@@ -82,10 +81,11 @@ void remove_horiz_ave(struct All_variables *E, float *X, float *H, int store_or_
 
 void return_horiz_sum(struct All_variables *E, float *X, float *H, int nn)
 {
-	const int dims = E->mesh.nsd;
-	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
-	int lnode[5], sizeofH, noz2, iroot;
-	float *Have, *temp;
+	//const int dims = E->mesh.nsd;
+	//int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
+	int i, j, d, nproc;
+	//int lnode[5], sizeofH, noz2, iroot;
+	//float *Have, *temp;
 
 	int *processors;
 
@@ -132,10 +132,12 @@ void return_horiz_sum(struct All_variables *E, float *X, float *H, int nn)
 
 void return_horiz_ave(struct All_variables *E, float *X, float *H)
 {
-	const int dims = E->mesh.nsd;
-	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
-	int lnode[5], sizeofH, noz2, iroot;
-//  float *Have,*temp;
+	//const int dims = E->mesh.nsd;
+	//int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, j1, j2, i1, i2, k1, k2, nproc;
+	int i, j, k, d, nint, noz, nox, noy, el, elz, elx, ely, nproc;
+	//int lnode[5], sizeofH, noz2, iroot;
+	int lnode[5], noz2;
+//	float *Have,*temp;
 	double *Have, *temp;
 	struct Shape_function1 M;
 	struct Shape_function1_dA dGamma;
@@ -251,14 +253,15 @@ void return_horiz_ave(struct All_variables *E, float *X, float *H)
 
 float return_bulk_value(struct All_variables *E, float *Z, float z_thld, int average)
 {
-	int i, j, k, n, el, elx, ely, elz, i1, i2, j1, j2, k1, k2;
+	//int i, j, k, n, el, elx, ely, elz, i1, i2, j1, j2, k1, k2;
+	int i, j, n, el, elx, ely, elz, i1, j1, k1;
 	float integral;
-//    float volume,volume1,integral1,integral0;
+//	float volume,volume1,integral1,integral0;
 	double volume, volume1, integral1, integral0;
 
-	struct Shape_function GN;
-	struct Shape_function_dx GNx;
-	struct Shape_function_dA dOmega;
+	//struct Shape_function GN;
+	//struct Shape_function_dx GNx;
+	//struct Shape_function_dA dOmega;
 
 	const int vpts = vpoints[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
@@ -369,7 +372,8 @@ float global_tdot(struct All_variables *E, float *A, float *B, int lev)
 float Tmax(struct All_variables *E, float *T)
 {
 	float temp, temp1;
-	int i, m;
+	//int i, m;
+	int i;
 
 	temp = -10.0;
 	for(i = 1; i <= E->lmesh.nno; i++)
@@ -577,7 +581,7 @@ void gather_TG_to_me0(struct All_variables *E, float *TG)
 	const float e_16 = 1.e-16;
 
 	MPI_Status status[100];
-	MPI_Status status1;
+	//MPI_Status status1;
 	MPI_Request request[100];
 
 	if(E->parallel.nprocxy == 1)
@@ -643,15 +647,16 @@ void gather_TG_to_me0(struct All_variables *E, float *TG)
 /* ==========================================================  */
 void propogator_down_process(struct All_variables *E, float *Tadi)
 {
-	int i, j, noz, idb, ii, to_proc, from_proc, mst, me;
+	//int i, j, noz, idb, ii, to_proc, from_proc, mst, me;
+	int i, j, noz, idb, to_proc, from_proc, mst, me;
 	float temp;
 
 	static float *RG[20], *SD;
 	static int been_here = 0;
-	const float e_16 = 1.e-16;
+	//const float e_16 = 1.e-16;
 
 	MPI_Status status[100];
-	MPI_Status status1;
+	//MPI_Status status1;
 	MPI_Request request[100];
 
 	if(E->parallel.nprocz == 1)

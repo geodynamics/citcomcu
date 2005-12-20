@@ -66,16 +66,18 @@ void heat_flux(struct All_variables *E)
 	static float *flux;
 	static float *inp, *outp;
 	static int been_here = 0;
-	double T1[9], VZ[9], u[9], T[9], dTdz[9], area, uT, uT_adv, uT_adv_s;
+	//double T1[9], VZ[9], u[9], T[9], dTdz[9], area, uT, uT_adv, uT_adv_s;
+	double T1[9], VZ[9], u[9], T[9], dTdz[9], uT, uT_adv, uT_adv_s;
 	double diff, tempb, tempt, hfb, hft, areab, areat;
 
-	struct Shape_function GN;
-	struct Shape_function_dA dOmega;
-	struct Shape_function_dx GNx;
+	//struct Shape_function GN;
+	//struct Shape_function_dA dOmega;
+	//struct Shape_function_dx GNx;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int vpts = vpoints[dims];
-	const int ppts = ppoints[dims];
+	//const int ppts = ppoints[dims];
 	const int ends = enodes[dims];
 	const int nno = E->lmesh.nno;
 	const int lev = E->mesh.levmax;
@@ -206,21 +208,23 @@ void heat_flux(struct All_variables *E)
 
 void heat_flux1(struct All_variables *E)
 {
-	int e, i, j, node, lnode;
+	//int e, i, j, node, lnode;
+	int e, i, j;
 	float *mass, *flux, *SU, *RU, *inp, *outp;
 	float VZ[9], u[9], T[9], dTdz[9], area, uT;
 	double tempb, tempt, hfb, hft, areab, areat;
 
-	struct Shape_function GN;
-	struct Shape_function_dA dOmega;
-	struct Shape_function_dx GNx;
+	//struct Shape_function GN;
+	//struct Shape_function_dA dOmega;
+	//struct Shape_function_dx GNx;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int vpts = vpoints[dims];
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int vpts = vpoints[dims];
 	const int ppts = ppoints[dims];
 	const int ends = enodes[dims];
 	const int nno = E->lmesh.nno;
-	const int lev = E->mesh.levmax;
+	//const int lev = E->mesh.levmax;
 
 	mass = (float *)malloc((1 + nno) * sizeof(float));
 	flux = (float *)malloc((1 + nno) * sizeof(float));
@@ -338,25 +342,29 @@ void heat_flux1(struct All_variables *E)
 
 void plume_buoyancy_flux(struct All_variables *E)
 {
-	int d, nint, el, e, i, j, k, node, lnode[5];
-	float *mass, *flux, *SU, *RU, *inp, *outp;
-	float VZ[9], u[9], T[9], dTdz[9], area, uT;
+	//int d, nint, el, e, i, j, k, node, lnode[5];
+	int d, nint, el, i, j, k, lnode[5];
+	//float *mass, *flux, *SU, *RU, *inp, *outp;
+	float *inp, *outp;
+	//float VZ[9], u[9], T[9], dTdz[9], area, uT;
+	float area, uT;
 
 	struct Shape_function1 M;
 	struct Shape_function1_dA dGamma;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int vpts = vpoints[dims];
-	const int ppts = ppoints[dims];
-	const int ends = enodes[dims];
-	const int nno = E->lmesh.nno;
+	//const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int vpts = vpoints[dims];
+	//const int ppts = ppoints[dims];
+	//const int ends = enodes[dims];
+	//const int nno = E->lmesh.nno;
 	const int noz = E->lmesh.noz;
-	const int noy = E->lmesh.noy;
+	//const int noy = E->lmesh.noy;
 	const int nox = E->lmesh.nox;
 	const int elz = E->lmesh.elz;
 	const int ely = E->lmesh.ely;
 	const int elx = E->lmesh.elx;
-	const int lev = E->mesh.levmax;
+	//const int lev = E->mesh.levmax;
 
 	inp = (float *)malloc((6) * sizeof(float));
 	outp = (float *)malloc((6) * sizeof(float));

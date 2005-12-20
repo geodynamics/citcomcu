@@ -78,13 +78,14 @@ void process_new_velocity(struct All_variables *E, int ii)
 
 void get_surface_velo(struct All_variables *E, float *SV)
 {
+	//FILE *fp;
+	//char output_file[255];
 
-	int el, els, i, m, node, lev;
-	char output_file[255];
-	FILE *fp;
+	//int el, els, i, m, node, lev;
+	int i, m, node, lev;
 
-	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
+	//const int dims = E->mesh.nsd;
+	//const int ends = enodes[dims];
 	const int nno = E->lmesh.nno;
 
 	lev = E->mesh.levmax;
@@ -159,7 +160,8 @@ void get_surf_stress(struct All_variables *E, float *SXX, float *SYY, float *SZZ
 
 void averages(struct All_variables *E)
 {
-	int lev, i, j, el;
+	//int lev, i, j, el;
+	int lev, i;
 	float *temp, z_thld;
 
 	lev = E->mesh.levmax;

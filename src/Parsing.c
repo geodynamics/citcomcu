@@ -40,11 +40,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <sys/types.h>
-#ifndef __sunos__
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 #include "global_defs.h"
 
 #define MAXLINE		1024		/* max length of line in input file */
@@ -194,6 +190,7 @@ void shutdown_parser(struct All_variables *E)
 }
 
 /* add an entry to arglist, expanding memory if necessary */
+/* FIXME: return type should be void */
 int add_to_parameter_list(register char *name, register char *value)
 {
 	struct arglist *alptr;
@@ -238,6 +235,8 @@ int add_to_parameter_list(register char *name, register char *value)
 		*ptr++ = *value;
 	while(*value++);
 	NLIST++;
+
+	return 0; /* successfully added value to list */
 }
 
 int compute_parameter_hash_table(register char *s)
@@ -329,10 +328,12 @@ int input_int(char *name, int *value, char *interpret)
 /* in the case of a string default=NULL forces input */
 int input_string(char *name, char *value, char *Default)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
-	int h, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, hno, hyes, found;
+	int h, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 	int essential;
 
 
@@ -377,10 +378,12 @@ int input_string(char *name, char *value, char *Default)
 /* supports name=on/off too */
 int input_boolean (char *name, int *value, char *interpret)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
-	int h, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, hno, hyes, found;
+	int h, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	int essential;
 	double *Default, *minvalue, *maxvalue;
@@ -414,6 +417,7 @@ int input_boolean (char *name, int *value, char *interpret)
 	if(!found)
 	{
 		if(VERBOSE)
+		{
 			if(Default != NULL)
 				fprintf(stderr, "%25s: (boolean int) = not found (%d) \n", name, (int)(*Default));
 			else
@@ -425,8 +429,8 @@ int input_boolean (char *name, int *value, char *interpret)
 					fprintf(stderr, "%d\n", *value);
 				}
 			}
-
-		return (0);
+		}
+		return 0;
 	}
 
 
@@ -445,11 +449,13 @@ int input_boolean (char *name, int *value, char *interpret)
 
 int input_float(char *name, float *value, char *interpret)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 
-	int h, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, hno, hyes, found;
+	int h, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 	int exists, essential;
 	double *Default, *minvalue, *maxvalue;
 
@@ -512,11 +518,13 @@ int input_float(char *name, float *value, char *interpret)
 
 int input_double(char *name, double *value, char *interpret)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 
-	int h, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, hno, hyes, found;
+	int h, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	int exists, essential;
 	double *Default, *minvalue, *maxvalue;
@@ -582,12 +590,14 @@ int input_double(char *name, double *value, char *interpret)
 /* value is a comma-separated list of ints */
 int input_int_vector(char *name, int number, int *value)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 	char control_string[500];
 
-	int h, i, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, i, hno, hyes, found;
+	int h, i, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	if(DESCRIBE)
 		fprintf(stderr, "input_int_vector: searching for %s (%d times)\n", name, number);
@@ -609,7 +619,7 @@ int input_int_vector(char *name, int number, int *value)
 	/* now interpret vector */
 
 	if(!found)
-		return (0);
+		return 0;
 
 	for(h = 0; h < number; h++)
 	{
@@ -631,12 +641,14 @@ int input_int_vector(char *name, int number, int *value)
 /* value is a comma-separated list of ints */
 int input_char_vector(char *name, int number, char *value)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 	char control_string[500];
 
-	int h, i, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, i, hno, hyes, found;
+	int h, i, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	if(DESCRIBE)
 		fprintf(stderr, "input_char_vector: searching for %s (%d times)\n", name, number);
@@ -678,12 +690,14 @@ int input_char_vector(char *name, int number, char *value)
 /* value is a comma-separated list of floats */
 int input_float_vector(char *name, int number, float *value)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 	char control_string[500];
 
-	int h, i, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, i, hno, hyes, found;
+	int h, i, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	if(0 == number)
 		return (0);
@@ -728,12 +742,14 @@ int input_float_vector(char *name, int number, float *value)
 /* value is a comma-separated list of doubles */
 int input_double_vector(char *name, int number, double *value)
 {
-	char *sptr;
+	//char *sptr;
 	struct arglist *alptr;
 	char control_string[500];
 
-	int h, i, hno, hyes, found;
-	char line[MAXLINE], *str, *noname;
+	//int h, i, hno, hyes, found;
+	int h, i, found;
+	//char line[MAXLINE], *str, *noname;
+	char *str;
 
 	if(DESCRIBE)
 		fprintf(stderr, "input_double_vector: searching for %s (%d times)\n", name, number);

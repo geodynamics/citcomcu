@@ -122,11 +122,12 @@ void PG_timestep_particle(struct All_variables *E)
 {
 	float T_interior1;
 
-	int iredo, i, j, psc_pass, count, steps;
+	//int iredo, i, j, psc_pass, count, steps;
+	int iredo, i, psc_pass, count;
 
 	float *DTdot, *Tdot1, *T1, T_maxvaried;
 
-	static int loops_since_new_eta = 0;
+	//static int loops_since_new_eta = 0;
 	static int been_here = 0;
 	static int on_off = 0;
 
@@ -239,11 +240,12 @@ void PG_timestep(struct All_variables *E)
 {
 	float T_interior1;
 
-	int iredo, i, j, psc_pass, count, steps;
+	//int iredo, i, j, psc_pass, count, steps;
+	int iredo, i, psc_pass, count;
 
 	float *DTdot, *Tdot1, *T1, T_maxvaried;
 
-	static int loops_since_new_eta = 0;
+	//static int loops_since_new_eta = 0;
 	static int been_here = 0;
 
 	DTdot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
@@ -390,7 +392,7 @@ void pg_solver(struct All_variables *E, float *T, float *Tdot, float *DTdot, flo
 	struct Shape_function PG;
 
 	const int dims = E->mesh.nsd;
-	const int dofs = E->mesh.dof;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 
 	for(i = 1; i <= E->lmesh.nno; i++)
@@ -437,23 +439,26 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 	int i, j;
 	int *ienmatrix;
 
-	double xsi1, xsi2, xsi3;
+	//double xsi1, xsi2, xsi3;
 	double uc1, uc2, uc3;
-	double aa1, aa2, aa3;
-	double ah1, ah2, ah3;
+	//double aa1, aa2, aa3;
+	//double ah1, ah2, ah3;
 	double size1, size2, size3;
-	double neg1, neg2, neg3;
+	//double neg1, neg2, neg3;
 	double u1, u2, u3;
-	double adiff, dx1, dx2, dx3, uxse, ueta, ufai, xse, eta, fai;
+	//double adiff, dx1, dx2, dx3, uxse, ueta, ufai, xse, eta, fai;
+	double adiff, uxse, ueta, ufai, xse, eta, fai;
 
-	double twodiff, prod, prod1;
+	//double twodiff, prod, prod1;
+	double twodiff, prod1;
 
-	double K, unorm;
+	//double K, unorm;
+	double unorm;
 
-	const int dims = E->mesh.nsd;
-	const int dofs = E->mesh.dof;
-	const int ends = enodes[E->mesh.nsd];
-	const int vpts = vpoints[E->mesh.nsd];
+	//const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int ends = enodes[dims];
+	//const int vpts = vpoints[dims];
 
 	ienmatrix = E->ien[el].node;
 
@@ -543,21 +548,23 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 
 void element_residual(struct All_variables *E, int el, struct Shape_function PG, float **vel, float *field, float *fielddot, struct SOURCES Q0, double Eres[9], double rtf[4][9], float diff, float **BC, unsigned int *FLAGS)
 {
-	int i, j, a, k, node, nodes[5], d, aid, back_front, onedfns;
+	//int i, j, a, k, node, nodes[5], d, aid, back_front, onedfns;
+	int i, j, a, k, node, nodes[5], aid, back_front, onedfns;
 	double Q;
 	double dT[9];
 	double tx1[9], tx2[9], tx3[9];
 	double v1[9], v2[9], v3[9];
-	double adv_dT, t2[4];
+	//double adv_dT, t2[4];
 	double T, DT;
 
-	register double prod, sfn;
+	//register double prod, sfn;
+	register double sfn;
 	struct Shape_function1 GM;
 	struct Shape_function1_dA dGamma;
-	double temp;
+	//double temp;
 
 	const int dims = E->mesh.nsd;
-	const int dofs = E->mesh.dof;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 	const int vpts = vpoints[dims];
 	const int diffusion = (diff != 0.0);
@@ -709,15 +716,17 @@ void element_residual(struct All_variables *E, int el, struct Shape_function PG,
 void std_timestep(struct All_variables *E)
 {
 	static int been_here = 0;
-	static float diff_timestep, root3, root2;
+	//static float diff_timestep, root3, root2;
+	static float diff_timestep;
 	int i, d, n, nel;
 
 	float adv_timestep;
-	float ts, uc2, uc3, uc1, uc, size, step;
+	//float ts, uc2, uc3, uc1, uc, size, step;
+	float ts, uc2, uc3, uc1, uc, step;
 
 	const int dims = E->mesh.nsd;
-	const int dofs = E->mesh.dof;
-	const int ends = enodes[dims];
+	//const int dofs = E->mesh.dof;
+	//const int ends = enodes[dims];
 
 	nel = E->lmesh.nel;
 
@@ -782,27 +791,25 @@ void std_timestep(struct All_variables *E)
 
 void process_heating(struct All_variables *E)
 {
-
-	int m, e, i, j, ee;
+	//int m, e, i, j, ee;
+	int e, i, j, ee;
 	static int been = 0;
-	static float para1;
+	//static float para1;
 	double temp1, temp2, temp3, temp4, temp5, temp6;
 	FILE *fp;
 	char filename[250];
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
-	const int lev = E->mesh.levmax;
-	const int nno = E->lmesh.nno;
+	//const int lev = E->mesh.levmax;
+	//const int nno = E->lmesh.nno;
 	const int vpts = vpoints[dims];
 
 
-	const double two = 2.0;
-
 	if(been == 0)
 	{
-//    para1 = 1e6*E->data.radius_km*E->data.radius_km/(E->data.density*E->data.Cp*E->data.ref_temperature*E->data.therm_diff);
-//    E->data.disptn_number = 1e3*E->data.therm_exp*E->data.grav_acc*E->data.radius_km/E->data.Cp;
+//		para1 = 1e6*E->data.radius_km*E->data.radius_km/(E->data.density*E->data.Cp*E->data.ref_temperature*E->data.therm_diff);
+//		E->data.disptn_number = 1e3*E->data.therm_exp*E->data.grav_acc*E->data.radius_km/E->data.Cp;
 		been++;
 	}
 

@@ -78,19 +78,20 @@ void project_vector(
 {
 	int i, j;
 	int el, node, e1;
-	int eqn1, eqn_minus1;
-	int eqn2, eqn_minus2;
-	int eqn3, eqn_minus3;
-	double amplifier, average1, average2, average3, w;
-	float time;
+	//int eqn1, eqn_minus1;
+	//int eqn2, eqn_minus2;
+	//int eqn3, eqn_minus3;
+	//double amplifier, average1, average2, average3, w;
+	double average1, average2, average3;
+	//float time;
 
 	const int sl_minus = start_lev - 1;
 	const int neq_minus = E->lmesh.NEQ[start_lev - 1];
 	const int nno_minus = E->lmesh.NNO[start_lev - 1];
 	const int nels_minus = E->lmesh.NEL[start_lev - 1];
 	const int dims = E->mesh.nsd;
-	const int ends = enodes[E->mesh.nsd];
-	const double weight = (double)1.0 / ends;
+	//const int ends = enodes[E->mesh.nsd];
+	//const double weight = (double)1.0 / ends;
 
 
 	/* on the lower level the average value of data in upper level
@@ -184,7 +185,7 @@ void interp_vector(struct All_variables *E, int start_lev, double *AD, double *A
 	const int nox = E->lmesh.NOX[level];
 	const int noz = E->lmesh.NOZ[level];
 	const int noy = E->lmesh.NOY[level];
-	const int high_eqn = E->lmesh.NEQ[level];
+	//const int high_eqn = E->lmesh.NEQ[level];
 
 	if(start_lev == E->mesh.levmax)
 		return;
@@ -304,19 +305,22 @@ void interp_vector(struct All_variables *E, int start_lev, double *AD, double *A
  */
 void project_scalar_e(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
-	int i, j, m;
-	int el, node, e;
-	float average, w;
+	//int i, j, m;
+	int i;
+	//int el, node, e;
+	int el, e;
+	//float average, w;
+	float average;
 
-	static int been_here = 0;
+	//static int been_here = 0;
 
 	const int sl_minus = start_lev - 1;
 	const int nels_minus = E->lmesh.NEL[start_lev - 1];
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 	const int ends = enodes[E->mesh.nsd];
 	const double weight = (double)1.0 / ends;
-	const int vpts = vpoints[E->mesh.nsd];
-	const int n_minus = nels_minus * vpts;
+	//const int vpts = vpoints[E->mesh.nsd];
+	//const int n_minus = nels_minus * vpts;
 
 	for(el = 1; el <= nels_minus; el++)
 	{
@@ -340,14 +344,15 @@ void project_scalar_e(struct All_variables *E, int start_lev, float *AU, float *
  */
 void project_scalar(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
-	int i, j, m;
+	//int i, j, m;
+	int i, j;
 	int el, node, node1;
 	float average, w;
 
 	const int sl_minus = start_lev - 1;
 	const int nno_minus = E->lmesh.NNO[start_lev - 1];
 	const int nels_minus = E->lmesh.NEL[start_lev - 1];
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 	const int ends = enodes[E->mesh.nsd];
 	const double weight = (double)1.0 / ends;
 
@@ -393,7 +398,8 @@ void project_scalar(struct All_variables *E, int start_lev, float *AU, float *AD
 
 void project_viscosity(struct All_variables *E)
 {
-	int lv, i, j, k, el, sl_minus;
+	//int lv, i, j, k, el, sl_minus;
+	int lv, sl_minus;
 
 	const int nsd = E->mesh.nsd;
 	const int vpts = vpoints[nsd];
@@ -444,7 +450,8 @@ void project_viscosity(struct All_variables *E)
 void inject_node_fvector(struct All_variables *E, int start_lev, float **AU, float **AD)
 {
 	int i;
-	int el, ex, ey, ez, d;
+	//int el, ex, ey, ez, d;
+	int el, ex, ey, ez;
 	int node, node_minus;
 
 	const int sl_minus = start_lev - 1;
@@ -543,7 +550,7 @@ void un_inject_vector(struct All_variables *E, int start_lev, double *AD, double
 	int eqn3, eqn_plus3;
 
 	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
+	//const int ends = enodes[dims];
 	const int sl_plus = start_lev + 1;
 	const int neq = E->lmesh.NEQ[sl_plus];
 	const int nels = E->lmesh.NEL[start_lev];
@@ -596,7 +603,8 @@ void un_inject_vector(struct All_variables *E, int start_lev, double *AD, double
  */
 void inject_scalar(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
-	int i, m, el, node_coarse, node_fine, sl_minus, eqn, eqn_coarse;
+	//int i, m, el, node_coarse, node_fine, sl_minus, eqn, eqn_coarse;
+	int i, el, node_coarse, node_fine, sl_minus;
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
@@ -629,13 +637,15 @@ void inject_scalar(struct All_variables *E, int start_lev, float *AU, float *AD)
  */
 void inject_scalar_e(struct All_variables *E, int start_lev, float *AU, float *AD)
 {
-	int i, j, m;
-	int el, node, e;
-	float average, w;
+	//int i, j, m;
+	int i;
+	//int el, node, e;
+	int el, e;
+	//float average, w;
 
 	const int sl_minus = start_lev - 1;
 	const int nels_minus = E->lmesh.NEL[start_lev - 1];
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 	const int ends = enodes[E->mesh.nsd];
 	const int vpts = vpoints[E->mesh.nsd];
 

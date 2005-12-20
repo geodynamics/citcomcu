@@ -50,12 +50,13 @@
 
 void construct_ien(struct All_variables *E)
 {
-	int lev, p, q, r, rr, e1, e2, i, a, node, node2, e;
+	int lev, p, q, r, rr, i, a, node, e;
 	int element, start, nel, nno;
 	int pmax, qmax, rmax;
-	int pnmax, qnmax, rnmax, temp;
+	int pnmax, qnmax, rnmax;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
@@ -134,15 +135,16 @@ void construct_ien(struct All_variables *E)
 
 void construct_id(struct All_variables *E)
 {
-	int i, j, k, kk, i1, i2, j1, j2, k1, k2;
-	int eqn_count, node, eqn_countd;
-	unsigned int type, doff;
-	int lev, temp_dims;
+	int i, j, k, i1, i2, j1, j2, k1, k2;
+	int eqn_count, node;
+	unsigned int doff;
+	int lev;
 	int nox, noy, noz;
-	int elx, ely, elz, rr, element;
+	int elx, ely, elz;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int ends = enodes[dims];
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int ends = enodes[dims];
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
 	{
@@ -215,11 +217,13 @@ void construct_id(struct All_variables *E)
 
 void construct_lm(struct All_variables *E)
 {
-	int i, a, e;
-	int lev, eqn_no;
+	int lev;
+	int a, e;
+	//int lev, eqn_no;
 	int nel, nel2;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 
 
@@ -239,6 +243,7 @@ void construct_lm(struct All_variables *E)
 	}
 
 	if(E->control.verbose)
+	{
 		if(dims == 3)
 			for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
 			{
@@ -249,7 +254,7 @@ void construct_lm(struct All_variables *E)
 						fprintf(E->fp, "%d %d %d %d %d %d\n", lev, e, a, E->LMD[lev][e].node[a].doff[1], E->LMD[lev][e].node[a].doff[2], E->LMD[lev][e].node[a].doff[3]);
 				}
 			}
-		else if(E->mesh.nsd == 2)
+		else if(dims == 2)
 			for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
 			{
 				nel = E->lmesh.NEL[lev];
@@ -257,7 +262,7 @@ void construct_lm(struct All_variables *E)
 					for(a = 1; a <= ends; a++)
 						fprintf(E->fp, "%d %d %d %d %d\n", lev, e, a, E->LMD[lev][e].node[a].doff[1], E->LMD[lev][e].node[a].doff[2]);
 			}
-
+	}
 	return;
 }
 
@@ -275,15 +280,18 @@ void construct_lm(struct All_variables *E)
 
 void construct_node_maps(struct All_variables *E)
 {
-	float initial_time;
+	//float initial_time;
 
-	int el, n, nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke, dims2;
-	int doff, nox, noy, noz, noxz, node1, eqn1, loc1, count, found, element;
+	//int el, n, nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke, dims2;
+	int nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke;
+	//int doff, nox, noy, noz, noxz, node1, eqn1, loc1, count, found, element;
+	int doff, nox, noy, noz, noxz;
 	int neq, nno, matrix;
-	int *node_map;
+	//int *node_map;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int ends = enodes[dims];
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int ends = enodes[dims];
 	const int max_eqn = max_eqn_interaction[dims];
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
@@ -348,22 +356,26 @@ void construct_node_maps(struct All_variables *E)
 
 void construct_node_ks(struct All_variables *E)
 {
-	int lev, level, i, j, k, e;
-	int node, node1, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3, found, element, index, pp, qq;
+	//int lev, level, i, j, k, e;
+	int level, i, j, k;
+	//int node, node1, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3, found, element, index, pp, qq;
+	int node, node1, eqn1, eqn2, eqn3, loc0, found, element, index, pp, qq;
 	int neq, nno, nel;
 
 	double elt_K[24 * 24];
-	static int been_here = 0;
+	//static int been_here = 0;
 	double w1, w2, w3, ww1, ww2, ww3;
 
-	higher_precision *B1, *B2, *B3;
-	int *C;
+	//higher_precision *B1, *B2, *B3;
+	higher_precision *B1, *B2;
+	//int *C;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 	const int lms = loc_mat_size[E->mesh.nsd];
 	const int max_eqn = max_eqn_interaction[dims];
-	const int vpts = vpoints[E->mesh.nsd];
+	//const int vpts = vpoints[E->mesh.nsd];
 
 	const double zero = 0.0;
 
@@ -529,7 +541,8 @@ void construct_node_ks(struct All_variables *E)
 
 void construct_masks(struct All_variables *E)	/* Add lid/edge masks/nodal weightings */
 {
-	int i, j, k, l, node, el, elt;
+	//int i, j, k, l, node, el, elt;
+	int i, j, node;
 	int lev, elx, elz, ely, nno, nox, noz, noy;
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
@@ -652,7 +665,8 @@ void construct_sub_element(struct All_variables *E)
 
 void construct_elt_ks(struct All_variables *E)
 {
-	int e, el, lev, j, k, ii;
+	//int e, el, lev, j, k, ii;
+	int el, lev, j, k, ii;
 
 	const int dims = E->mesh.nsd;
 	const int n = loc_mat_size[E->mesh.nsd];
@@ -708,10 +722,12 @@ void construct_elt_ks(struct All_variables *E)
 
 void construct_elt_gs(struct All_variables *E)
 {
-	int el, lev, a;
+	//int el, lev, a;
+	int el, lev;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int ends = enodes[dims];
+	//const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int ends = enodes[dims];
 
 	if(E->control.verbose && E->parallel.me == 0)
 		fprintf(stderr, "storing elt g matrices\n");
@@ -732,9 +748,11 @@ void construct_mat_group(struct All_variables *E)
 	float rz_botm, rz_top, x3, t_b, slope1, slope2;
 	float *Xtmp[4];
 
-	int i, j, k, el, lev, a, nodea, llayer, nslab, nwz, crit2;
+	//int i, j, k, el, lev, a, nodea, llayer, nslab, nwz, crit2;
+	int i, el, a, nodea, llayer;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
 
 	t_b = 3.0 * E->viscosity.zlith;
@@ -874,13 +892,15 @@ void construct_stiffness_B_matrix(struct All_variables *E)
 
 void rebuild_BI_on_boundary(struct All_variables *E)
 {
-	int m, level, i, j;
+	//int m, level, i, j;
+	int level, i, j;
 	int eqn1, eqn2, eqn3;
 
 	higher_precision *B1, *B2, *B3;
 	int *C;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 
 	const int max_eqn = max_eqn_interaction[dims];
 

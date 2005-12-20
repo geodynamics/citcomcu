@@ -68,13 +68,16 @@ static double Dm[5][5] = {  {0.0, 0.0, 0.0, 0.0, 0.0},
 
 void assemble_forces(struct All_variables *E, int penalty)
 {
-	double elt_f[24], elt_h[1];
-	int el, p, i, a, a1, a2, a3, e, ii, jj, kk, elx, ely, elz, node, temp_dims;
+	//double elt_f[24], elt_h[1];
+	double elt_f[24];
+	//int el, p, i, a, a1, a2, a3, e, ii, jj, kk, elx, ely, elz, node, temp_dims;
+	int p, a, a1, a2, a3, e;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[E->mesh.nsd];
 	const int neq = E->lmesh.neq;
-	const int npno = E->lmesh.npno;
+	//const int npno = E->lmesh.npno;
 	const int nel = E->lmesh.nel;
 	const int lev = E->mesh.levmax;
 
@@ -125,21 +128,24 @@ void assemble_forces(struct All_variables *E, int penalty)
 void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int penalty)
 {
 	double bdbmu[4][4];
-	double bdbl[4][4];
+	//double bdbl[4][4];
 
 	double rtf[4][9], W[9], ra[9], si[9], ct[9];
-	struct Shape_function GN;
-	struct Shape_function_dA dOmega;
-	struct Shape_function_dx GNx;
+	//struct Shape_function GN;
+	//struct Shape_function_dA dOmega;
+	//struct Shape_function_dx GNx;
 	static struct CC Cc;
 	static struct CCX Ccx;
 
 
-	int p1[9], pn, qn, ad, bd;
+	//int p1[9], pn, qn, ad, bd;
+	int pn, qn, ad, bd;
 
-	int nodea, nodeb, a, b, i, j, k, p, q, nint;
-	double RM2[9], RMP[9], r;
-	double Visc, visc[9], temp;
+	//int nodea, nodeb, a, b, i, j, k, p, q, nint;
+	int a, b, i, j, k;
+	//double RM2[9], RMP[9], r;
+	//double Visc, visc[9], temp;
+	double temp;
 	float gnx0, gnx1, gnx2;
 	double shp, cc1, cc2, cc3;
 
@@ -148,11 +154,12 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 
 	const int n = loc_mat_size[E->mesh.nsd];
 	const int vpts = vpoints[E->mesh.nsd];
-	const int ppts = ppoints[E->mesh.nsd];
+	//const int ppts = ppoints[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
-	const int sphere_key = 1;
-	const double zero = 0.0;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
+	//const int sphere_key = 1;
+	//const double zero = 0.0;
 	const double one = 1.0;
 	const double two = 2.0;
 
@@ -296,17 +303,19 @@ void assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, 
 
 void e_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
-	int el, e, i, a, b, a1, a2, a3, ii;
-	double elt_k[24 * 24], U[24], AU[24], alpha = 1.0, beta = 0.0;
+	//int el, e, i, a, b, a1, a2, a3, ii;
+	int e, i, a, b, a1, a2, a3, ii;
+	//double elt_k[24 * 24], U[24], AU[24], alpha = 1.0, beta = 0.0;
 
-	int indx[24];
-	char uplo = 'U';
+	//int indx[24];
+	//char uplo = 'U';
 
-	double U1[24];
+	//double U1[24];
 
 	const int n = loc_mat_size[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int nel = E->lmesh.NEL[level];
 	const int neq = E->lmesh.NEQ[level];
 
@@ -352,7 +361,8 @@ void e_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level
 
 void n_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
-	int node, e, i, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3;
+	//int node, e, i, eqn1, eqn2, eqn3, loc0, loc1, loc2, loc3;
+	int e, i, eqn1, eqn2, eqn3, loc0; 
 
 	double U1, U2, U3, UU;
 
@@ -363,7 +373,8 @@ void n_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level
 
 	const int neq = E->lmesh.NEQ[level];
 	const int nno = E->lmesh.NNO[level];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int max_eqn = max_eqn_interaction[dims];
 
 	for(e = 0; e <= neq; e++)
@@ -454,7 +465,7 @@ void build_diagonal_of_Ahat(struct All_variables *E)
 	double BU;
 	int e, npno, neq;
 	int level;
-	float time, time0;
+	//float time, time0;
 
 	for(level = E->mesh.levmax; level >= E->mesh.levmin; level--)
 	{
@@ -488,12 +499,14 @@ void build_diagonal_of_Ahat(struct All_variables *E)
 
 void assemble_div_u(struct All_variables *E, double *U, double *divU, int level)
 {
-	int e, j1, j2, j3, p, a, b;
-	higher_precision elt_g[24][1];
+	//int e, j1, j2, j3, p, a, b;
+	int e, j1, j2, j3, p, a;
+	//higher_precision elt_g[24][1];
 
 	const int nel = E->lmesh.NEL[level];
 	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int npno = E->lmesh.NPNO[level];
 
 	for(e = 1; e <= npno; e++)
@@ -522,11 +535,13 @@ void assemble_div_u(struct All_variables *E, double *U, double *divU, int level)
 
 void assemble_grad_p(struct All_variables *E, double *P, double *gradP, int lev)
 {
-	int el, e, i, j1, j2, p, a, nel, neq;
-	higher_precision elt_g[24][1];
+	//int el, e, i, j1, j2, p, a, nel, neq;
+	int e, i, j1, j2, p, a, nel, neq;
+	//higher_precision elt_g[24][1];
 
 	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 
 	nel = E->lmesh.NEL[lev];
 	neq = E->lmesh.NEQ[lev];
@@ -564,13 +579,15 @@ void assemble_grad_p(struct All_variables *E, double *P, double *gradP, int lev)
 
 double assemble_dAhatp_entry(struct All_variables *E, int e, int level)
 {
-	int i, j, p, a, b, node, ee, element, lnode, npno;
-	higher_precision elt_g[24][1];
+	//int i, j, p, a, b, node, ee, element, lnode, npno;
+	int i, j, p, a, b, npno;
+	//higher_precision elt_g[24][1];
 
 	double gradP[81], divU;
 
 	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 
 	npno = E->lmesh.NPNO[level];
 
@@ -622,22 +639,25 @@ double assemble_dAhatp_entry(struct All_variables *E, int e, int level)
 
 void get_elt_g(struct All_variables *E, int el, higher_precision elt_del[24][1], int lev)
 {
-	double dGNdash[3];
-	double recip_radius, temp;
-	int p, a, nint, es, d, i, j, k;
+	//double dGNdash[3];
+	//double recip_radius, temp;
+	double temp;
+	//int p, a, nint, es, d, i, j, k;
+	int p, a, i;
 	double ra, ct, si, x[4], rtf[4][9];
-	int lmsize;
+	//int lmsize;
 
-	struct Shape_function GN;
-	struct Shape_function_dA dOmega;
-	struct Shape_function_dx GNx;
+	//struct Shape_function GN;
+	//struct Shape_function_dA dOmega;
+	//struct Shape_function_dx GNx;
 	static struct CC Cc;
 	static struct CCX Ccx;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int ends = enodes[dims];
-	const int vpts = vpoints[dims];
-	const int sphere_key = 1;
+	//const int vpts = vpoints[dims];
+	//const int sphere_key = 1;
 
 	/* Special case, 4/8 node bilinear cartesian square/cube element -> 1 pressure point */
 
@@ -695,7 +715,8 @@ void get_elt_g(struct All_variables *E, int el, higher_precision elt_del[24][1],
 
 void get_elt_h(struct All_variables *E, int el, double elt_h[1], int penalty)
 {
-	int aid, i, p, a, b, d, j, k, q, global, got_g;
+	//int aid, i, p, a, b, d, j, k, q, global, got_g;
+	int i, p, a, b, q, got_g;
 	unsigned int type;
 	higher_precision elt_g[24][1];
 
@@ -740,29 +761,34 @@ void get_elt_h(struct All_variables *E, int el, double elt_h[1], int penalty)
 void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, int bcs)
 {
 
-	int aid, i, p, a, b, d, j, k, q, es;
-	int node[5], back_front, got_elt_k, nodea, nodeb;
+	//int aid, i, p, a, b, d, j, k, q, es;
+	int i, p, a, b, j, k, q;
+	//int node[5], back_front, got_elt_k, nodea, nodeb;
+	int got_elt_k, nodea, nodeb;
 	unsigned int type[4];
-	static int been_here = 0;
+	//static int been_here = 0;
 
-	double force[9], force_at_gs[9], stress[9];
-	double vector[4], magnitude;
-	double tmp, rtf[4][9];
+	//double force[9], force_at_gs[9], stress[9];
+	double force[9], force_at_gs[9];
+	//double vector[4], magnitude;
+	//double tmp, rtf[4][9];
+	double rtf[4][9];
 	double elt_k[24 * 24];
 
-	struct Shape_function GN;
-	struct Shape_function_dA dOmega;
-	struct Shape_function_dx GNx;
-	struct Shape_function1 GM;
-	struct Shape_function1_dA dGammax;
+	//struct Shape_function GN;
+	//struct Shape_function_dA dOmega;
+	//struct Shape_function_dx GNx;
+	//struct Shape_function1 GM;
+	//struct Shape_function1_dA dGammax;
 	static struct CC Cc;
 	static struct CCX Ccx;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int n = loc_mat_size[dims];
 	const int ends = enodes[dims];
 	const int vpts = vpoints[dims];
-	const int sphere_key = 1;
+	//const int sphere_key = 1;
 
 	type[1] = VBX;
 	type[2] = VBY;
@@ -886,7 +912,8 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 
 void get_aug_k(struct All_variables *E, int el, double elt_k[24 * 24], int level)
 {
-	int i, j, k, p[9], a, b, nodea, nodeb;
+	//int i, j, k, p[9], a, b, nodea, nodeb;
+	int i, p[9], a, b;
 	double Visc;
 
 	const int n = loc_mat_size[E->mesh.nsd];

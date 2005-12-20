@@ -42,6 +42,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
@@ -52,10 +53,10 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 {
 	double start_time;
 
-	int *temp, i;
+	//int *temp, i;
 
 	/* =====================================================
-	 * Global interuption handling routine defined once here
+	 * Global interruption handling routine defined once here
 	 * =====================================================  */
 
 	if(E->parallel.me == 0)
@@ -167,7 +168,8 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 
 void allocate_common_vars(struct All_variables *E)
 {
-	int nox, noy, noz, i, j, l, nno_l, npno_l, nozl, nnov_l, nxyz;
+	//int nox, noy, noz, i, j, l, nno_l, npno_l, nozl, nnov_l, nxyz;
+	int nox, noy, noz, i, j, l, nxyz;
 
 	E->mesh.fnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(float);
 	E->mesh.dnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(double);
@@ -382,7 +384,7 @@ void interruption(int signal_number)
 
 void global_default_values(struct All_variables *E)
 {
-	FILE *fp;
+	//FILE *fp;
 
 	/* FIRST: values which are not changed routinely by the user */
 
@@ -1044,7 +1046,8 @@ void common_initial_fields(struct All_variables *E)
 
 void initial_pressure(struct All_variables *E)
 {
-	int i, node, ii;
+	//int i, node, ii;
+	int i;
 
 	for(i = 1; i <= E->lmesh.npno; i++)
 		E->P[i] = 0.0;
@@ -1054,7 +1057,8 @@ void initial_pressure(struct All_variables *E)
 
 void initial_velocity(struct All_variables *E)
 {
-	int i, node, ii;
+	//int i, node, ii;
+	int i;
 
 	for(i = 1; i <= E->lmesh.nnov; i++)
 	{

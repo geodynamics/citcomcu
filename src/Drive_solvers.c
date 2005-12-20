@@ -42,19 +42,21 @@
 
 void general_stokes_solver(struct All_variables *E)
 {
-	float vmag;
+	//float vmag;
 	double *delta_U;
-	double *force, Udot_mag, dUdot_mag;
+	//double *force, Udot_mag, dUdot_mag;
+	double Udot_mag, dUdot_mag;
 	double time;
-	int count, i, j, k;
+	//int count, i, j, k;
+	int count, i;
 
 	static float *oldU;
 	static int visits = 0;
 
-	const int nno = E->lmesh.nno;
+	//const int nno = E->lmesh.nno;
 	const int neq = E->lmesh.neq;
-	const int vpts = vpoints[E->mesh.nsd];
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
+	//const int vpts = vpoints[E->mesh.nsd];
 
 	if(visits == 0)
 	{
@@ -80,11 +82,12 @@ void general_stokes_solver(struct All_variables *E)
 
 	assemble_forces(E, 0);
 
-/*
-if(E->parallel.me==0) {
-  fprintf(stderr,"time1= %g seconds\n",CPU_time0()-time);
-  time=CPU_time0();
-  }
+/*	
+	if(E->parallel.me==0)
+	{
+		fprintf(stderr,"time1= %g seconds\n",CPU_time0()-time);
+		time=CPU_time0();
+	}
 */
 
 	count = 1;

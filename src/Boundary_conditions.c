@@ -44,7 +44,8 @@
 void velocity_boundary_conditions(struct All_variables *E)
 {
 	int lv;
-	int node, d;
+	//int node, d;
+	int node;
 
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
@@ -175,7 +176,7 @@ void velocity_refl_vert_bc(struct All_variables *E)
 	int i, j, ii, jj;
 	int node1, node2;
 	int level, nox, noy, noz;
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 
 	/* except one side with XOZ and y=0, all others are not reflecting BC */
 	/* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
@@ -316,7 +317,7 @@ void temperature_refl_vert_bc(struct All_variables *E)
 {
 	int i, j;
 	int node1, node2;
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 
 	/* Temps and bc-values  at top level only */
 	/* fixed temperature at x=0 */
@@ -367,10 +368,11 @@ void temperature_refl_vert_bc(struct All_variables *E)
 
 void temperature_imposed_botm_bcs(struct All_variables *E, float *BC[], int dirn)
 {
-	int i, j, node, rowl;
+	//int i, j, node, rowl;
+	int i, j, node;
 	const int dims = E->mesh.nsd;
 	const int level = E->mesh.levmax;
-	const int noz = E->lmesh.NOZ[E->mesh.levmax];
+	//const int noz = E->lmesh.NOZ[E->mesh.levmax];
 	float dT, aa2, rr2;
 
 	aa2 = E->segment.plume_radius * E->segment.plume_radius;
@@ -400,7 +402,7 @@ void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, floa
 
 {
 	int i, j, node, rowl;
-	const int dims = E->mesh.nsd;
+	//const int dims = E->mesh.nsd;
 
 	/* safety feature */
 	if(dirn > E->mesh.nsd)
@@ -442,9 +444,9 @@ void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, floa
 
 void velocity_apply_periodic_bcs(struct All_variables *E)
 {
-	int n1, n2, level;
-	int i, j, ii, jj;
-	const int dims = E->mesh.nsd;
+	//int n1, n2, level;
+	//int i, j, ii, jj;
+	//const int dims = E->mesh.nsd;
 
 	fprintf(E->fp, "Periodic boundary conditions\n");
 
@@ -453,9 +455,9 @@ void velocity_apply_periodic_bcs(struct All_variables *E)
 
 void temperature_apply_periodic_bcs(struct All_variables *E)
 {
-	int n1, n2, e1, level;
-	int i, j, ii, jj;
-	const int dims = E->mesh.nsd;
+	//int n1, n2, e1, level;
+	//int i, j, ii, jj;
+	//const int dims = E->mesh.nsd;
 
 	fprintf(E->fp, "Periodic temperature boundary conditions\n");
 
@@ -468,9 +470,10 @@ void strip_bcs_from_residual(struct All_variables *E, double *Res, int level)
 {
 	int i;
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	//const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int nno = E->lmesh.NNO[level];
-	const int addi_dof = additional_dof[dims];
+	//const int addi_dof = additional_dof[dims];
 
 	for(i = 1; i <= nno; i++)
 	{
@@ -532,13 +535,14 @@ void temperatures_conform_bcs(struct All_variables *E)
 
 void velocities_conform_bcs(struct All_variables *E, double *U)
 {
-	int node, d;
+	//int node, d;
+	int node;
 
 	const unsigned int typex = VBX;
 	const unsigned int typez = VBZ;
 	const unsigned int typey = VBY;
 
-	const int dofs = E->mesh.dof;
+	//const int dofs = E->mesh.dof;
 	const int nno = E->lmesh.nno;
 
 	for(node = 1; node <= nno; node++)

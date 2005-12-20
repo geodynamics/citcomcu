@@ -42,6 +42,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
+#include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
 
@@ -173,7 +174,7 @@ void viscosity_for_system(struct All_variables *E)
 void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, float *visc)
 {
 	int i, j;
-	float *visc_old, *evisc_old;
+	//float *visc_old, *evisc_old;
 
 	const int vpts = vpoints[E->mesh.nsd];
 
@@ -234,7 +235,8 @@ void apply_viscosity_smoother(struct All_variables *E, float *visc, float *evisc
 
 void visc_from_mat(struct All_variables *E, float *Eta, float *EEta)
 {
-	int i, j, k, l, z, jj, kk;
+	//int i, j, k, l, z, jj, kk;
+	int i, jj;
 
 	for(i = 1; i <= E->lmesh.nel; i++)
 		for(jj = 1; jj <= vpoints[E->mesh.nsd]; jj++)
@@ -247,9 +249,12 @@ void visc_from_mat(struct All_variables *E, float *Eta, float *EEta)
 
 void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
-	int i, j, k, l, z, e, jj, kk, imark;
-	float c1, c2, c3, zero, e_6, one, eta0, Tave, depth, temp, tempa, TT[9];
-	double ztop, zbotm, zz, visc1, area1, temp1, temp2, temp3, temp4;
+	//int i, j, k, l, z, e, jj, kk, imark;
+	int i, l, e, jj, kk;
+	//float c1, c2, c3, zero, e_6, one, eta0, Tave, depth, temp, tempa, TT[9];
+	float zero, one, temp, tempa, TT[9];
+	//double ztop, zbotm, zz, visc1, area1, temp1, temp2, temp3, temp4;
+	double ztop, zbotm, zz, temp1, temp2, temp3, temp4;
 	float *Xtmp[4];
 	static int visits = 0;
 	static float *Tadi;
@@ -436,10 +441,12 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
 	static int visits = 0;
-	float one, two, scale, stress_magnitude, depth, exponent1;
+	//float one, two, scale, stress_magnitude, depth, exponent1;
+	float one, two, scale, exponent1;
 	float *eedot;
 
-	int e, l, z, jj, kk;
+	//int e, l, z, jj, kk;
+	int e, jj;
 
 	const int vpts = vpoints[E->mesh.nsd];
 	const int nel = E->lmesh.nel;
@@ -477,15 +484,16 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT, int SQRT)
 	double edot[4][4], dudx[4][4], rtf[4][9];
 	float VV[4][9], Vxyz[9][9];
 
-	int e, i, j, p, q, n, nel, k;
+	//int e, i, j, p, q, n, nel, k;
+	int e, i, j, p, q, n, nel;
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
 	const int lev = E->mesh.levmax;
-	const int nno = E->lmesh.nno;
-	const int vpts = vpoints[dims];
+	//const int nno = E->lmesh.nno;
+	//const int vpts = vpoints[dims];
 	const int ppts = ppoints[dims];
-	const int sphere_key = 1;
+	//const int sphere_key = 1;
 
 	nel = E->lmesh.nel;
 

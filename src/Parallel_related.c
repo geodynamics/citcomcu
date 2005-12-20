@@ -205,8 +205,10 @@ void parallel_shuffle_ele_and_id(struct All_variables *E)
 
 void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
 {
-	int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
-	int lev, elx, elz, ely, nel, nno, nox, noz, noy;
+	//int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
+	int i, ii, j, k, node, node1, llnode;
+	//int lev, elx, elz, ely, nel, nno, nox, noz, noy;
+	int lev, elx, elz, ely, nel, nox, noz, noy;
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
 	{
@@ -292,8 +294,10 @@ void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
 //
 void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
 {
-	int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
-	int lev, elx, elz, ely, nel, nno, nox, noz, noy;
+	//int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
+	int i, ii, j, k, node, node1, llnode;
+	//int lev, elx, elz, ely, nel, nno, nox, noz, noy;
+	int lev, elx, elz, ely, nel, nox, noz, noy;
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
 	{
@@ -398,7 +402,8 @@ void parallel_communication_routs(struct All_variables *E)
 
 void parallel_communication_routs1(struct All_variables *E)
 {
-	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	int i, ii, j, k, node, lnode, jj, doff;
 	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
 	int me, nprocz, nprocx, nprocy;
 
@@ -634,7 +639,8 @@ fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E
 // periodic BC
 void parallel_communication_routs2(struct All_variables *E)
 {
-	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	int i, ii, j, k, node, lnode, jj, doff;
 	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
 	int me, nprocz, nprocx, nprocy;
 
@@ -869,9 +875,10 @@ fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E
 
 void parallel_communication_routs3(struct All_variables *E)
 {
-
-	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
+	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	int i, j, k, el;
+	//int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
+	int lev, elx, elz, ely;
 	int m1, m2, m3, me, nprocz, nprocx, nprocy, proc;
 
 	me = E->parallel.me;
@@ -952,9 +959,9 @@ void parallel_communication_routs3(struct All_variables *E)
 
 void parallel_communication_routs4(struct All_variables *E)
 {
-	int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
-	int me, nprocz, nprocx, nprocy;
+	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
+	//int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
+	//int me, nprocz, nprocx, nprocy;
 
 	return;
 }
@@ -962,7 +969,8 @@ void parallel_communication_routs4(struct All_variables *E)
 
 void exchange_number_rec_markers(struct All_variables *E)
 {
-	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	int target_proc, k, idb;
 	static int *S[27], *R[27];
 
 	static int been_here = 0;
@@ -1014,11 +1022,12 @@ void exchange_number_rec_markers(struct All_variables *E)
 
 void exchange_markers(struct All_variables *E)
 {
-	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	int target_proc, kk, k, idb;
 
-	static int been_here = 0;
-	static int mid_recv, sizeofk;
-	const int levmax = E->mesh.levmax;
+	//static int been_here = 0;
+	//static int mid_recv, sizeofk;
+	//const int levmax = E->mesh.levmax;
 
 	MPI_Status status[100];
 	MPI_Request request[100];
@@ -1070,11 +1079,13 @@ void exchange_markers(struct All_variables *E)
 
 void exchange_id_d20(struct All_variables *E, double *U, int lev)
 {
-	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	int target_proc, kk, i, j, k, idb;
 	static double *S[27], *R[27];
 
 	static int been_here = 0;
-	static int mid_recv, sizeofk;
+	//static int mid_recv, sizeofk;
+	static int sizeofk;
 	const int levmax = E->mesh.levmax;
 
 	MPI_Status status[100];
@@ -1156,11 +1167,13 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 
 void exchange_node_f20(struct All_variables *E, float *U, int lev)
 {
-	int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
+	int target_proc, kk, i, j, k, idb;
 	static float *S[27], *R[27];
 
 	static int been_here = 0;
-	static int mid_recv, sizeofk;
+	//static int mid_recv, sizeofk;
+	static int sizeofk;
 	const int levmax = E->mesh.levmax;
 
 	MPI_Status status[100];

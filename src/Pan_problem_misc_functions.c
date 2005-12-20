@@ -43,12 +43,7 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#if (defined __sunos__)
 #include <string.h>
-#else
-#include <strings.h>
-#endif
 
 #if defined(__sgi) || defined(__osf__)
 #include <sys/types.h>
@@ -82,9 +77,9 @@ void thermal_buoyancy(struct All_variables *E)
 {
 	int i, j;
 	float *H;
-	const double zeroo = 0.0;
-	const int i1 = 670;
-	const int i2 = 670;
+	//const double zeroo = 0.0;
+	//const int i1 = 670;
+	//const int i2 = 670;
 
 	H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
 
@@ -296,7 +291,8 @@ int read_previous_field(struct All_variables *E, float *field, char *name, char 
 
 	if(interpolate != 0)
 	{
-		fprintf(E->fp, "\t%s requires interpolation from previous value\n", name, interpolate);
+		//fprintf(E->fp, "\t%s requires interpolation from previous value\n", name, interpolate); //XXX
+		fprintf(E->fp, "\t%s requires interpolation from previous value\n", name);
 		fflush(E->fp);
 		fprintf(E->fp, "\tOld nodes = %d/%d/%d and new nodes = %d/%d/%d\n", fnodesx, fnodesz, fnodesy, E->mesh.nox, E->mesh.noz, E->mesh.noy);
 		fflush(E->fp);
@@ -334,16 +330,18 @@ void fcopy_interpolating(struct All_variables *E, float *X, float *Z, float *Y, 
 
 	double *P;
 
-	int i, j, found, not_found;
+	//int i, j, found, not_found;
+	int i, found, not_found;
 	int elX, elY, elZ, ex, ez;
 	int old_ex, old_ez, old_ey;
 	int node1, node2, node3, node4;
-	int node5, node6, node7, node8;
+	//int node5, node6, node7, node8;
 	float inside1, inside2, inside3, inside4;
-	float inside5, inside6, inside7, inside8, inside9, inside10, inside11, inside12;
+	//float inside5, inside6, inside7, inside8, inside9, inside10, inside11, inside12;
 	float distance1, distance2, distance3, distance4;
-	float distance5, distance6, distance7, distance8;
-	float d1, d2, d3, d4, d5, d6, d7, d8;
+	//float distance5, distance6, distance7, distance8;
+	//float d1, d2, d3, d4, d5, d6, d7, d8;
+	float d1, d2, d3, d4;
 
 	const int dims = E->mesh.nsd;
 
@@ -471,18 +469,18 @@ float cross2d(float x11, float x12, float x21, float x22, int D)
 		return (-x11 * x22 + x12 * x21);
 	if(3 == D)
 		return (x11 * x22 - x12 * x21);
-
+	return 0; /* should not reach this line */
 }
 
 
 void field_arbitrary_rectangle_file(struct All_variables *E, int parse_and_apply, struct Rect *RECT, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
 	char read_string[500];
-	float weight, radius2, weight2;
-	float x1, y1, z1;
-	int in1, in2, in3;
-	int number, node;
-	int combine_option;
+	//float weight, radius2, weight2;
+	//float x1, y1, z1;
+	//int in1, in2, in3;
+	//int number, node;
+	//int combine_option;
 
 	sprintf(read_string, "%s_rect", name);
 	input_int(read_string, &(RECT->numb), "0");
@@ -517,7 +515,7 @@ void field_arbitrary_rectangle(struct All_variables *E, struct Rect *RECT, float
 	float x1, y1, z1;
 	int in1, in2, in3;
 	int number, node;
-	int combine_option;
+	//int combine_option;
 
 	for(node = 1; node <= E->lmesh.nno; node++)
 	{
@@ -593,11 +591,11 @@ void field_arbitrary_rectangle(struct All_variables *E, struct Rect *RECT, float
 void field_arbitrary_circle_file(struct All_variables *E, int parse_and_apply, struct Circ *CIRC, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
 	char read_string[500];
-	float weight, radius2, weight2;
-	float x1, y1, z1;
-	int in1;
-	int number, node;
-	int combine_option;
+	//float weight, radius2, weight2;
+	//float x1, y1, z1;
+	//int in1;
+	//int number, node;
+	//int combine_option;
 
 	sprintf(read_string, "%s_circ", name);
 	input_int(read_string, &(CIRC->numb), "0");
@@ -624,12 +622,12 @@ void field_arbitrary_circle_file(struct All_variables *E, int parse_and_apply, s
 
 void field_arbitrary_circle(struct All_variables *E, struct Circ *CIRC, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-	char read_string[500];
+	//char read_string[500];
 	float weight, radius2, weight2;
 	float x1, y1, z1;
-	int in1;
+	//int in1;
 	int number, node;
-	int combine_option;
+	//int combine_option;
 
 
 	for(node = 1; node <= E->lmesh.nno; node++)
@@ -752,11 +750,12 @@ void field_arbitrary_harmonic_file(struct All_variables *E, int parse_and_apply,
 
 void field_arbitrary_harmonic(struct All_variables *E, struct Harm *HARM, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off)
 {
-	float weight, radius2, weight2;
+	//float weight, radius2, weight2;
+	float weight;
 	float x1, y1, z1;
 	int in1, in2, in3;
 	int number, node, l;
-	int combine_option;
+	//int combine_option;
 
 	for(node = 1; node <= E->lmesh.nno; node++)
 	{

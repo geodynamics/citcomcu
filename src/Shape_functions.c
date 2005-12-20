@@ -52,8 +52,9 @@
 
 void construct_shape_functions(struct All_variables *E)
 {
-	int i, j, k, d, dd, el;
-	int remapj, remapk;
+	//int i, j, k, d, dd, el;
+	int i, j, k, d, dd;
+	//int remapj, remapk;
 
 	/* first zero ALL entries, even those not used in 2d. */
 

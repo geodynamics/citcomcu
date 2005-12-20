@@ -67,8 +67,10 @@ extern float Zj0[1000], Zj1[1000];
 /* call this only for top and bottom processors */
 void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 {
-	int el, elb, els, node, nodeb, nodes, i, j, k, l, m, n, count;
-	int nodel, nodem, nodesl, nodesm, lnsf, nel2;
+	//int el, elb, els, node, nodeb, nodes, i, j, k, l, m, n, count;
+	int el, elb, els, node, nodeb, i, l, m, n;
+	//int nodel, nodem, nodesl, nodesm, lnsf, nel2;
+	int lnsf;
 
 	struct Shape_function1 GM, GMb;
 	struct Shape_function1_dA dGammax, dGammabx;
@@ -82,15 +84,15 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 
 	const int dims = E->mesh.nsd;
 	const int Tsize = 5;		/* maximum values, applicable to 3d, harmless for 2d */
-	const int Ssize = 4;
+	//const int Ssize = 4;
 	const int ends = enodes[dims];
-	const int noz = E->lmesh.noz;
-	const int noy = E->lmesh.noy;
+	//const int noz = E->lmesh.noz;
+	//const int noy = E->lmesh.noy;
 	const int nno = E->lmesh.nno;
 	const int onedv = onedvpoints[dims];
-	const int snode1 = 1, snode2 = 4, snode3 = 5, snode4 = 8;
+	//const int snode1 = 1, snode2 = 4, snode3 = 5, snode4 = 8;
 	const int elz = E->lmesh.elz;
-	const int ely = E->lmesh.ely;
+	//const int ely = E->lmesh.ely;
 	const int lev = E->mesh.levmax;
 
 	lnsf = E->lmesh.nsf;
@@ -295,16 +297,19 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 
 void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 {
-	int i, j, k, e, nel2, snode, node;
+	//int i, j, k, e, nel2, snode, node;
+	int i, j, e, snode, node;
 
 	float *SZZ, *SXX, *SYY, *SXY, *SXZ, *SZY, VZ[9], VY[9], VX[9], Szz, Sxx, Syy, Sxy, Sxz, Szy;
 	float Vzz[9], Vxx[9], Vyy[9], Vxy[9], Vxz[9], Vzy[9];
-	float pre[9], el_volume, tww[9], Visc, a, b;
+	//float pre[9], el_volume, tww[9], Visc, a, b;
+	float pre[9];
 	double rtf[4][9];
 
-	const int dims = E->mesh.nsd, dofs = E->mesh.dof;
+	const int dims = E->mesh.nsd;
+	//const int dofs = E->mesh.dof;
 	const int vpts = vpoints[dims];
-	const int ppts = ppoints[dims];
+	//const int ppts = ppoints[dims];
 	const int ends = enodes[dims];
 	const int nno = E->lmesh.nno;
 	const int nel = E->lmesh.nel;
