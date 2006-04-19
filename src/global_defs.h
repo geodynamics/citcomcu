@@ -34,8 +34,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/* This file contains the definitions of variables which are passed as arguments */
-/* to functions across the whole filespace of CITCOM. #include this file everywhere !*/
+/* 
+ * This file contains the definitions of variables which are passed as
+ * arguments to functions across the whole filespace of CITCOM.
+ * #include this file everywhere!
+ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -867,7 +870,7 @@ struct TRACES
 
 struct All_variables
 {
-#include "Convection_variables.h"
+#include "convection_variables.h"
 #include "viscosity_descriptions.h"
 #include "temperature_descriptions.h"
 #include "advection.h"
