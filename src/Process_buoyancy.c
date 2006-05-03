@@ -34,20 +34,24 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/*  Here are the routines which process the results of each buoyancy solution, and call
-    any relevant output routines. Much of the information has probably been output along
-    with the velocity field. (So the velocity vectors and other data are fully in sync).
-    However, heat fluxes and temperature averages are calculated here (even when they
-    get output the next time around the velocity solver);
-    */
+/*  Here are the routines which process the results of each buoyancy solution,
+ *  and call any relevant output routines.  Much of the information has
+ *  probably been output along with the velocity field. (So the velocity
+ *  vectors and other data are fully in sync).  However, heat fluxes and
+ *  temperature averages are calculated here (even when they get output the
+ *  next time around the velocity solver);
+ */
 
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
 #include <stdlib.h>				/* for "system" command */
+#include "Process_buoyancy.h"
 
-#include "element_definitions.h"
-#include "global_defs.h"
+
+#include "Global_operations.h" /* return_horiz_ave(), return_horiz_sum() */
+#include "Parallel_related.h" /* exchange_node_f20() */
+#include "Size_does_matter.h" /* get_global_1d_shape_fn() */
 
 void process_temp_field(struct All_variables *E, int ii)
 {

@@ -46,8 +46,17 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <math.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Advection_diffusion.h"
+
+#include "Parsing.h" /* input_boolean(), input_int(), input_float() */
+#include "Composition_adv.h" /* Runge_Kutta(), Euler() */
+#include "Global_operations.h" /* Tmax(), global_fmin() */
+#include "Boundary_conditions.h" /* temperatures_conform_bcs() */
+#include "Pan_problem_misc_functions.h" /* thermal_buoyancy() */
+#include "Size_does_matter.h" /* get_rtf(), get_global_1d_shape_fn() */
+#include "Parallel_related.h" /* exchange_node_f20() */
+#include "Viscosity_structures.h" /* strain_rate_2_inv() */
+
 
 extern int Emergency_stop;
 

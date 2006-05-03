@@ -43,8 +43,8 @@
     necessary to change the main calculation/setup/solving machinery.		 */
 
 #include <math.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Shape_functions.h"
+
 
 /*  =======================================================
     Function creating shape_fn data in form of a structure

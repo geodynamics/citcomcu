@@ -37,8 +37,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Phase_change.h"
+
+#include "Global_operations.h" /* return_horiz_ave(), sum_across_depth() */
+
 
 void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4)
 {

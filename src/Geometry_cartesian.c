@@ -34,9 +34,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#include "element_definitions.h"
-#include "global_defs.h"
-
+#include "Geometry_cartesian.h"
 
 void set_2dc_defaults(struct All_variables *E)
 {

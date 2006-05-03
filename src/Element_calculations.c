@@ -39,10 +39,13 @@
    to the point of redundancy. */
 
 #include <math.h>
-#include "element_definitions.h"
-#include "global_defs.h"
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "Element_calculations.h"
+
+#include "Parallel_related.h" /* exchange_id_d20() */
+#include "Boundary_conditions.h" /* strip_bcs_from_residual() */
+#include "Size_does_matter.h" /* get_rtf(), construct_c3x3matrix_el() */
 
 
 /* *INDENT-OFF* */

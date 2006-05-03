@@ -46,8 +46,16 @@
 #include <sys/types.h>
 #include <math.h>
 #include <mpi.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Composition_adv.h"
+
+/* exchange_number_rec_markers()
+ * exchange_markers()
+ * exchange_node_f20()
+ * parallel_process_termination() */
+#include "Parallel_related.h"
+
+
+
 
 /* *INDENT-OFF* */
 static float xxsh[5][3] = {  {0.0,  0.0,  0.0},

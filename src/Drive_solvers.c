@@ -37,8 +37,16 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Drive_solvers.h"
+
+#include "Parallel_related.h" /* CPU_time0() */
+#include "Boundary_conditions.h" /* velocities_conform_bcs() */
+#include "Element_calculations.h" /* assemble_forces() */
+#include "Viscosity_structures.h" /* get_system_viscosity() */
+#include "Construct_arrays.h" /* construct_stiffness_B_matrix() */
+#include "Stokes_flow_Incomp.h" /* solve_constrained_flow_iterative() */
+#include "Global_operations.h" /* global_vdot */
+
 
 void general_stokes_solver(struct All_variables *E)
 {

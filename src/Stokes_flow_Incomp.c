@@ -39,8 +39,16 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Stokes_flow_Incomp.h"
+
+#include "Parallel_related.h" /* CPU_time0() */
+#include "Global_operations.h" /* global_vdot(), global_pdot() */
+#include "Boundary_conditions.h" /* strip_bcs_from_residual() */
+#include "General_matrix_functions.h" /* solve_del2_u() */
+#include "Element_calculations.h" /* assemble_grad_p(),
+								   * assemble_del2_u()
+								   * assemble_div_u() */
+
 
 extern int Emergency_stop;
 

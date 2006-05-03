@@ -38,8 +38,17 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Topo_gravity.h"
+
+/* get_elt_k(), get_elt_f(), get_elt_g() */
+#include "Element_calculations.h"
+
+/* get_global_1d_shape_fn(), get_rtf() */
+#include "Size_does_matter.h"
+
+/* exchange_node_f20() */
+#include "Parallel_related.h"
+
 
 #define c_re(a) a.real
 #define c_im(a) a.imag

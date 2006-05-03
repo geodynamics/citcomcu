@@ -34,8 +34,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Solver_conj_grad.h"
+
+#include "Element_calculations.h" /* assemble_forces() */
+#include "Boundary_conditions.h"  /* strip_bcs_from_residual() */
 
 void set_cg_defaults(struct All_variables *E)
 {

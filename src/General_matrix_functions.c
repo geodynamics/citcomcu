@@ -45,12 +45,19 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
 
 #ifdef _UNICOS
 #include <fortran.h>
 #endif
+
+#include "General_matrix_functions.h"
+
+#include "Global_operations.h" /* global_vdot() */
+#include "Parallel_related.h" /* CPU_time0(), exchange_id_d20() */
+#include "Solver_multigrid.h" /* project_vector(), interp_vector() */
+#include "Boundary_conditions.h" /* strip_bcs_from_residual() */
+#include "Element_calculations.h" /* assemble_del2_u(), *_assemble_del2_u() */
+
 
 /* *INDENT-OFF* */
 int epsilon[4][4] = {  {0,  0,  0,  0}, /* Levi-Cita epsilon */

@@ -4,12 +4,16 @@
 
 #
 #  NOTES:
-#  1) Macro substitution is different for different version of make, for SGI, CRAY, HP
-#  It seems necessary to go through and replace the CEXT ... FOBJFLAG macros manually.
+#  
+#  1) Macro substitution is different for different version of make,
+#  	  for SGI, CRAY, HP.  It seems necessary to go through and replace
+#  	  the CEXT ... FOBJFLAG macros manually.
 #
-#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows, add machines
-#  where necessary, try and find a better way than just defining "const" to be null. 
+#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows,
+#     add machines where necessary, try and find a better way than just
+#     defining "const" to be null. 
 #
+
 ##############################################################################
 #	Individual Machine Variations
 ##############################################################################
@@ -101,7 +105,7 @@ SGIOPTIM=-O -fsingle
 #LinuxFLAGS=-I/usr/local/mpi/include
 #LinuxFLAGS=-I/opt/mpi/include
 #LinuxFLAGS=-I$(HOME)/usr/include
-LinuxFLAGS=
+LinuxFLAGS=-Wall
 LinuxLDFLAGS=
 #LinuxOPTIM=-g
 LinuxOPTIM=-O3
@@ -117,7 +121,7 @@ PARAGONOPTIM=-O4
 #	Choose the actual flags for your machine here ...
 ####################################################################
 
-FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
+FLAGS=$(LinuxFLAGS)
 LDFLAGS= $(LinuxLDFLAGS)
 OPTIM= $(LinuxOPTIM)
 
@@ -177,101 +181,101 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 default: citcom.mpi
 
 clean:
-	rm -f *.o
+	rm -f *.o *~ \#*\#
 
 clean-all:
 	rm -f *.o citcom.mpi
 
-global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
+global_defs.h: viscosity_descriptions.h advection.h convection_variables.h
 		
 # The following entries can probably be automated from $CFILES etc
 
 Advection_diffusion.o: $(HEADER) Advection_diffusion.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Advection_diffusion.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Advection_diffusion.c
 #
 Boundary_conditions.o: $(HEADER) Boundary_conditions.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Boundary_conditions.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Boundary_conditions.c
 #	
 Citcom.o: $(HEADER) Citcom.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Citcom.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Citcom.c
 #	
 Composition_adv.o: $(HEADER) Composition_adv.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Composition_adv.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Composition_adv.c
 #	
 Construct_arrays.o: $(HEADER) Construct_arrays.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Construct_arrays.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Construct_arrays.c
 #	
 Convection.o: $(HEADER) Convection.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Convection.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Convection.c
 #	
 Drive_solvers.o: $(HEADER) Drive_solvers.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Drive_solvers.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Drive_solvers.c
 #	
 Element_calculations.o: $(HEADER) Element_calculations.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Element_calculations.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Element_calculations.c
 
 General_matrix_functions.o: $(HEADER) General_matrix_functions.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  General_matrix_functions.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  General_matrix_functions.c
 		
 Geometry_cartesian.o: $(HEADER) Geometry_cartesian.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Geometry_cartesian.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Geometry_cartesian.c
 	
 Global_operations.o: $(HEADER) Global_operations.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Global_operations.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Global_operations.c
 	
 Instructions.o: $(HEADER) Instructions.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Instructions.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Instructions.c
 	
 Nodal_mesh.o: $(HEADER) Nodal_mesh.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Nodal_mesh.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Nodal_mesh.c
 
 Output.o: $(HEADER) Output.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Output.c
 	
 Pan_problem_misc_functions.o: $(HEADER)  Pan_problem_misc_functions.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Pan_problem_misc_functions.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Pan_problem_misc_functions.c
 		
 Parallel_related.o: $(HEADER) Parallel_related.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Parallel_related.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Parallel_related.c
 
 Parsing.o: $(HEADER) Parsing.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Parsing.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Parsing.c
 
 Phase_change.o: $(HEADER) Phase_change.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Phase_change.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Phase_change.c
 
 Process_velocity.o: $(HEADER) Process_velocity.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Process_velocity.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Process_velocity.c
 
 Process_buoyancy.o: $(HEADER) Process_buoyancy.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Process_buoyancy.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Process_buoyancy.c
 			
 Profiling.o: $(HEADER) Profiling.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Profiling.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Profiling.c
 	
 Shape_functions.o: $(HEADER) Shape_functions.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Shape_functions.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Shape_functions.c
 	
 Size_does_matter.o: $(HEADER) Size_does_matter.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Size_does_matter.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Size_does_matter.c
 	
 Solver_conj_grad.o: $(HEADER) Solver_conj_grad.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Solver_conj_grad.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Solver_conj_grad.c
 	
 Solver_multigrid.o: $(HEADER) Solver_multigrid.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Solver_multigrid.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Solver_multigrid.c
 
 Sphere_harmonics.o: $(HEADER) Sphere_harmonics.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Sphere_harmonics.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Sphere_harmonics.c
 
 Stokes_flow_Incomp.o: $(HEADER) Stokes_flow_Incomp.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Stokes_flow_Incomp.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Stokes_flow_Incomp.c
 	
 Topo_gravity.o: $(HEADER) Topo_gravity.c 
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Topo_gravity.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Topo_gravity.c
 
 Viscosity_structures.o: $(HEADER) Viscosity_structures.c
-	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Viscosity_structures.c
+	$(CC) $(OPTIM) $(FLAGS) $(OBJFLAG)  Viscosity_structures.c
 	
 
 Blas_lapack_interfaces.f: Blas_lapack_interfaces.F
@@ -287,4 +291,4 @@ larger:
 
 
 citcom.mpi: $(OBJFILES)  $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
+	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES) $(FFTLIB) $(LIB)

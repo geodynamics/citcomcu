@@ -34,11 +34,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#include "element_definitions.h"
-#include "global_defs.h"
-
 #include <stdio.h>
-
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
@@ -48,6 +44,22 @@
 #if defined(__sgi) || defined(__osf__)
 #include <sys/types.h>
 #endif
+
+#include "Pan_problem_misc_functions.h"
+
+
+/* input_string(), input_int(),
+ * input_float_vector(), input_char_vector() */
+#include "Parsing.h"
+
+#include "Phase_change.h" /* phase_change() */
+#include "Global_operations.h" /* remove_horiz_ave() */
+#include "General_matrix_functions.h" /* vcopy() */
+#include "Parallel_related.h" /* CPU_time0() */
+#include "Nodal_mesh.h" /* p_to_centres(), p_to_nodes() */
+
+
+
 
 
 int get_process_identifier(void)

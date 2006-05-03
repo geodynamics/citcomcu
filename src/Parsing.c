@@ -41,7 +41,10 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <string.h>
-#include "global_defs.h"
+#include "Parsing.h"
+
+#include "Pan_problem_misc_functions.h" /* unique_copy_file() */
+
 
 #define MAXLINE		1024		/* max length of line in input file */
 #define MAXNAME		64			/* max length of name */
@@ -50,7 +53,7 @@
 #define MAXVECTOR	10			/* max # of elements for unspecified vectors */
 
 /* abbreviations: */
-#define AL 		struct arglist
+#define AL 		    struct arglist
 #define PROGNAME	ext_par.progname
 #define FLAGS		ext_par.argflags
 #define ARGLIST		ext_par.arglist
@@ -376,7 +379,7 @@ int input_string(char *name, char *value, char *Default)
 }
 
 /* supports name=on/off too */
-int input_boolean (char *name, int *value, char *interpret)
+int input_boolean(char *name, int *value, char *interpret)
 {
 	//char *sptr;
 	struct arglist *alptr;

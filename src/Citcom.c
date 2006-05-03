@@ -34,10 +34,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/*CITCOM: A finite element convection program written at Caltech 1992 */
-/*Aims to include an iterative matrix solver based on Multigrid techniques */
-/*To do this requires the use of a mixed method and a conjugate-gradient */
-/*approach to determining the */
+/* CITCOM: A finite element convection program written at Caltech 1992
+ *  Aims to include an iterative matrix solver based on Multigrid techniques
+ *  To do this requires the use of a mixed method and a conjugate-gradient
+ *  approach to determining the */
 
 #include <mpi.h>
 
@@ -48,6 +48,13 @@
 
 #include "element_definitions.h"
 #include "global_defs.h"
+
+#include "Parallel_related.h"    /* CPU_time0(), parallel_process_*() */
+#include "Instructions.h"        /* read_instructions(), report() */
+#include "Drive_solvers.h"       /* general_stokes_solver() */
+#include "Process_buoyancy.h"    /* process_temp_field() */
+#include "Process_velocity.h"    /* process_new_velocity() */
+#include "Advection_diffusion.h" /* process_heating() */
 
 extern int Emergency_stop;
 

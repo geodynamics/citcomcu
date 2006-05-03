@@ -34,8 +34,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/*	Header file containing the appropriate definitions for the elements being used 
-in the problem.   Include in all of the files linking in to the element program.  */
+/*	Header file containing the appropriate definitions for the elements being
+ *	used in the problem.  Include in all of the files linking in to the
+ *	element program.
+ */
+
+
+#ifndef __ELEMENT_DEFINITIONS_H__
+#define __ELEMENT_DEFINITIONS_H__
 
 /* *INDENT-OFF* <-- disables formatting when using /usr/bin/indent */
 
@@ -256,3 +262,5 @@ static const int
 
 
 /* *INDENT-ON* <-- enable formatting */
+
+#endif

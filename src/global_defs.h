@@ -40,6 +40,9 @@
  * #include this file everywhere!
  */
 
+#ifndef __GLOBAL_DEFS_H__
+#define __GLOBAL_DEFS_H__
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1014,8 +1017,15 @@ struct All_variables
 };
 
 /* To regenerate function prototypes:
+ *  1. Edit *.c files
+ *  2. Run script: ./prototypes.py
+ *  
+ * Old way of regenerating function prototypes:
  * 	1. Comment out the #include line below, and save this file
  * 	2. Run command: cproto -q -p -f 3 *.c > prototypes.h
- * 	3. Uncomment the #include line below, and save this file
+ * 	3. Uncomment the #include line below, and save this file.
  */
-#include "prototypes.h"
+
+// #include "prototypes.h" // no longer necessary
+
+#endif

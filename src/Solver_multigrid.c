@@ -34,9 +34,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#include "element_definitions.h"
-#include "global_defs.h"
 #include <math.h>
+#include "Solver_multigrid.h"
+
+/* exchange_id_d20(), exchange_node_f20() */
+#include "Parallel_related.h"
+
+/* visc_from_gint_to_nodes(), visc_from_nodes_to_gint(),
+ * visc_from_gint_to_ele(), visc_from_ele_to_gint() */ 
+#include "Nodal_mesh.h"
 
 
 /* *INDENT-OFF* */

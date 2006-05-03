@@ -40,8 +40,17 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Nodal_mesh.h"
+
+/* input_int(), input_float_vector(), input_int_vector() */
+#include "Parsing.h"
+
+/* parallel_process_termination(), exchange_node_f20() */
+#include "Parallel_related.h"
+
+/* inject_node_fvector() */
+#include "Solver_multigrid.h"
+
 
 extern int Emergency_stop;
 

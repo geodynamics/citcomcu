@@ -41,10 +41,35 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
 #include <stdlib.h>				/* for "system" command */
 #include <string.h>
+#include "Convection.h"
+
+
+/* input_int(), input_float(), input_boolean(),
+ * input_float_vector(), input_int_vector(), input_string() */
+#include "Parsing.h"
+
+/* report() */
+#include "Instructions.h"
+
+/* velocity_boundary_conditions(), temperature_boundary_conditions()
+ * temperatures_conform_bcs() */
+#include "Boundary_conditions.h"
+
+/* modified_plgndr_a() */
+#include "General_matrix_functions.h"
+
+/* thermal_buoyancy(), myatan() */
+#include "Pan_problem_misc_functions.h"
+
+/* get_element(), get_C_from_markers() */
+#include "Composition_adv.h"
+
+/* strain_rate_2_inv() */
+#include "Viscosity_structures.h"
+
+
 
 void set_convection_defaults(struct All_variables *E)
 {

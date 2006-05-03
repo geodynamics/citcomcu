@@ -34,19 +34,25 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/*  Here are the routines which process the results of each velocity solution, and call
-    the relevant output routines. At this point, the velocity and pressure fields have
-    been calculated and stored at the nodes. The only properties of the velocity field
-    which are already known are those required to check convergence of the iterative
-    scheme and so on. */
+/*  Here are the routines which process the results of each velocity
+ *  solution, and call the relevant output routines. At this point,
+ *  the velocity and pressure fields have been calculated and stored
+ *  at the nodes. The only properties of the velocity field which are
+ *  already known are those required to check convergence of the
+ *  iterative scheme and so on. */
 
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
 #include <stdlib.h>				/* for "system" command */
 
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Process_velocity.h"
+
+#include "Topo_gravity.h" /* get_STD_topo() */
+#include "Output.h" /* output_velo_related() */
+#include "Nodal_mesh.h" /* visc_from_gint_to_nodes() */
+#include "Global_operations.h" /* return_horiz_ave(), return_bulk_value() */
+
 
 void process_new_velocity(struct All_variables *E, int ii)
 {

@@ -39,9 +39,17 @@
 
 #include <math.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
 #include <stdlib.h>
+#include "Sphere_harmonics.h"
+
+/* sqrt_multis(), modified_plgndr_a() */
+#include "General_matrix_functions.h"
+
+/* gather_TG_to_me0(), sum_across_surf_sph1() */
+#include "Global_operations.h"
+
+#include "Output.h" /* print_field_spectral_regular() */
+#include "Parallel_related.h" /* parallel_process_sync() */
 
 /*   ======================================================================
     ======================================================================  */

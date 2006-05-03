@@ -37,8 +37,21 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Construct_arrays.h"
+
+/* get_elt_k(), get_aug_k(), build_diagonal_of_K()
+ * get_elt_g(), build_diagonal_of_Ahat() */
+#include "Element_calculations.h"
+
+/* exchange_id_d20() */
+#include "Parallel_related.h" 
+
+/* layers() */
+#include "Viscosity_structures.h"
+
+/* project_viscosity() */
+#include "Solver_multigrid.h"
+
 
 /*========================================================
   Function to make the IEN array for a mesh of given 

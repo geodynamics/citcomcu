@@ -43,8 +43,10 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Global_operations.h"
+
+#include "Size_does_matter.h" /* get_global_1d_shape_fn() */
+
 
 /* ===============================================
    strips horizontal average from nodal field X. 

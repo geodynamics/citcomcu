@@ -44,8 +44,33 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Instructions.h"
+
+/* setup_parser(), shutdown_parser(), input_string(),
+ * input_boolean(), input_int(), input_float(), input_double() */
+#include "Parsing.h"
+
+/* CPU_time0(), parallel_domain_decomp1(),
+ * parallel_shuffle_ele_and_id(), parallel_communication_routs() */
+#include "Parallel_related.h"
+
+/* construct_ien(), construct_masks(), construct_id(), construct_lm(),
+ * construct_sub_element(), construct_mat_group() */
+#include "Construct_arrays.h"
+
+/* set_2dc_defaults(), set_2pt5dc_defaults(),
+ * set_3dc_defaults(), set_3ds_defaults() */
+#include "Geometry_cartesian.h"
+
+#include "Pan_problem_misc_functions.h" /* get_process_identifier() */
+#include "Nodal_mesh.h" /* node_locations() */
+#include "Shape_functions.h" /* construct_shape_functions() */
+#include "Size_does_matter.h" /* mass_matrix() */
+#include "Convection.h" /* set_convection_defaults() */
+#include "Solver_conj_grad.h" /* set_cg_defaults() */
+#include "Solver_multigrid.h" /* set_mg_defaults() */
+#include "Viscosity_structures.h" /* viscosity_parameters() */
+
 
 int Emergency_stop;
 

@@ -43,9 +43,12 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include "element_definitions.h"
-#include "global_defs.h"
 #include <mpi.h>
+#include "Size_does_matter.h"
+
+#include "General_matrix_functions.h" /* determinant(), cofactor() */
+#include "Pan_problem_misc_functions.h" /* myatan() */
+#include "Parallel_related.h" /* exchange_node_f20() */
 
 
 void twiddle_thumbs(struct All_variables *yawn, int scratch_groin)

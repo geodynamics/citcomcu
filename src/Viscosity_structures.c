@@ -43,8 +43,25 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <string.h>
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Viscosity_structures.h"
+
+
+/* input_boolean(), input_int(), input_float(), input_string(),
+ * input_float_vector() */
+#include "Parsing.h"
+
+/* parallel_process_termination() */
+#include "Parallel_related.h"
+
+/* p_to_centres(), p_to_nodes() */
+#include "Nodal_mesh.h"
+
+/* return_horiz_ave(), propogator_down_process() */
+#include "Global_operations.h"
+
+/* get_rtf() */
+#include "Size_does_matter.h"
+
 
 void viscosity_parameters(struct All_variables *E)
 {

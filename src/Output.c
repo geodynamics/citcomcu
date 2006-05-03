@@ -48,8 +48,7 @@
 #include <string.h>
 #endif
 
-#include "element_definitions.h"
-#include "global_defs.h"
+#include "Output.h"
 
 void output_velo_related(struct All_variables *E, int file_number)
 {
