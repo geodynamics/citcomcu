@@ -46,7 +46,7 @@
 #include "global_defs.h"
 
 
-void parallel_process_initilization(struct All_variables *E, int argc, char **argv)
+void parallel_process_initialization(struct All_variables *E, int argc, char **argv)
 {
 	E->parallel.me = 0;
 	E->parallel.nproc = 1;

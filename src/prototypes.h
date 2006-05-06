@@ -202,7 +202,7 @@ void field_arbitrary_harmonic_file(struct All_variables *E, int parse_and_apply,
 void field_arbitrary_harmonic(struct All_variables *E, struct Harm *HARM, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off);
 double myatan(double y, double x);
 /* Parallel_related.c */
-void parallel_process_initilization(struct All_variables *E, int argc, char **argv);
+void parallel_process_initialization(struct All_variables *E, int argc, char **argv);
 void parallel_process_termination(void);
 void parallel_domain_decomp1(struct All_variables *E);
 void parallel_shuffle_ele_and_id(struct All_variables *E);
