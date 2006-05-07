@@ -100,7 +100,7 @@ void setup_parser(char *filename, int verbose)
 
     if((fp = fopen(filename, "r")) == NULL)
     {
-        fprintf(stderr, "File: %s is unreadable\n", av[1]);
+        fprintf(stderr, "File: %s is unreadable\n", filename);
         exit(11);
     }
 
