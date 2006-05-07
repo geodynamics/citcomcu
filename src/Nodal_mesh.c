@@ -263,10 +263,16 @@ void node_locations(struct All_variables *E)
             fprintf(E->fp, "output_coordinates \n");
             if(E->control.Rsphere)
                 for(i = 1; i <= E->lmesh.NNO[lev]; i++)
-                    fprintf(E->fp, "%d %g %g %g\n", i, E->SXX[lev][1][i], E->SXX[lev][2][i], E->SXX[lev][3][i]);
+                    fprintf(E->fp, "%d %g %g %g\n", i,
+                            E->SXX[lev][1][i],
+                            E->SXX[lev][2][i],
+                            E->SXX[lev][3][i]);
             else
                 for(i = 1; i <= E->lmesh.NNO[lev]; i++)
-                    fprintf(E->fp, "%d %g %g %g\n", i, E->XX[lev][1][i], E->XX[lev][2][i], E->XX[lev][3][i]);
+                    fprintf(E->fp, "%d %g %g %g\n", i,
+                            E->XX[lev][1][i],
+                            E->XX[lev][2][i],
+                            E->XX[lev][3][i]);
         }
     }
 
@@ -356,6 +362,7 @@ void flogical_mesh_to_real(struct All_variables *E, float *data, int level)
     int i, j, n1, n2;
 
     if(E->mesh.periodic_x)
+    {
         for(i = 1; i <= E->mesh.NOZ[level]; i++)
             for(j = 1; j <= E->mesh.NOY[level]; j++)
             {
@@ -365,19 +372,24 @@ void flogical_mesh_to_real(struct All_variables *E, float *data, int level)
                 data[n2] = data[n1];
 
             }
-
+    }
+    
     if(E->mesh.periodic_y)
+    {
         for(i = 1; i <= E->mesh.NOZ[level]; i++)
             for(j = 1; j <= E->mesh.NOX[level]; j++)
             {
                 n1 = i + (j - 1) * E->mesh.NOZ[level];
-                n2 = n1 + (E->mesh.NOY[level] - 1) * E->mesh.NOZ[level] * E->mesh.NOX[level];
+                n2 = n1 + (E->mesh.NOY[level]-1) * E->mesh.NOZ[level]
+                                                 * E->mesh.NOX[level];
 
                 data[n2] = data[n1];
 
             }
+    }
 
-    if(E->mesh.periodic_y && E->mesh.periodic_x)    /* then need to do the 1st one again */
+    if(E->mesh.periodic_y && E->mesh.periodic_x)
+    {   /* then need to do the 1st one again */
         for(i = 1; i <= E->mesh.NOZ[level]; i++)
             for(j = 1; j <= E->mesh.NOY[level]; j++)
             {
@@ -387,13 +399,13 @@ void flogical_mesh_to_real(struct All_variables *E, float *data, int level)
                 data[n2] = data[n1];
 
             }
+    }
 
     return;
 }
 
 void p_to_nodes(struct All_variables *E, double *P, float *PN, int lev)
 {
-    //int e, element, node, j;
     int element, node, j;
 
     for(node = 1; node <= E->lmesh.NNO[lev]; node++)
@@ -418,7 +430,6 @@ void p_to_nodes(struct All_variables *E, double *P, float *PN, int lev)
 
 void p_to_centres(struct All_variables *E, float *PN, double *P, int lev)
 {
-    //int p, element, node, j;
     int p, j;
     double weight;
 
@@ -437,7 +448,6 @@ void p_to_centres(struct All_variables *E, float *PN, double *P, int lev)
 
 void v_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
 {
-    //int e, i, j, k;
     int e, i, j;
     const int nsd = E->mesh.nsd;
     const int vpts = vpoints[nsd];
@@ -448,13 +458,13 @@ void v_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
         {
             VE[(e - 1) * vpts + i] = 0.0;
             for(j = 1; j <= ends; j++)
-                VE[(e - 1) * vpts + i] += VN[E->IEN[lev][e].node[j]] * E->N.vpt[GNVINDEX(j, i)];
+                VE[(e - 1) * vpts + i] 
+                    += VN[E->IEN[lev][e].node[j]] * E->N.vpt[GNVINDEX(j, i)];
         }
 }
 
 void v_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 {
-    //int e, i, j, k, n;
     int e, i, j, n;
     const int nsd = E->mesh.nsd;
     const int vpts = vpoints[nsd];
@@ -467,7 +477,8 @@ void v_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
         {
             n = E->IEN[lev][e].node[j];
             for(i = 1; i <= vpts; i++)
-                VN[n] += E->N.vpt[GNVINDEX(j, i)] * E->TW[lev][n] * VE[(e - 1) * vpts + i];
+                VN[n] += E->N.vpt[GNVINDEX(j, i)] * E->TW[lev][n]
+                                                  * VE[(e - 1) * vpts + i];
         }
     flogical_mesh_to_real(E, VN, E->mesh.levmax);
     return;
@@ -475,7 +486,6 @@ void v_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 
 void visc_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
 {
-    //int e, i, j, k;
     int e, i, j;
     const int nsd = E->mesh.nsd;
     const int vpts = vpoints[nsd];
@@ -486,7 +496,9 @@ void visc_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
         {
             VE[(e - 1) * vpts + i] = 0.0;
             for(j = 1; j <= ends; j++)
-                VE[(e - 1) * vpts + i] += log(VN[E->IEN[lev][e].node[j]]) * E->N.vpt[GNVINDEX(j, i)];
+                VE[(e - 1) * vpts + i] 
+                  += log(VN[E->IEN[lev][e].node[j]])*E->N.vpt[GNVINDEX(j, i)];
+            
             VE[(e - 1) * vpts + i] = exp(VE[(e - 1) * vpts + i]);
         }
     return;
@@ -495,7 +507,6 @@ void visc_to_intpts(struct All_variables *E, float *VN, float *VE, int lev)
 
 void visc_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
 {
-    //int e, i, j, k, n;
     int e, i, j, n;
     const int nsd = E->mesh.nsd;
     const int vpts = vpoints[nsd];
@@ -511,14 +522,16 @@ void visc_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
             n = E->IEN[lev][e].node[j];
             temp_visc = 0.0;
             for(i = 1; i <= vpts; i++)
-                temp_visc += E->TW[lev][n] * log(E->N.vpt[GNVINDEX(j, i)] * VE[(e - 1) * vpts + i]);
+                temp_visc += E->TW[lev][n] * log(E->N.vpt[GNVINDEX(j, i)]
+                                           * VE[(e - 1) * vpts + i]);
             VN[n] += exp(temp_visc);
         }
     
     return;
 }
 
-void visc_from_ele_to_gint(struct All_variables *E, float *VN, float *VE, int lev)
+void visc_from_ele_to_gint(struct All_variables *E,
+                           float *VN, float *VE, int lev)
 {
     //int m, e, i, j, k, n;
     int e, i;
@@ -536,7 +549,8 @@ void visc_from_ele_to_gint(struct All_variables *E, float *VN, float *VE, int le
 }
 
 
-void visc_from_gint_to_ele(struct All_variables *E, float *VE, float *VN, int lev)
+void visc_from_gint_to_ele(struct All_variables *E,
+                           float *VE, float *VN, int lev)
 {
     //int m, e, i, j, k, n;
     int e, i;
@@ -560,7 +574,8 @@ void visc_from_gint_to_ele(struct All_variables *E, float *VE, float *VN, int le
 
 
 
-void visc_from_gint_to_nodes(struct All_variables *E, float *VE, float *VN, int lev)
+void visc_from_gint_to_nodes(struct All_variables *E,
+                             float *VE, float *VN, int lev)
 {
     //int m, e, i, j, k, n;
     int e, i, j, n;
@@ -594,7 +609,8 @@ void visc_from_gint_to_nodes(struct All_variables *E, float *VE, float *VN, int 
     return;
 }
 
-void visc_from_nodes_to_gint(struct All_variables *E, float *VN, float *VE, int lev)
+void visc_from_nodes_to_gint(struct All_variables *E,
+                             float *VN, float *VE, int lev)
 {
     //int m, e, i, j, k, n;
     int e, i, j;
@@ -607,14 +623,17 @@ void visc_from_nodes_to_gint(struct All_variables *E, float *VN, float *VE, int 
             VE[(e - 1) * vpts + i] = 0.0;
 
     for(e = 1; e <= E->lmesh.NEL[lev]; e++)
+    {
         for(i = 1; i <= vpts; i++)
         {
             temp_visc = 0.0;
             for(j = 1; j <= ends; j++)
-                temp_visc += E->N.vpt[GNVINDEX(j, i)] * VN[E->IEN[lev][e].node[j]];
-
+                temp_visc += E->N.vpt[GNVINDEX(j, i)]
+                                * VN[E->IEN[lev][e].node[j]];
+            
             VE[(e - 1) * vpts + i] = temp_visc;
         }
-
+    }
+    
     return;
 }
