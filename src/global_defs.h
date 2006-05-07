@@ -93,7 +93,7 @@ void *Malloc1();
 #define SWAP(a,b) {temp=(a);(a)=(b);(b)=temp;}
 
 typedef float higher_precision;	/* matrix coeffs etc */
-typedef double higher_precision1;	/* intermediate calculations for finding above coeffs */
+typedef double higher_precision1;	/* intermediate calculations for finding above coeffs */    /*FIXME: rename to std_precision */
 
 
 /* Common structures */
