@@ -181,12 +181,14 @@ void visc_from_ele_to_gint(struct All_variables *E, float *VN, float *VE, int le
 void visc_from_gint_to_ele(struct All_variables *E, float *VE, float *VN, int lev);
 void visc_from_gint_to_nodes(struct All_variables *E, float *VE, float *VN, int lev);
 void visc_from_nodes_to_gint(struct All_variables *E, float *VN, float *VE, int lev);
-/* Output.c */
-void output_velo_related(struct All_variables *E, int file_number);
+/* Obsolete.c */
 void output_velo_related_binary(struct All_variables *E, int file_number);
 void output_temp(struct All_variables *E, int file_number);
 void process_restart(struct All_variables *E);
+/* Output.c */
+void output_velo_related(struct All_variables *E, int file_number);
 void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen);
+/* Output_hdf5.c */
 /* Pan_problem_misc_functions.c */
 void thermal_buoyancy(struct All_variables *E);
 double SIN_D(double x);
@@ -204,7 +206,7 @@ void field_arbitrary_harmonic(struct All_variables *E, struct Harm *HARM, float 
 double myatan(double y, double x);
 /* Parallel_related.c */
 void parallel_process_initialization(struct All_variables *E, int argc, char **argv);
-void parallel_process_termination(void);
+void parallel_process_termination(int code);
 void parallel_domain_decomp1(struct All_variables *E);
 void parallel_shuffle_ele_and_id(struct All_variables *E);
 void parallel_shuffle_ele_and_id_bc1(struct All_variables *E);
@@ -221,7 +223,7 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
-void setup_parser(int ac, char **av);
+void setup_parser(char *filename, int verbose);
 void shutdown_parser(void);
 int add_to_parameter_list(register char *name, register char *value);
 int compute_parameter_hash_table(register char *s);
