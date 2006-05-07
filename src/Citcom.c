@@ -62,6 +62,12 @@ int main(int argc, char **argv)
     parallel_process_initialization(&E, argc, argv);
     gethostname(E.parallel.machinename, 160);
 
+    if(argc < 2)
+    {
+        fprintf(stderr, "Usage: citcom PARAMETERFILE\n");
+        parallel_process_termination(10);
+    }
+
     E.monitor.solution_cycles = 0;
 
     if(E.parallel.me == 0)
