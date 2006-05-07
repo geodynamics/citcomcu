@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         {
             fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n",
                     E.monitor.T_interior, E.advection.last_sub_iterations);
-            parallel_process_termination();
+            parallel_process_termination(8);
         }
 
         if(E.parallel.me == 0)
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
     fclose(E.fp);
 
-    parallel_process_termination();
+    parallel_process_termination(0);
 
     return 0;
 }

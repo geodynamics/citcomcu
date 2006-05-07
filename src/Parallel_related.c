@@ -66,10 +66,10 @@ void parallel_process_initialization(struct All_variables *E,
 /* ============================================ */
 /* ============================================ */
 
-void parallel_process_termination(void)
+void parallel_process_termination(int code)
 {
     MPI_Finalize();
-    exit(8); //FIXME: don't call exit here...and why 8??
+    exit(code);
     return;
 }
 
@@ -241,12 +241,13 @@ void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
         for(i = 1; i <= 2; i++)
         {                       /* do the ZOY boundary elements first */
             ii++;
-            if((i == 1 && E->parallel.me_loc[1] != 0) || (i == 2 && E->parallel.me_loc[1] != E->parallel.nprocx - 1))
+            if((i == 1 && E->parallel.me_loc[1] != 0) ||
+               (i == 2 && E->parallel.me_loc[1] != E->parallel.nprocx - 1))
             {
                 for(k = 1; k <= noy; k++)
                     for(j = 1; j <= noz; j++)
                     {
-                        node = j + (((i == 1) ? 1 : nox) - 1) * noz + (k - 1) * noz * nox;
+                        node = j + (((i==1) ? 1 : nox) - 1)*noz + (k-1)*noz*nox;
                         llnode = j + (k - 1) * noz;
                         E->parallel.NODE[lev][llnode].bound[1][i] = node;
                         E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -261,12 +262,13 @@ void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
         for(j = 1; j <= 2; j++)
         {                       /* do XOY boundary elements */
             ii++;
-            if((j == 1 && E->parallel.me_loc[3] != 0) || (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
+            if((j == 1 && E->parallel.me_loc[3] != 0) ||
+               (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
             {
                 for(k = 1; k <= noy; k++)
                     for(i = 1; i <= nox; i++)
                     {
-                        node = ((j == 1) ? 1 : noz) + (i - 1) * noz + (k - 1) * noz * nox;
+                        node = ((j==1) ? 1 : noz) + (i-1)*noz + (k-1)*noz*nox;
                         llnode = i + (k - 1) * nox;
                         E->parallel.NODE[lev][llnode].bound[3][j] = node;
                         E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -281,12 +283,13 @@ void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
         for(k = 1; k <= 2; k++)
         {                       /* do XOZ boundary elements for 3D */
             ii++;
-            if((k == 1 && E->parallel.me_loc[2] != 0) || (k == 2 && E->parallel.me_loc[2] != E->parallel.nprocy - 1))
+            if((k == 1 && E->parallel.me_loc[2] != 0) ||
+               (k == 2 && E->parallel.me_loc[2] != E->parallel.nprocy - 1))
             {
                 for(j = 1; j <= noz; j++)
                     for(i = 1; i <= nox; i++)
                     {
-                        node = j + (i - 1) * noz + (((k == 1) ? 1 : noy) - 1) * noz * nox;
+                        node = j + (i-1)*noz + (((k==1) ? 1 : noy) - 1)*noz*nox;
                         llnode = j + (i - 1) * noz;
                         E->parallel.NODE[lev][llnode].bound[2][k] = node;
                         E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -333,7 +336,7 @@ void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
             for(k = 1; k <= noy; k++)
                 for(j = 1; j <= noz; j++)
                 {
-                    node = j + (((i == 1) ? 1 : nox) - 1) * noz + (k - 1) * noz * nox;
+                    node = j + (((i==1) ? 1 : nox) - 1)*noz + (k - 1)*noz*nox;
                     llnode = j + (k - 1) * noz;
                     E->parallel.NODE[lev][llnode].bound[1][i] = node;
                     E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -347,12 +350,13 @@ void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
         for(j = 1; j <= 2; j++)
         {                       /* do XOY boundary elements */
             ii++;
-            if((j == 1 && E->parallel.me_loc[3] != 0) || (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
+            if((j == 1 && E->parallel.me_loc[3] != 0) ||
+               (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
             {
                 for(k = 1; k <= noy; k++)
                     for(i = 1; i <= nox; i++)
                     {
-                        node = ((j == 1) ? 1 : noz) + (i - 1) * noz + (k - 1) * noz * nox;
+                        node = ((j==1) ? 1 : noz) + (i-1)*noz + (k-1)*noz*nox;
                         llnode = i + (k - 1) * nox;
                         E->parallel.NODE[lev][llnode].bound[3][j] = node;
                         E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -370,7 +374,7 @@ void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
             for(j = 1; j <= noz; j++)
                 for(i = 1; i <= nox; i++)
                 {
-                    node = j + (i - 1) * noz + (((k == 1) ? 1 : noy) - 1) * noz * nox;
+                    node = j + (i-1)*noz + (((k==1) ? 1 : noy) - 1)*noz*nox;
                     llnode = j + (i - 1) * noz;
                     E->parallel.NODE[lev][llnode].bound[2][k] = node;
                     E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
@@ -1272,14 +1276,11 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 
 double CPU_time0(void)
 {
-    double time;
-    time = MPI_Wtime();
-    return time;
+    return (double)MPI_Wtime();
 }
 
 
 void parallel_process_sync(void)
 {
     MPI_Barrier(MPI_COMM_WORLD);
-    return;
 }

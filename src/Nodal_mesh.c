@@ -201,7 +201,7 @@ void node_locations(struct All_variables *E)
     else
     {
         fprintf(stderr, "Your requested geometry is not supported! Sorry!\n");
-        parallel_process_termination();
+        parallel_process_termination(8);
     }
 
 

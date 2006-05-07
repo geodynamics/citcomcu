@@ -100,14 +100,6 @@ void setup_parser(int ac, char **av)
 
     /* should get file length & cpp &c before any further parsing */
 
-    /* for now, read one filename from the command line, we'll parse that ! */
-
-    if(ac < 2)
-    {
-        fprintf(stderr, "Usage: citcom PARAMETERFILE\n");
-        exit(10);
-    }
-
 
     if((fp = fopen(av[1], "r")) == NULL)
     {

@@ -113,7 +113,7 @@ void viscosity_parameters(struct All_variables *E)
 	{
 		if(E->parallel.me == 0)
 			fprintf(stderr, "this option for rheology is not supported\n");
-		parallel_process_termination();
+		parallel_process_termination(8);
 	}
 	else if(E->viscosity.RHEOL == 3)
 	{

@@ -261,7 +261,7 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	{
 		fprintf(E->fp, "number of markers over the limit %d\n", E->advection.markers1);
 		fflush(E->fp);
-		parallel_process_termination();
+		parallel_process_termination(8);
 	}
 
 	exchange_markers(E);
@@ -293,7 +293,7 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 	{
 		fprintf(E->fp, "problems with no_trans1 no_tran %d %d\n", no_trans1, no_tran);
 		fflush(E->fp);
-		parallel_process_termination();
+		parallel_process_termination(8);
 	}
 
 	ii = jj = 0;
@@ -722,7 +722,7 @@ int get_element(struct All_variables *E, double XMC1, double XMC2, double XMC3, 
 	{
 		fprintf(E->fp, "!!!overflow %g %g %g %d\n", XMC1, XMC2, XMC3, el);
 		fflush(E->fp);
-		parallel_process_termination();
+		parallel_process_termination(8);
 	}
 
 	return (el);
