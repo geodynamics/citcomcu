@@ -90,11 +90,12 @@ static int DESCRIBE = 0;
 static int BEGINNER = 0;
 
 
-void setup_parser(char *filename, int verbose)
+void setup_parser(char *filename, int verbose_output)
 {
     FILE *fp;
     char *pl, *pn, *pv;
     char t1, t2, line[MAXLINE], name[MAXNAME], value[MAXVALUE];
+    int verbose, describe, beginner;
 
     /* should get file length & cpp &c before any further parsing */
 
@@ -149,14 +150,17 @@ loop:   /* loop over entries on each line */
 
     ARGHEAD = ARGLIST;
 
-    /* Now we can use our routines to check & set their own flags ! */
-    input_boolean("VERBOSE",  &VERBOSE,  "off");
-    input_boolean("DESCRIBE", &DESCRIBE, "off");
-    input_boolean("BEGINNER", &BEGINNER, "off");
-
-    /* override verbosity options, if necessary */
-    if(!verbose)
-        VERBOSE = DESCRIBE = BEGINNER = 0;
+    if(verbose_output)
+    {
+        /* Now we can use our routines to check & set their own flags ! */
+        input_boolean("VERBOSE",  &verbose,  "off");
+        input_boolean("DESCRIBE", &describe, "off");
+        input_boolean("BEGINNER", &beginner, "off");
+        /* Now, set the approprate flags */
+        VERBOSE = verbose;
+        DESCRIBE = describe;
+        BEGINNER = beginner;
+    }
 
     return;
 }
