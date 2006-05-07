@@ -12,12 +12,12 @@
  *
  * For questions or comments regarding this software, you may contact
  *
- *     Luis Armendariz <luis@geodynamics.org>
- *     http://geodynamics.org
- *     Computational Infrastructure for Geodynamics (CIG)
- *     California Institute of Technology
- *     2750 East Washington Blvd, Suite 210
- *     Pasadena, CA 91007
+ *   Luis Armendariz <luis@geodynamics.org>
+ *   http://geodynamics.org
+ *   Computational Infrastructure for Geodynamics (CIG)
+ *   California Institute of Technology
+ *   2750 East Washington Blvd, Suite 210
+ *   Pasadena, CA 91007
  *
  * This program is free software; you can redistribute it and/or modify 
  * it under the terms of the GNU General Public License as published by 
@@ -49,15 +49,43 @@
 
 int Emergency_stop;
 
+
+void unique_copy_file(struct All_variables *E, char *name, char *comment)
+{
+    char unique_name[500];
+    char command[600];
+    
+    if(E->parallel.me == 0)
+    {
+        sprintf(unique_name, "%06d.%s-%s", E->control.PID, comment, name);
+        sprintf(command, "cp -f %s %s\n", name, unique_name);
+        system(command);
+    }
+    
+    return;
+}
+
+void initialize_parser(struct All_variables *E, int argc, char **argv)
+{
+    if(argc > 1)
+    {
+        /* make a copy of the input file before parsing */
+        unique_copy_file(E, argv[1], "copy");
+        /* set up the input file parser (see Parsing.c) for each process */
+        setup_parser(argc, argv);
+        /* do all processes make it here? send something to stdout */
+        printf("%s %d\n", argv[1], E->parallel.me);
+    }
+    return;
+}
+
 void read_instructions(struct All_variables *E, int argc, char **argv)
 {
     double start_time;
 
-    //int *temp, i;
-
-    /* =====================================================
+    /* ======================================================
      * Global interruption handling routine defined once here
-     * =====================================================  */
+     * ====================================================== */
 
     if(E->parallel.me == 0)
         start_time = CPU_time0();
@@ -67,92 +95,79 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 
     E->control.PID = get_process_identifier();
 
-
     /* ==================================================
      * Initialize from the command line 
      * from startup files. (See Parsing.c).
      * ==================================================  */
 
-    setup_parser(E, argc, argv);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok1\n");
-
+    initialize_parser(E, argc, argv);
+    report(E,"ok1");
+    
     global_default_values(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok2\n");
+    report(E,"ok2");
+    
     read_initial_settings(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok3\n");
-    (E->problem_derived_values) (E);    /* call this before global_derived_  */
+    report(E,"ok3");
+    
+    /* call this before global_derived_ */
+    (E->problem_derived_values)(E);  /* calls convection_derived_values() */
     global_derived_values(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok4\n");
+    report(E,"ok4");
+    
     parallel_domain_decomp1(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok5\n");
+    report(E,"ok5");
+    
     allocate_common_vars(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok6\n");
-    (E->problem_allocate_vars) (E);
-    (E->solver_allocate_vars) (E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok6a\n");
+    report(E,"ok6");
+    
+    (E->problem_allocate_vars)(E); /* calls convection_allocate_memory() */
+    (E->solver_allocate_vars)(E);  /* calls either cg_allocate_vars() or mg_allocate_vars() */
+    report(E,"ok6a");
+    
     construct_ien(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok9\n");
-    construct_masks(E);         /* order is important here */
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok10\n");
+    report(E,"ok9");
+    
+    construct_masks(E);      /* order is important here */
+    report(E,"ok10");
+    
     construct_id(E);
     construct_lm(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok11\n");
+    report(E,"ok11");
+    
     construct_sub_element(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok12\n");
+    report(E,"ok12");
 
     node_locations(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok7a\n");
+    report(E,"ok7a");
+    
     construct_mat_group(E);
-
-    (E->problem_boundary_conds) (E);
+    (E->problem_boundary_conds)(E); /* calls convection_boundary_conditions() */
     check_bc_consistency(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok13\n");
+    report(E,"ok13");
 
     parallel_shuffle_ele_and_id(E);
-
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok14\n");
+    report(E,"ok14");
+    
     parallel_communication_routs(E);
-
+    
     construct_shape_functions(E);
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok15\n");
+    report(E,"ok15");
+    
     mass_matrix(E);
+    report(E,"ok16");
+    
+    /* temperature/chemistry/melting etc */
+    (E->problem_initial_fields)(E); /* calls convection_initial_fields() */
+    report(E,"ok17");
+    
+    /* velocity/pressure/viscosity (viscosity must be done LAST) */
+    common_initial_fields(E);
+    report(E,"ok18");
 
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok16\n");
-    (E->problem_initial_fields) (E);    /* temperature/chemistry/melting etc */
+    shutdown_parser();
+    report(E,"done with read_instructions()");
 
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok17\n");
-    common_initial_fields(E);   /* velocity/pressure/viscosity (viscosity must be done LAST) */
-    if(E->parallel.me == 0)
-        fprintf(stderr, "ok18\n");
-
-    shutdown_parser(E);
-
-/*  if (E->parallel.me==0)
-        fprintf (stderr,"done instruction\n");
+/*  
     parallel_process_termination();
     exit(8);
 */
@@ -171,117 +186,117 @@ void allocate_common_vars(struct All_variables *E)
     //int nox, noy, noz, i, j, l, nno_l, npno_l, nozl, nnov_l, nxyz;
     int nox, noy, noz, i, j, l, nxyz;
 
-    E->mesh.fnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(float);
-    E->mesh.dnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(double);
-    E->mesh.feqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2) * sizeof(float);
-    E->mesh.deqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2) * sizeof(double);
+    E->mesh.fnodal_malloc_size = (E->lmesh.nno + 2)*sizeof(float);
+    E->mesh.dnodal_malloc_size = (E->lmesh.nno + 2)*sizeof(double);
+    E->mesh.feqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2)*sizeof(float);
+    E->mesh.deqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2)*sizeof(double);
 
-    E->P = (double *)malloc((E->lmesh.npno + 1) * sizeof(double));
-    E->S = (double *)malloc((E->lmesh.npno + 1) * sizeof(double));
+    E->P = (double *)malloc((E->lmesh.npno + 1)*sizeof(double));
+    E->S = (double *)malloc((E->lmesh.npno + 1)*sizeof(double));
 
-    E->Have.f = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.F = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.T = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.C = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.Vi = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.Rho = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.vrms = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-    E->Have.Tadi = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
+    E->Have.f = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.F = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.T = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.C = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.Vi = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.Rho = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.vrms = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
+    E->Have.Tadi = (float *)malloc((E->mesh.noz + 1)*sizeof(float));
 
-    E->segment.Tz = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-    E->segment.Vx = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
+    E->segment.Tz = (float *)malloc((E->lmesh.noz + 1)*sizeof(float));
+    E->segment.Vx = (float *)malloc((E->lmesh.noz + 1)*sizeof(float));
 
-    E->F = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
-    E->U = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
-    E->T = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->C = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->CE = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-    E->buoyancy = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->NP = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->heatflux = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->heatflux_adv = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->edot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+    E->F = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1)*sizeof(double));
+    E->U = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1)*sizeof(double));
+    E->T = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->C = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->CE = (float *)malloc((E->lmesh.nel + 1)*sizeof(float));
+    E->buoyancy = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->NP = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->heatflux = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->heatflux_adv = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->edot = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
 
-    E->heating_adi = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-    E->heating_visc = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-    E->heating_latent = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
+    E->heating_adi = (float *)malloc((E->lmesh.nel + 1)*sizeof(float));
+    E->heating_visc = (float *)malloc((E->lmesh.nel + 1)*sizeof(float));
+    E->heating_latent = (float *)malloc((E->lmesh.nel + 1)*sizeof(float));
 
-    E->Fas670 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->Fas670_b = (float *)malloc((E->lmesh.nsf + 1) * sizeof(float));
-    E->Fas410 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-    E->Fas410_b = (float *)malloc((E->lmesh.nsf + 1) * sizeof(float));
+    E->Fas670 = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->Fas670_b = (float *)malloc((E->lmesh.nsf + 1)*sizeof(float));
+    E->Fas410 = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+    E->Fas410_b = (float *)malloc((E->lmesh.nsf + 1)*sizeof(float));
 
 
-    E->diffusivity = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-    E->expansivity = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
+    E->diffusivity = (float *)malloc((E->lmesh.noz + 1)*sizeof(float));
+    E->expansivity = (float *)malloc((E->lmesh.noz + 1)*sizeof(float));
 
 
     for(i = 1; i <= E->mesh.nsd; i++)
     {
-        E->TB[i] = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-        E->V[i] = (float *)malloc((E->lmesh.nnov + 1) * sizeof(float));
-        E->VB[i] = (float *)malloc((E->lmesh.nnov + 1) * sizeof(float));
+        E->TB[i] = (float *)malloc((E->lmesh.nno + 1)*sizeof(float));
+        E->V[i] = (float *)malloc((E->lmesh.nnov + 1)*sizeof(float));
+        E->VB[i] = (float *)malloc((E->lmesh.nnov + 1)*sizeof(float));
     }
 
-    E->stress = (float *)malloc((E->lmesh.nsf * 12 + 12) * sizeof(float));
-    E->slice.tpg = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.tpgb = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.vline = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.vlinek = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.shflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.bhflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.cen_mflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.vxsurf[1] = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-    E->slice.vxsurf[2] = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
+    E->stress = (float *)malloc((E->lmesh.nsf * 12 + 12)*sizeof(float));
+    E->slice.tpg = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.tpgb = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.vline = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.vlinek = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.shflux = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.bhflux = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.cen_mflux = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.vxsurf[1] = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
+    E->slice.vxsurf[2] = (float *)malloc((E->lmesh.nsf + 2)*sizeof(float));
 
-    E->mat = (int *)malloc((E->lmesh.nel + 2) * sizeof(int));
+    E->mat = (int *)malloc((E->lmesh.nel + 2)*sizeof(int));
 
-    E->XP[1] = (double *)malloc((E->lmesh.nox + 1) * sizeof(double));
-    E->XP[2] = (double *)malloc((E->lmesh.noy + 1) * sizeof(double));
-    E->XP[3] = (double *)malloc((E->lmesh.noz + 1) * sizeof(double));
+    E->XP[1] = (double *)malloc((E->lmesh.nox + 1)*sizeof(double));
+    E->XP[2] = (double *)malloc((E->lmesh.noy + 1)*sizeof(double));
+    E->XP[3] = (double *)malloc((E->lmesh.noz + 1)*sizeof(double));
     E->lmesh.rnoz = 50 * E->lmesh.elz + 1;
-    E->XRG[3] = (double *)malloc((E->lmesh.rnoz + 1) * sizeof(double));
-    E->RG[3] = (int *)malloc((E->lmesh.rnoz + 1) * sizeof(int));
+    E->XRG[3] = (double *)malloc((E->lmesh.rnoz + 1)*sizeof(double));
+    E->RG[3] = (int *)malloc((E->lmesh.rnoz + 1)*sizeof(int));
 
     /* set up memory for different grids  */
     for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
     {
         for(j = 1; j <= E->mesh.nsd; j++)
-            E->XX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+            E->XX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1)*sizeof(float));
         if(E->control.Rsphere)
             for(j = 1; j <= E->mesh.nsd; j++)
-                E->SXX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+                E->SXX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1)*sizeof(float));
 
-        E->MASS[i] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+        E->MASS[i] = (float *)malloc((E->lmesh.NNO[i] + 1)*sizeof(float));
 
-        E->ECO[i] = (struct COORD *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct COORD));
-        E->IEN[i] = (struct IEN *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct IEN));
-        E->ID[i] = (struct ID *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct ID));
-        E->GNX[i] = (struct Shape_function_dx *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dx));
-        E->GDA[i] = (struct Shape_function_dA *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dA));
-        E->EL[i] = (struct SUBEL *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct SUBEL));
-        E->LMD[i] = (struct LM *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct LM));
+        E->ECO[i] = (struct COORD *)malloc((E->lmesh.NNO[i] + 2)*sizeof(struct COORD));
+        E->IEN[i] = (struct IEN *)malloc((E->lmesh.NNO[i] + 2)*sizeof(struct IEN));
+        E->ID[i] = (struct ID *)malloc((E->lmesh.NNO[i] + 2)*sizeof(struct ID));
+        E->GNX[i] = (struct Shape_function_dx *)malloc((E->lmesh.NEL[i] + 2)*sizeof(struct Shape_function_dx));
+        E->GDA[i] = (struct Shape_function_dA *)malloc((E->lmesh.NEL[i] + 2)*sizeof(struct Shape_function_dA));
+        E->EL[i] = (struct SUBEL *)malloc((E->lmesh.NEL[i] + 2)*sizeof(struct SUBEL));
+        E->LMD[i] = (struct LM *)malloc((E->lmesh.NEL[i] + 2)*sizeof(struct LM));
 
-        E->EVI[i] = (float *)malloc((E->lmesh.NEL[i] + 2) * vpoints[E->mesh.nsd] * sizeof(float));
+        E->EVI[i] = (float *)malloc((E->lmesh.NEL[i] + 2)*vpoints[E->mesh.nsd]*sizeof(float));
 
-        E->TW[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
-        E->VI[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
-        E->NODE[i] = (unsigned int *)malloc((E->lmesh.NNO[i] + 2) * sizeof(unsigned int));
-        E->TWW[i] = (struct FNODE *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct FNODE));
+        E->TW[i] = (float *)malloc((E->lmesh.NNO[i] + 2)*sizeof(float));
+        E->VI[i] = (float *)malloc((E->lmesh.NNO[i] + 2)*sizeof(float));
+        E->NODE[i] = (unsigned int *)malloc((E->lmesh.NNO[i] + 2)*sizeof(unsigned int));
+        E->TWW[i] = (struct FNODE *)malloc((E->lmesh.NEL[i] + 2)*sizeof(struct FNODE));
 
-        E->NEI[i].nels = (int *)malloc((E->lmesh.NNO[i] + 2) * sizeof(int));
-        E->NEI[i].lnode = (int *)malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
-        E->NEI[i].element = (int *)malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
+        E->NEI[i].nels = (int *)malloc((E->lmesh.NNO[i] + 2)*sizeof(int));
+        E->NEI[i].lnode = (int *)malloc((E->lmesh.NNO[i] + 2)*enodes[E->mesh.nsd]*sizeof(int));
+        E->NEI[i].element = (int *)malloc((E->lmesh.NNO[i] + 2)*enodes[E->mesh.nsd]*sizeof(int));
 
-        E->elt_del[i] = (struct EG *)malloc((E->lmesh.NEL[i] + 1) * sizeof(struct EG));
+        E->elt_del[i] = (struct EG *)malloc((E->lmesh.NEL[i] + 1)*sizeof(struct EG));
 
         E->BI[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
         E->BPI[i] = (double *)malloc((E->lmesh.NPNO[i] + 1) * sizeof(double));
         E->control.B_is_good[i] = 0;
     }
 
-    E->temp = (double *)malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(double));
-    E->Element = (unsigned int *)malloc((E->lmesh.nel + 2) * sizeof(unsigned int));
+    E->temp = (double *)malloc((E->lmesh.NEQ[E->mesh.levmax]+2)*sizeof(double));
+    E->Element = (unsigned int *)malloc((E->lmesh.nel+2)*sizeof(unsigned int));
 
 
     for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
@@ -372,7 +387,6 @@ void allocate_common_vars(struct All_variables *E)
 
 /*  =========================================================  */
 
-
 void interruption(int signal_number)
 {
     if(Emergency_stop++)
@@ -384,8 +398,6 @@ void interruption(int signal_number)
 
 void global_default_values(struct All_variables *E)
 {
-    //FILE *fp;
-
     /* FIRST: values which are not changed routinely by the user */
 
     E->control.v_steps_low = 10;
@@ -396,14 +408,14 @@ void global_default_values(struct All_variables *E)
     E->control.true_vcycle = 0;
     E->control.depth_dominated = 0;
     E->control.eqn_zigzag = 0;
-    E->control.verbose = 0;     /* debugging/profiles */
+    E->control.verbose = 0;  /* debugging/profiles */
     E->control.stokes = 0;
     E->control.restart = 0;
 
     /* SECOND: values for which an obvious default setting is useful */
 
-    E->control.ORTHO = 1;       /* for orthogonal meshes by default */
-    E->control.ORTHOZ = 1;      /* for orthogonal meshes by default */
+    E->control.ORTHO = 1;      /* for orthogonal meshes by default */
+    E->control.ORTHOZ = 1;    /* for orthogonal meshes by default */
 
 
     E->control.KERNEL = 0;
@@ -455,15 +467,15 @@ void global_default_values(struct All_variables *E)
     E->viscosity.guess = 0;
     sprintf(E->viscosity.old_file, "initialize");
 
-    E->control.precondition = 0;    /* for larger visc contrasts turn this back on  */
-    E->control.vprecondition = 1;
+    E->control.precondition=0;/* for larger visc contrasts turn this back on */
+    E->control.vprecondition=1;
 
-    E->mesh.toptbc = 1;         /* fixed t */
+    E->mesh.toptbc = 1;      /* fixed t */
     E->mesh.bottbc = 1;
-    E->mesh.topvbc = 0;         /* stress */
+    E->mesh.topvbc = 0;      /* stress */
     E->mesh.botvbc = 0;
     E->mesh.sidevbc = 0;
-    E->mesh.periodic_x = 0;     /* reflection is default */
+    E->mesh.periodic_x = 0;  /* reflection is default */
     E->mesh.periodic_y = 0;
     E->control.VBXtopval = 0.0;
     E->control.VBYtopval = 0.0;
@@ -576,7 +588,8 @@ void global_derived_values(struct All_variables *E)
     E->mesh.npno = E->mesh.nel;
     E->mesh.nsf = E->mesh.nox * E->mesh.noy;
 
-    for(i = E->mesh.levmax; i >= E->mesh.levmin; i--)   /* set up dimensions for different grids  */
+    /* set up dimensions for different grids */
+    for(i = E->mesh.levmax; i >= E->mesh.levmin; i--)
     {
         if(E->control.NMULTIGRID || E->control.EMULTIGRID)
         {
@@ -624,9 +637,8 @@ void global_derived_values(struct All_variables *E)
     }
 
     if(E->control.print_convergence && E->parallel.me == 0)
-        fprintf(stderr, "Problem has %d x %d x %d nodes\n", E->mesh.nox, E->mesh.noz, E->mesh.noy);
-
-
+        fprintf(stderr, "Problem has %d x %d x %d nodes\n",
+                E->mesh.nox, E->mesh.noz, E->mesh.noy);
 
     return;
 }
@@ -654,7 +666,8 @@ void read_initial_settings(struct All_variables *E)
 
     else
     {
-        fprintf(E->fp, "Unable to determine problem type, assuming convection ... \n");
+        fprintf(E->fp,
+                "Unable to determine problem type, assuming convection ...\n");
         E->control.CONVECTION = 1;
         set_convection_defaults(E);
     }
@@ -686,7 +699,8 @@ void read_initial_settings(struct All_variables *E)
     }
     else
     {
-        fprintf(E->fp, "Unable to determine geometry, assuming cartesian 2d ... \n");
+        fprintf(E->fp,
+                "Unable to determine geometry, assuming cartesian 2d ...\n");
         E->control.CART2D = 1;
         set_2dc_defaults(E);
     }
@@ -710,29 +724,34 @@ void read_initial_settings(struct All_variables *E)
     else
     {
         if(E->parallel.me == 0)
-            fprintf(stderr, "Unable to determine how to solve, specify Solver=VALID_OPTION \n");
+            fprintf(stderr,
+                    "Unable to determine how to solve, "
+                    "specify Solver=VALID_OPTION \n");
         exit(0);
     }
 
 
     /* admin */
 
-    /* Information on which files to print, which variables of the flow to calculate and print.
-     * Default is no information recorded (apart from special things for given applications.
+    /* Information on which files to print, which variables of the flow
+     * to calculate and print. Default is no information recorded 
+     * (apart from special things for given applications).
      */
 
     input_string("datatypes", E->control.which_data_files, "");
     input_string("averages", E->control.which_horiz_averages, "");
     input_string("timelog", E->control.which_running_data, "");
     input_string("observables", E->control.which_observable_data, "");
-
+    
     input_string("datafile", E->control.data_file, "initialize");
     input_string("process_command", E->control.output_written_external_command, "");
     input_string("use_scratch", tmp_string, "local");
     if(strcmp(tmp_string, "local") == 0)
         strcpy(E->control.data_file2, E->control.data_file);
     else
-        sprintf(E->control.data_file2, "/scratch_%s/%s/%s", E->parallel.machinename, tmp_string, E->control.data_file);
+        sprintf(E->control.data_file2,
+                "/scratch_%s/%s/%s",
+                E->parallel.machinename, tmp_string, E->control.data_file);
 
     input_boolean("AVS", &(E->control.AVS), "off");
     input_boolean("CONMAN", &(E->control.CONMAN), "off");
@@ -773,7 +792,7 @@ void read_initial_settings(struct All_variables *E)
     input_int("obs_maxlongk", &(E->slice.maxlong), "100,1");
     input_int("obs_minlongk", &(E->slice.minlong), "1,1");
 
-    /* for layers    */
+    /* for layers   */
     E->viscosity.zlm = 1.0;
     E->viscosity.z410 = 1.0;
     E->viscosity.zlith = 0.0;
@@ -969,13 +988,15 @@ void check_bc_consistency(struct All_variables *E)
                 printf("Inconsistent z velocity bc at %d,%d\n", lev, i);
             if((E->NODE[lev][i] & VBY) && (E->NODE[lev][i] & SBY))
                 printf("Inconsistent y velocity bc at %d,%d\n", lev, i);
-            /* Tbc's not applicable below top level */ }
+            /* Tbc's not applicable below top level */
+        }
 
     return;
 }
 
+/* Aliases for functions only interested in the highest mg level */
 void set_up_nonmg_aliases(struct All_variables *E)
-{                               /* Aliases for functions only interested in the highest mg level */
+{   
     int i;
 
     E->eco = E->ECO[E->mesh.levmax];
@@ -995,27 +1016,6 @@ void set_up_nonmg_aliases(struct All_variables *E)
     if(E->control.Rsphere)
         for(i = 1; i <= E->mesh.nsd; i++)
             E->SX[i] = E->SXX[E->mesh.levmax][i];
-
-    return;
-}
-
-void report(struct All_variables *E, char *string)
-{
-    if(E->control.verbose && E->parallel.me == 0)
-    {
-        fprintf(stderr, "%s\n", string);
-        fflush(stderr);
-    }
-    return;
-}
-
-void record(struct All_variables *E, char *string)
-{
-    if(E->control.verbose)
-    {
-        fprintf(E->fp, "%s\n", string);
-        fflush(E->fp);
-    }
 
     return;
 }
@@ -1046,7 +1046,6 @@ void common_initial_fields(struct All_variables *E)
 
 void initial_pressure(struct All_variables *E)
 {
-    //int i, node, ii;
     int i;
 
     for(i = 1; i <= E->lmesh.npno; i++)
@@ -1057,7 +1056,6 @@ void initial_pressure(struct All_variables *E)
 
 void initial_velocity(struct All_variables *E)
 {
-    //int i, node, ii;
     int i;
 
     for(i = 1; i <= E->lmesh.nnov; i++)
@@ -1069,3 +1067,26 @@ void initial_velocity(struct All_variables *E)
 
     return;
 }
+
+/* ========================================== */
+
+void report(struct All_variables *E, char *string)
+{
+    if(E->control.verbose && E->parallel.me == 0)
+    {
+        fprintf(stderr, "%s\n", string);
+        fflush(stderr);
+    }
+    return;
+}
+
+void record(struct All_variables *E, char *string)
+{
+    if(E->control.verbose)
+    {
+        fprintf(E->fp, "%s\n", string);
+        fflush(E->fp);
+    }
+    return;
+}
+

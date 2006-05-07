@@ -49,29 +49,12 @@
 #include <sys/types.h>
 #endif
 
-
 int get_process_identifier(void)
 {
 	int pid;
 	pid = (int)getpid();
 	return pid;
 }
-
-void unique_copy_file(struct All_variables *E, char *name, char *comment)
-{
-	char unique_name[500];
-	char command[600];
-
-	if(E->parallel.me == 0)
-	{
-		sprintf(unique_name, "%06d.%s-%s", E->control.PID, comment, name);
-		sprintf(command, "cp -f %s %s\n", name, unique_name);
-		system(command);
-	}
-
-	return;
-}
-
 
 void thermal_buoyancy(struct All_variables *E)
 {
