@@ -76,7 +76,9 @@ void solve_constrained_flow_iterative(struct All_variables *E)
 
     /* Solve for velocity and pressure, correct for bc's */
 
-    residual_ddash = solve_Ahat_p_fhat(E, E->U, E->P, E->F, E->control.accuracy, &cycles);
+    residual_ddash = solve_Ahat_p_fhat(E,
+                                       E->U, E->P, E->F,
+                                       E->control.accuracy, &cycles);
 
     been_here = 1;
 
@@ -147,7 +149,8 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
     v_res = sqrt(global_vdot(E, F, F, lev) / gneq);
 
     if(E->parallel.me == 0)
-        fprintf(stderr, "initial residue of momentum equation %g %d\n", v_res, gneq);
+        fprintf(stderr,
+                "initial residue of momentum equation %g %d\n", v_res, gneq);
 
     assemble_grad_p(E, P, Ah, lev);
     assemble_del2_u(E, V, u1, lev, 1);
@@ -184,9 +187,16 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
     if(E->control.print_convergence && E->parallel.me == 0)
     {
-        fprintf(E->fp, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
-        /**/ fprintf(stderr, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
-        /**/
+        fprintf(E->fp,
+                "AhatP (%03d) after %g sec %g sec with "
+                "div/v=%.3e for step %d\n",
+                count, CPU_time0() - time0, CPU_time0() - timea,
+                E->monitor.incompressibility, E->monitor.solution_cycles);
+        fprintf(stderr, 
+                "AhatP (%03d) after %g sec %g sec with "
+                "div/v=%.3e for step %d\n", 
+                count, CPU_time0() - time0, CPU_time0() - timea,
+                E->monitor.incompressibility, E->monitor.solution_cycles);
     }
 
 /*   while( (count < *steps_max) && (E->monitor.incompressibility >= E->control.tole_comp || dvelocity >= imp) )  {     
@@ -204,7 +214,8 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
         else
         {
             r0dotr0 = global_pdot(E, r0, z0, lev);
-            assert(r0dotr0 != 0.0 /* Division by zero in head of incompressibility iteration */ );
+            /* Division by zero in head of incompressibility iteration */
+            assert(r0dotr0 != 0.0);
             delta = r1dotz1 / r0dotr0;
             for(j = 1; j <= npno; j++)
                 s2[j] = z1[j] + delta * s1[j];
@@ -242,9 +253,17 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
         count++;
         if(E->control.print_convergence && E->parallel.me == 0)
         {
-            fprintf(E->fp, "AhatP (%03d) after %g sec with div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n", count, CPU_time0() - time0, E->monitor.incompressibility, dvelocity, dpressure, E->monitor.solution_cycles);
-            /**/ fprintf(stderr, "AhatP (%03d) after %g sec with div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n", count, CPU_time0() - time0, E->monitor.incompressibility, dvelocity, dpressure, E->monitor.solution_cycles);
-            /**/ fflush(E->fp);
+            fprintf(E->fp, 
+                    "AhatP (%03d) after %g sec with "
+                    "div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n",
+                    count, CPU_time0() - time0, E->monitor.incompressibility,
+                    dvelocity, dpressure, E->monitor.solution_cycles);
+            fprintf(stderr,
+                    "AhatP (%03d) after %g sec with "
+                    "div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n",
+                    count, CPU_time0() - time0, E->monitor.incompressibility,
+                    dvelocity, dpressure, E->monitor.solution_cycles);
+            fflush(E->fp);
         }
 
         shuffle = s1;
@@ -262,17 +281,23 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
     if(problems)
     {
-        fprintf(E->fp, "Convergence of velocity solver may affect continuity\n");
-        fprintf(E->fp, "Consider running with the `see_convergence=on' option\n");
-        fprintf(E->fp, "To evaluate the performance of the current relaxation parameters\n");
+        fprintf(E->fp,
+                "Convergence of velocity solver may affect continuity\n"
+                "Consider running with the `see_convergence=on' option\n"
+                "To evaluate the performance of the current relaxation "
+                "parameters\n");
         fflush(E->fp);
     }
 
     if(E->control.print_convergence && E->parallel.me == 0)
     {
-        fprintf(E->fp, "after (%03d) pressure loops and %g sec for step %d\n", count, CPU_time0() - timea, E->monitor.solution_cycles);
-        /**/ fprintf(stderr, "after (%03d) pressure loops and %g sec for step %d\n", count, CPU_time0() - timea, E->monitor.solution_cycles);
-        /**/ fflush(E->fp);
+        fprintf(E->fp,
+                "after (%03d) pressure loops and %g sec for step %d\n",
+                count, CPU_time0() - timea, E->monitor.solution_cycles);
+        fprintf(stderr,
+                "after (%03d) pressure loops and %g sec for step %d\n",
+                count, CPU_time0() - timea, E->monitor.solution_cycles);
+        fflush(E->fp);
     }
 
 
