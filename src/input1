@@ -12,8 +12,8 @@
     restart_timesteps=20000 # timestep to restart
 
     stokes_flow_only=0  # 1: only solve velocity once; 0: time-dependent problem.
-    maxstep=20000       # max time steps
-    storage_spacing=50  # write data every ...
+    maxstep=20          # max time steps
+    storage_spacing=1   # write data every ...
 
 # 2. Geometry, Ra numbers, Internal heating, Thermochemical/Purely thermal convection
 
