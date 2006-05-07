@@ -46,7 +46,8 @@
 #include "global_defs.h"
 
 
-void parallel_process_initialization(struct All_variables *E, int argc, char **argv)
+void parallel_process_initialization(struct All_variables *E,
+                                     int argc, char **argv)
 {
     E->parallel.me = 0;
     E->parallel.nproc = 1;
@@ -68,7 +69,7 @@ void parallel_process_initialization(struct All_variables *E, int argc, char **a
 void parallel_process_termination(void)
 {
     MPI_Finalize();
-    exit(8);
+    exit(8); //FIXME: don't call exit here...and why 8??
     return;
 }
 
@@ -79,9 +80,22 @@ void parallel_process_termination(void)
 
 void parallel_domain_decomp1(struct All_variables *E)
 {
-    int i, j, k, nox, noz, noy, me;
+    int i, j, k;
+    int nox, noz, noy;
+    
+    int me = E->parallel.me;
+    
+    int levmax = E->mesh.levmax;
+    int levmin = E->mesh.levmin;
+    
+    int nprocx = E->parallel.nprocx;
+    int nprocz = E->parallel.nprocz;
+    int nprocy = E->parallel.nprocy;
 
-    me = E->parallel.me;
+    int nprocxz = E->parallel.nprocx * E->parallel.nprocz;
+    int nprocxy = E->parallel.nprocx * E->parallel.nprocy;
+    int nproczy = E->parallel.nprocz * E->parallel.nprocy;
+    
 
     if(E->parallel.automa)
     {
@@ -89,35 +103,37 @@ void parallel_domain_decomp1(struct All_variables *E)
 
     if(E->control.NMULTIGRID || E->control.EMULTIGRID)
     {
-        E->lmesh.elx = E->lmesh.mgunitx * (int)pow(2.0, ((double)E->mesh.levmax));
-        E->lmesh.elz = E->lmesh.mgunitz * (int)pow(2.0, ((double)E->mesh.levmax));
-        E->lmesh.ely = E->lmesh.mgunity * (int)pow(2.0, ((double)E->mesh.levmax));
-
+        E->lmesh.elx = E->lmesh.mgunitx * (int)pow(2.0, (double)levmax);
+        E->lmesh.elz = E->lmesh.mgunitz * (int)pow(2.0, (double)levmax);
+        E->lmesh.ely = E->lmesh.mgunity * (int)pow(2.0, (double)levmax);
     }
 
     E->lmesh.elx = E->mesh.elx / E->parallel.nprocx;
     E->lmesh.elz = E->mesh.elz / E->parallel.nprocz;
     E->lmesh.ely = E->mesh.ely / E->parallel.nprocy;
 
-    E->parallel.nprocxz = E->parallel.nprocx * E->parallel.nprocz;
-    E->parallel.nprocxy = E->parallel.nprocx * E->parallel.nprocy;
-    E->parallel.nproczy = E->parallel.nprocz * E->parallel.nprocy;
+    E->parallel.nprocxz = nprocxz;
+    E->parallel.nprocxy = nprocxy;
+    E->parallel.nproczy = nproczy;
 
     k = 0;
     for(j = 0; j < E->parallel.nproc; j++)
+    {
         for(i = 0; i <= j; i++)
         {
             E->parallel.mst[j][i][1] = k++;
             E->parallel.mst[j][i][2] = k++;
         }
+    }
     for(j = 0; j < E->parallel.nproc; j++)
+    {
         for(i = 0; i <= E->parallel.nproc; i++)
             if(i > j)
             {
                 E->parallel.mst[j][i][1] = E->parallel.mst[i][j][2];
                 E->parallel.mst[j][i][2] = E->parallel.mst[i][j][1];
             }
-
+    }
 
     /* for overlapping domain, good for e by e assemble */
 
@@ -127,12 +143,13 @@ void parallel_domain_decomp1(struct All_variables *E)
     E->lmesh.nzs = j * E->lmesh.elz + 1;
 
     /* y direction then */
-    k = (me + 1) / E->parallel.nprocxz - (((me + 1) % E->parallel.nprocxz == 0) ? 1 : 0);
+    k = (me + 1)/nprocxz - (((me + 1) % nprocxz == 0) ? 1 : 0);
     E->parallel.me_loc[2] = k;
     E->lmesh.nys = k * E->lmesh.ely + 1;
 
     /* x direction then */
-    i = (me + 1 - k * E->parallel.nprocxz) / E->parallel.nprocz - (((me + 1 - k * E->parallel.nprocxz) % E->parallel.nprocz == 0) ? 1 : 0);
+    i = (me + 1 - k * nprocxz)/nprocz 
+            - (((me + 1 - k * nprocxz) % nprocz == 0) ? 1 : 0);
     E->parallel.me_loc[1] = i;
     E->lmesh.nxs = i * E->lmesh.elx + 1;
 
@@ -152,13 +169,13 @@ void parallel_domain_decomp1(struct All_variables *E)
     E->lmesh.nnov = E->lmesh.nno;
     E->lmesh.neq = E->lmesh.nnov * E->mesh.nsd;
 
-    for(i = E->mesh.levmax; i >= E->mesh.levmin; i--)
+    for(i = levmax; i >= levmin; i--)
     {
         if(E->control.NMULTIGRID || E->control.EMULTIGRID)
         {
-            nox = E->lmesh.elx / ((int)pow(2.0, (double)(E->mesh.levmax - i))) + 1;
-            noz = E->lmesh.elz / ((int)pow(2.0, (double)(E->mesh.levmax - i))) + 1;
-            noy = E->lmesh.ely / ((int)pow(2.0, (double)(E->mesh.levmax - i))) + 1;
+            nox = E->lmesh.elx / ((int)pow(2.0, (double)(levmax - i))) + 1;
+            noz = E->lmesh.elz / ((int)pow(2.0, (double)(levmax - i))) + 1;
+            noy = E->lmesh.ely / ((int)pow(2.0, (double)(levmax - i))) + 1;
         }
         else
         {
@@ -199,7 +216,6 @@ void parallel_shuffle_ele_and_id(struct All_variables *E)
         parallel_shuffle_ele_and_id_bc2(E);
     else
         parallel_shuffle_ele_and_id_bc1(E);
-
     return;
 }
 
