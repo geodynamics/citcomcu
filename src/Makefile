@@ -182,7 +182,7 @@ clean:
 clean-all:
 	rm -f *.o citcom.mpi
 
-global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
+global_defs.h: viscosity_descriptions.h advection.h convection_variables.h
 		
 # The following entries can probably be automated from $CFILES etc
 
