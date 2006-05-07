@@ -53,102 +53,102 @@ extern int Emergency_stop;
 
 int main(int argc, char **argv)
 {
-	struct All_variables E;
-	double time, initial_time, start_time;
+    struct All_variables E;
+    double time, initial_time, start_time;
 
-/*	parallel_process_initialization(&E,argc,argv); */
+/*  parallel_process_initialization(&E,argc,argv); */
 
-	E.parallel.me = 0;
-	E.parallel.nproc = 1;
-	E.parallel.me_loc[1] = 0;
-	E.parallel.me_loc[2] = 0;
-	E.parallel.me_loc[3] = 0;
+    E.parallel.me = 0;
+    E.parallel.nproc = 1;
+    E.parallel.me_loc[1] = 0;
+    E.parallel.me_loc[2] = 0;
+    E.parallel.me_loc[3] = 0;
 
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &(E.parallel.me));
-	MPI_Comm_size(MPI_COMM_WORLD, &(E.parallel.nproc));
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &(E.parallel.me));
+    MPI_Comm_size(MPI_COMM_WORLD, &(E.parallel.nproc));
 
-	gethostname(E.parallel.machinename, 160);
+    gethostname(E.parallel.machinename, 160);
 
-	E.monitor.solution_cycles = 0;
+    E.monitor.solution_cycles = 0;
 
-	if(E.parallel.me == 0)
-	{
-		start_time = time = CPU_time0();
-	}
+    if(E.parallel.me == 0)
+    {
+        start_time = time = CPU_time0();
+    }
 
-	read_instructions(&E, argc, argv);
+    read_instructions(&E, argc, argv);
 
-	E.control.keep_going = 1;
+    E.control.keep_going = 1;
 
-	if(E.parallel.me == 0)
-	{
-		fprintf(stderr, "Input parameters taken from file '%s'\n", argv[1]);
-		fprintf(stderr, "Initialization complete after %g seconds\n\n", CPU_time0() - time);
-		fflush(E.fp);
-		initial_time = CPU_time0() - time;
-		fprintf(E.fp, "Initialization overhead = %f\n", initial_time);
-		initial_time = CPU_time0();
-	}
+    if(E.parallel.me == 0)
+    {
+        fprintf(stderr, "Input parameters taken from file '%s'\n", argv[1]);
+        fprintf(stderr, "Initialization complete after %g seconds\n\n", CPU_time0() - time);
+        fflush(E.fp);
+        initial_time = CPU_time0() - time;
+        fprintf(E.fp, "Initialization overhead = %f\n", initial_time);
+        initial_time = CPU_time0();
+    }
 
-	general_stokes_solver(&E);
-	process_temp_field(&E, E.monitor.solution_cycles);
-	process_new_velocity(&E, E.monitor.solution_cycles);
+    general_stokes_solver(&E);
+    process_temp_field(&E, E.monitor.solution_cycles);
+    process_new_velocity(&E, E.monitor.solution_cycles);
 
-	if(E.control.stokes)
-	{
-		E.control.keep_going = 0;
-		E.monitor.solution_cycles++;
-	}
-
-
-	while(E.control.keep_going && (Emergency_stop == 0))
-	{
-		process_heating(&E);
-
-		E.monitor.solution_cycles++;
-		if(E.monitor.solution_cycles > E.control.print_convergence)
-			E.control.print_convergence = 1;
-
-		 /**/ report(&E, "Update buoyancy for further `timesteps'");
-		(E.next_buoyancy_field) (&E);
-
-		 /**/ report(&E, "Process results of buoyancy update");
-		process_temp_field(&E, E.monitor.solution_cycles);
-
-		general_stokes_solver(&E);
-
-		if(E.control.composition)
-			(E.next_buoyancy_field) (&E);	/* correct with R-G */
-
-		 /**/ report(&E, "Process results of velocity solver");
-		process_new_velocity(&E, E.monitor.solution_cycles);
+    if(E.control.stokes)
+    {
+        E.control.keep_going = 0;
+        E.monitor.solution_cycles++;
+    }
 
 
-		if(E.monitor.T_interior > 1.5)
-		{
-			fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, E.advection.last_sub_iterations);
-			parallel_process_termination();
-		}
+    while(E.control.keep_going && (Emergency_stop == 0))
+    {
+        process_heating(&E);
 
-		if(E.parallel.me == 0)
-		{
-			fprintf(E.fp, "CPU total = %g & CPU = %g for step %d time = %.4e dt = %.4e  maxT = %.4e sub_iteration%d markers=%d\n", CPU_time0() - start_time, CPU_time0() - time, E.monitor.solution_cycles, E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, E.advection.last_sub_iterations, E.advection.markers_g);
-			time = CPU_time0();
-		}
+        E.monitor.solution_cycles++;
+        if(E.monitor.solution_cycles > E.control.print_convergence)
+            E.control.print_convergence = 1;
 
-	}
+         /**/ report(&E, "Update buoyancy for further `timesteps'");
+        (E.next_buoyancy_field) (&E);
 
-	if(E.parallel.me == 0)
-	{
-		time = CPU_time0() - initial_time;
-		fprintf(E.fp, "Average cpu time taken for velocity step = %f\n", time / ((float)(E.monitor.solution_cycles - 1)));
-		fprintf(stderr, "Average cpu time taken for velocity step = %f\n", time / ((float)(E.monitor.solution_cycles - 1)));
-	}
+         /**/ report(&E, "Process results of buoyancy update");
+        process_temp_field(&E, E.monitor.solution_cycles);
 
-	fclose(E.fp);
+        general_stokes_solver(&E);
 
-	parallel_process_termination();
+        if(E.control.composition)
+            (E.next_buoyancy_field) (&E);   /* correct with R-G */
 
-	return 0;
+         /**/ report(&E, "Process results of velocity solver");
+        process_new_velocity(&E, E.monitor.solution_cycles);
+
+
+        if(E.monitor.T_interior > 1.5)
+        {
+            fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, E.advection.last_sub_iterations);
+            parallel_process_termination();
+        }
+
+        if(E.parallel.me == 0)
+        {
+            fprintf(E.fp, "CPU total = %g & CPU = %g for step %d time = %.4e dt = %.4e  maxT = %.4e sub_iteration%d markers=%d\n", CPU_time0() - start_time, CPU_time0() - time, E.monitor.solution_cycles, E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, E.advection.last_sub_iterations, E.advection.markers_g);
+            time = CPU_time0();
+        }
+
+    }
+
+    if(E.parallel.me == 0)
+    {
+        time = CPU_time0() - initial_time;
+        fprintf(E.fp, "Average cpu time taken for velocity step = %f\n", time / ((float)(E.monitor.solution_cycles - 1)));
+        fprintf(stderr, "Average cpu time taken for velocity step = %f\n", time / ((float)(E.monitor.solution_cycles - 1)));
+    }
+
+    fclose(E.fp);
+
+    parallel_process_termination();
+
+    return 0;
 }
