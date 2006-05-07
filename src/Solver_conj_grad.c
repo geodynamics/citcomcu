@@ -39,22 +39,22 @@
 
 void set_cg_defaults(struct All_variables *E)
 {
-	E->build_forcing_term = assemble_forces_iterative;
-	E->solve_stokes_problem = solve_constrained_flow_iterative;
-	E->solver_allocate_vars = cg_allocate_vars;
-	return;
+    E->build_forcing_term = assemble_forces_iterative;
+    E->solve_stokes_problem = solve_constrained_flow_iterative;
+    E->solver_allocate_vars = cg_allocate_vars;
+    return;
 }
 
 void cg_allocate_vars(struct All_variables *E)
 {
-	/* Nothing required ONLY by conj-grad stuff  */
-	/* printf("here here\n"); */
-	return;
+    /* Nothing required ONLY by conj-grad stuff  */
+    /* printf("here here\n"); */
+    return;
 }
 
 void assemble_forces_iterative(struct All_variables *E)
 {
-	assemble_forces(E, 0);
-	strip_bcs_from_residual(E, E->F, E->mesh.levmax);
-	return;
+    assemble_forces(E, 0);
+    strip_bcs_from_residual(E, E->F, E->mesh.levmax);
+    return;
 }
