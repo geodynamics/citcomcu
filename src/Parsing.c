@@ -91,7 +91,7 @@ int DESCRIBE = 0;
 int BEGINNER = 0;
 
 
-void setup_parser(struct All_variables *E, int ac, char **av)
+void setup_parser(int ac, char **av)
 {
     FILE *fp;
     char *pl, *pn, *pv;
@@ -114,9 +114,6 @@ void setup_parser(struct All_variables *E, int ac, char **av)
         fprintf(stderr, "File: %s is unreadable\n", av[1]);
         exit(11);
     }
-
-
-    unique_copy_file(E, av[1], "copy");
 
     /* now the parameter file is open, read into memory */
 
@@ -167,8 +164,6 @@ void setup_parser(struct All_variables *E, int ac, char **av)
 
     /* Now we can use our routines to check & set their own flags ! */
 
-    printf("%s %d\n", av[1], E->parallel.me);
-
     input_boolean("VERBOSE", &i, "off");
     input_boolean("DESCRIBE", &j, "off");
     input_boolean("BEGINNER", &k, "off");
@@ -179,7 +174,7 @@ void setup_parser(struct All_variables *E, int ac, char **av)
     return;
 }
 
-void shutdown_parser(struct All_variables *E)
+void shutdown_parser()
 {
     if(ARGLIST != NULL)
         free(ARGLIST);
@@ -267,9 +262,12 @@ int input_int(char *name, int *value, char *interpret)
     double *Default, *minvalue, *maxvalue;
 
     if(DESCRIBE)
-        fprintf(stderr, "input_int: searching for '%s' with default/range '%s'\n", name, (interpret == NULL) ? "**EMPTY**" : interpret);
+        fprintf(stderr,
+                "input_int: searching for '%s' with default/range '%s'\n",
+                name, (interpret == NULL) ? "**EMPTY**" : interpret);
 
-    exists = interpret_control_string(interpret, &essential, &Default, &minvalue, &maxvalue);
+    exists = interpret_control_string(interpret, &essential, &Default,
+                                      &minvalue, &maxvalue);
 
     if(Default != NULL)
         *value = (int)(*Default);
@@ -310,7 +308,9 @@ int input_int(char *name, int *value, char *interpret)
         if(found)
             fprintf(stderr, "%25s: (int) = %d \n", name, *value);
         else if(Default != NULL)
-            fprintf(stderr, "%25s: (int) = not found (%d) \n", name, (int)(*Default));
+            fprintf(stderr,
+                    "%25s: (int) = not found (%d) \n", 
+                    name, (int)(*Default));
         else
         {
             fprintf(stderr, "%25s: (int) = not found (no default) \n", name);
@@ -338,7 +338,9 @@ int input_string(char *name, char *value, char *Default)
 
 
     if(DESCRIBE)
-        fprintf(stderr, "input_string: searching for '%s' with default '%s'\n", name, (Default == NULL) ? "no default" : Default);
+        fprintf(stderr,
+                "input_string: searching for '%s' with default '%s'\n",
+                name, (Default == NULL) ? "no default" : Default);
 
     h = compute_parameter_hash_table(name);
     essential = found = 0;
@@ -370,7 +372,10 @@ int input_string(char *name, char *value, char *Default)
     }
 
     if(VERBOSE)
-        fprintf(stderr, "%25s: (string) = %s (%s)\n", name, (found ? value : "not found"), (Default != NULL ? Default : "no default"));
+        fprintf(stderr,
+                "%25s: (string) = %s (%s)\n",
+                name, (found ? value : "not found"),
+                (Default != NULL ? Default : "no default"));
 
     return found;
 }
@@ -389,9 +394,12 @@ int input_boolean (char *name, int *value, char *interpret)
     double *Default, *minvalue, *maxvalue;
 
     if(DESCRIBE)
-        fprintf(stderr, "input_boolean: searching for '%s' with default/range '%s'\n", name, (interpret == NULL) ? "**EMPTY**" : interpret);
+        fprintf(stderr, "input_boolean: searching for '%s' "
+                "with default/range '%s'\n",
+                name, (interpret == NULL) ? "**EMPTY**" : interpret);
 
-    interpret_control_string(interpret, &essential, &Default, &minvalue, &maxvalue);
+    interpret_control_string(interpret, &essential, &Default,
+                             &minvalue, &maxvalue);
 
     if(Default != NULL)
         *value = (int)(*Default);
@@ -419,10 +427,13 @@ int input_boolean (char *name, int *value, char *interpret)
         if(VERBOSE)
         {
             if(Default != NULL)
-                fprintf(stderr, "%25s: (boolean int) = not found (%d) \n", name, (int)(*Default));
+                fprintf(stderr,
+                        "%25s: (boolean int) = not found (%d) \n",
+                        name, (int)(*Default));
             else
             {
-                fprintf(stderr, "%25s: (boolean int) = not found (no default) \n", name);
+                fprintf(stderr, "%25s: (boolean int) = not found "
+                        "(no default) \n", name);
                 if(BEGINNER)
                 {
                     fprintf(stderr, "\t\t Previously set value gives ...");
@@ -461,10 +472,13 @@ int input_float(char *name, float *value, char *interpret)
 
 
     if(DESCRIBE)
-        fprintf(stderr, "input_float: searching for '%s' with default/range '%s'\n", name, (interpret == NULL) ? "**EMPTY**" : interpret);
+        fprintf(stderr, "input_float: searching for '%s' "
+                "with default/range '%s'\n",
+                name, (interpret == NULL) ? "**EMPTY**" : interpret);
 
 
-    exists = interpret_control_string(interpret, &essential, &Default, &minvalue, &maxvalue);
+    exists = interpret_control_string(interpret, &essential, &Default,
+                                      &minvalue, &maxvalue);
 
     if(Default != NULL)
         *value = (float)*Default;
@@ -502,10 +516,10 @@ int input_float(char *name, float *value, char *interpret)
         if(found)
             fprintf(stderr, "%25s: (float) = %f \n", name, *value);
         else if(Default != NULL)
-            fprintf(stderr, "%25s: (float) = not found (%f) \n", name, *Default);
+            fprintf(stderr, "%25s: (float) = not found (%f)\n", name, *Default);
         else
         {
-            fprintf(stderr, "%25s: (float) = not found (no default) \n", name);
+            fprintf(stderr, "%25s: (float) = not found (no default)\n", name);
             if(BEGINNER)
             {
                 fprintf(stderr, "\t\t Previously set value gives ...");
@@ -531,10 +545,13 @@ int input_double(char *name, double *value, char *interpret)
 
 
     if(DESCRIBE)
-        fprintf(stderr, "input_double: searching for '%s' with default/range '%s'\n", name, (interpret == NULL) ? "**EMPTY**" : interpret);
+        fprintf(stderr, "input_double: searching for '%s' "
+                "with default/range '%s'\n",
+                name, (interpret == NULL) ? "**EMPTY**" : interpret);
 
 
-    exists = interpret_control_string(interpret, &essential, &Default, &minvalue, &maxvalue);
+    exists = interpret_control_string(interpret, &essential, &Default,
+                                      &minvalue, &maxvalue);
 
     if(Default != NULL)
         *value = *Default;
@@ -570,7 +587,8 @@ int input_double(char *name, double *value, char *interpret)
         if(found)
             fprintf(stderr, "%25s: (double) = %g \n", name, *value);
         else if(Default != NULL)
-            fprintf(stderr, "%25s: (double) = not found (%g) \n", name, *Default);
+            fprintf(stderr, "%25s: (double) = not found "
+                    "(%g) \n", name, *Default);
         else
         {
             fprintf(stderr, "%25s: (double) = not found (no default)\n", name);
@@ -600,7 +618,8 @@ int input_int_vector(char *name, int number, int *value)
     char *str;
 
     if(DESCRIBE)
-        fprintf(stderr, "input_int_vector: searching for %s (%d times)\n", name, number);
+        fprintf(stderr, "input_int_vector: searching for %s "
+                "(%d times)\n", name, number);
 
     h = compute_parameter_hash_table(name);
     found = 0;
@@ -651,7 +670,8 @@ int input_char_vector(char *name, int number, char *value)
     char *str;
 
     if(DESCRIBE)
-        fprintf(stderr, "input_char_vector: searching for %s (%d times)\n", name, number);
+        fprintf(stderr, "input_char_vector: searching for %s "
+                "(%d times)\n", name, number);
 
     h = compute_parameter_hash_table(name);
     found = 0;
@@ -670,7 +690,7 @@ int input_char_vector(char *name, int number, char *value)
     /* now interpret vector */
 
     if(!found)
-        return (0);
+        return 0;
 
     for(h = 0; h < number; h++)
     {
@@ -684,7 +704,7 @@ int input_char_vector(char *name, int number, char *value)
     if(VERBOSE)
         fprintf(stderr, "%25s: (vector) = %s\n", name, str);
 
-    return (found);
+    return found;
 }
 
 /* value is a comma-separated list of floats */
@@ -703,7 +723,8 @@ int input_float_vector(char *name, int number, float *value)
         return (0);
 
     if(DESCRIBE)
-        fprintf(stderr, "input_float_vector: searching for %s (%d times)\n", name, number);
+        fprintf(stderr, "input_float_vector: searching for %s "
+                "(%d times)\n", name, number);
 
     h = compute_parameter_hash_table(name);
     found = 0;
@@ -752,7 +773,8 @@ int input_double_vector(char *name, int number, double *value)
     char *str;
 
     if(DESCRIBE)
-        fprintf(stderr, "input_double_vector: searching for %s (%d times)\n", name, number);
+        fprintf(stderr, "input_double_vector: searching for %s "
+                "(%d times)\n", name, number);
 
     h = compute_parameter_hash_table(name);
     found = 0;
@@ -798,10 +820,10 @@ int interpret_control_string(char *interpret, int *essential, double **Default, 
     *Default = *maxvalue = *minvalue = NULL;
     *essential = 0;
 
-    return (0);                 /* nothing to interpret */
+    return 0;                   /* nothing to interpret */
 
     if((substring = (char *)strtok(interpret, ",")) == NULL)
-        return (0);             /* nothing to interpret */
+        return 0;               /* nothing to interpret */
 
 
     if(strstr(substring, "essential") != NULL)
@@ -814,13 +836,14 @@ int interpret_control_string(char *interpret, int *essential, double **Default, 
         else if((strstr(substring, "off") != NULL) || (strstr(substring, "OFF") != NULL))
             **Default = 0.0;
         else
-            sscanf(substring, "%lf", *Default); /* read number as a default value */
+            /* read number as a default value */
+            sscanf(substring, "%lf", *Default);
 
     }
 
     if((substring = (char *)strtok(NULL, ",")) == NULL) /* minvalue */
     {                           /* no minimum, no maximum */
-        return (1);
+        return 1;
     }
 
     if(strstr(substring, "nomin") == NULL)
@@ -833,7 +856,7 @@ int interpret_control_string(char *interpret, int *essential, double **Default, 
     {                           /* no maximum */
         if(DESCRIBE)
             fprintf(stderr, "minimum but no maximum\n");
-        return (1);
+        return 1;
     }
 
     if(strstr(substring, "nomax") == NULL)
