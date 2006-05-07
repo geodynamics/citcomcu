@@ -40,27 +40,27 @@
 
 void set_2dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 2;
-	E->mesh.dof = 2;
+    E->mesh.nsd = 2;
+    E->mesh.dof = 2;
 }
 
 
 void set_2pt5dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 2;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 2;
+    E->mesh.dof = 3;
 }
 
 
 void set_3ds_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 3;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 3;
+    E->mesh.dof = 3;
 }
 
 
 void set_3dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 3;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 3;
+    E->mesh.dof = 3;
 }
