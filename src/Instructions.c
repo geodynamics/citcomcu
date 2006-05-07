@@ -71,12 +71,14 @@ void unique_copy_file(struct All_variables *E, char *name, char *comment)
 
 void initialize_parser(struct All_variables *E, int argc, char **argv)
 {
+    int verbose_mode = (E->parallel.me == 0); /* only process 0 outputs */
+
     if(argc > 1)
     {
         /* make a copy of the input file before parsing */
         unique_copy_file(E, argv[1], "copy");
         /* set up the input file parser (see Parsing.c) for each process */
-        setup_parser(argc, argv);
+        setup_parser(argv[1], verbose_mode);
         /* do all processes make it here? send something to stdout */
         printf("%s %d\n", argv[1], E->parallel.me);
     }

@@ -41,7 +41,6 @@
 #include <malloc.h>
 #include <sys/types.h>
 #include <string.h>
-#include "global_defs.h"
 
 #define MAXLINE     1024        /* max length of line in input file */
 #define MAXNAME     64          /* max length of name */
@@ -50,7 +49,7 @@
 #define MAXVECTOR   10          /* max # of elements for unspecified vectors */
 
 /* abbreviations: */
-#define AL      struct arglist
+#define AL          struct arglist
 #define PROGNAME    ext_par.progname
 #define FLAGS       ext_par.argflags
 #define ARGLIST     ext_par.arglist
@@ -86,49 +85,44 @@ struct arglist                  /* structure of list set up by setpar */
     int hash;
 };
 
-int VERBOSE = 0;
-int DESCRIBE = 0;
-int BEGINNER = 0;
+static int VERBOSE = 0;
+static int DESCRIBE = 0;
+static int BEGINNER = 0;
 
 
-void setup_parser(int ac, char **av)
+void setup_parser(char *filename, int verbose)
 {
     FILE *fp;
     char *pl, *pn, *pv;
     char t1, t2, line[MAXLINE], name[MAXNAME], value[MAXVALUE];
-    int i, j, k;
 
     /* should get file length & cpp &c before any further parsing */
 
-
-    if((fp = fopen(av[1], "r")) == NULL)
+    if((fp = fopen(filename, "r")) == NULL)
     {
         fprintf(stderr, "File: %s is unreadable\n", av[1]);
         exit(11);
     }
 
     /* now the parameter file is open, read into memory */
-
     while(fgets(line, MAXLINE, fp) != NULL)
     {
         pl = line;
-        /* loop over entries on each line */
-      loop:
-        while(*pl == ' ' || *pl == '\t')
-            pl++;
-        if(*pl == '\0' || *pl == '\n')
-            continue;           /* end of line */
-        if(*pl == '#')
-            continue;           /* end of interpretable part of line */
+loop:   /* loop over entries on each line */
+        while(*pl == ' ' || *pl == '\t') pl++;
+        if(*pl == '\0' || *pl == '\n') continue; /* end of line */
+        if(*pl == '#') continue; /* end of interpretable part of line */
 
         /* get name */
         pn = name;
-        while(*pl != '=' && *pl != '\0' && *pl != ' ' && *pl != '\n'    /* FIX by Glenn Nelson */
-              && *pl != '\t')
+        while(*pl != '=' && *pl != '\0' && *pl != ' '
+                  && *pl != '\n'    /* FIX by Glenn Nelson */
+                  && *pl != '\t')
+        {
             *pn++ = *pl++;
+        }
         *pn = '\0';
-        if(*pl == '=')
-            pl++;
+        if(*pl == '=') pl++;
 
         /* get value */
         *value = '\0';
@@ -145,6 +139,7 @@ void setup_parser(int ac, char **av)
         *pv = '\0';
         if(*pl == '"' || *pl == '\'')
             pl++;
+
         add_to_parameter_list(name, value);
 
         goto loop;
@@ -155,29 +150,26 @@ void setup_parser(int ac, char **av)
     ARGHEAD = ARGLIST;
 
     /* Now we can use our routines to check & set their own flags ! */
+    input_boolean("VERBOSE",  &VERBOSE,  "off");
+    input_boolean("DESCRIBE", &DESCRIBE, "off");
+    input_boolean("BEGINNER", &BEGINNER, "off");
 
-    input_boolean("VERBOSE", &i, "off");
-    input_boolean("DESCRIBE", &j, "off");
-    input_boolean("BEGINNER", &k, "off");
-    VERBOSE = i;
-    DESCRIBE = j;
-    BEGINNER = k;
+    /* override verbosity options, if necessary */
+    if(!verbose)
+        VERBOSE = DESCRIBE = BEGINNER = 0;
 
     return;
 }
 
 void shutdown_parser()
 {
-    if(ARGLIST != NULL)
-        free(ARGLIST);
-    if(ARGBUF != NULL)
-        free(ARGBUF);
+    if(ARGLIST != NULL) free(ARGLIST);
+    if(ARGBUF != NULL) free(ARGBUF);
     ARGBUF = NULL;
     ARGLIST = NULL;
 }
 
 /* add an entry to arglist, expanding memory if necessary */
-/* FIXME: return type should be void */
 int add_to_parameter_list(register char *name, register char *value)
 {
     struct arglist *alptr;
@@ -189,9 +181,9 @@ int add_to_parameter_list(register char *name, register char *value)
     {
         LISTMAX += LISTINC;
         if(ARGLIST == NULL)
-            ARGLIST = (AL *) malloc(LISTMAX * sizeof(AL));
+            ARGLIST = (AL *)malloc(LISTMAX * sizeof(AL));
         else
-            ARGLIST = (AL *) realloc(ARGLIST, LISTMAX * sizeof(AL));
+            ARGLIST = (AL *)realloc(ARGLIST, LISTMAX * sizeof(AL));
     }
     /* check argbuf memory */
     len = strlen(name) + strlen(value) + 2; /* +2 for terminating nulls */
@@ -234,14 +226,14 @@ int compute_parameter_hash_table(register char *s)
     if(s[1])
         h |= (s[1]) << 8;
     else
-        return (h);
+        return h;
     if(s[2])
         h |= (s[2]) << 16;
     else
-        return (h);
+        return h;
     if(s[3])
         h |= (s[3]) << 24;
-    return (h);
+    return h;
 }
 
 int input_int(char *name, int *value, char *interpret)
@@ -644,7 +636,7 @@ int input_int_vector(char *name, int number, int *value)
     if(VERBOSE)
         fprintf(stderr, "%25s: (vector) = %s\n", name, str);
 
-    return (found);
+    return found;
 }
 
 
