@@ -182,6 +182,9 @@ clean:
 clean-all:
 	rm -f *.o citcom.mpi
 
+prototypes:
+	/usr/bin/cproto -D__CPROTO__ -q -p -f 3 *.c 2>/dev/null > prototypes.h
+
 global_defs.h: viscosity_descriptions.h advection.h convection_variables.h
 		
 # The following entries can probably be automated from $CFILES etc
