@@ -49,13 +49,6 @@
 #include <sys/types.h>
 #endif
 
-int get_process_identifier(void)
-{
-	int pid;
-	pid = (int)getpid();
-	return pid;
-}
-
 void thermal_buoyancy(struct All_variables *E)
 {
 	int i, j;

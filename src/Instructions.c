@@ -42,13 +42,17 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <unistd.h>     /* getpid() */
 #include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
 
 int Emergency_stop;
 
+int get_process_identifier(void)
+{
+	return (int)getpid();
+}
 
 void unique_copy_file(struct All_variables *E, char *name, char *comment)
 {
