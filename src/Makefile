@@ -182,6 +182,9 @@ clean:
 clean-all:
 	rm -f *.o citcom.mpi
 
+doxygen:
+	/usr/bin/doxygen ../doc/CitcomCU.doxyconf
+
 prototypes:
 	/usr/bin/cproto -D__CPROTO__ -q -p -f 3 *.c 2>/dev/null > prototypes.h
 
