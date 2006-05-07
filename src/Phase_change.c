@@ -40,14 +40,18 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
-void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4)
+void phase_change(struct All_variables *E,
+                  float *B6,
+                  float *B_b6,
+                  float *B4,
+                  float *B_b4)
 {
-    //int i, j, k, n, ns, m;
+    static int been_here = 0;
+    static float *H;
+
     int i, j, k, n, ns;
     double e_pressure, pt5, one, temp1;
     float *Xtmp[4];
-    static int been_here = 0;
-    static float *H;
 
     if(been_here == 0)
     {
@@ -65,7 +69,12 @@ void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, fl
         E->control.clapeyron670 = E->control.clapeyron670 * E->data.ref_temperature / (E->data.density * E->data.grav_acc * E->monitor.length_scale);
         E->control.clapeyron410 = E->control.clapeyron410 * E->data.ref_temperature / (E->data.density * E->data.grav_acc * E->monitor.length_scale);
 
-        fprintf(E->fp, "%g %g %g %g %g %g %g %g\n", E->control.clapeyron410, E->control.clapeyron670, E->control.Ra_410, E->control.Ra_670, E->control.transT410, E->control.transT670, E->control.width410, E->control.width670);
+        fprintf(E->fp,
+                "%g %g %g %g %g %g %g %g\n",
+                E->control.clapeyron410, E->control.clapeyron670,
+                E->control.Ra_410, E->control.Ra_670,
+                E->control.transT410, E->control.transT670,
+                E->control.width410, E->control.width670);
         fflush(E->fp);
     }
 
@@ -153,7 +162,13 @@ void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, fl
 
     if(E->monitor.solution_cycles % E->control.record_every == 0)
     {
-        fprintf(E->fp, "fas=%g %g %g %g %g %g %g %g %g %g\n", E->control.clapeyron410, E->control.clapeyron670, E->control.Ra_410, E->control.Ra_670, E->control.transT410, E->control.transT670, E->control.width410, E->control.width670, E->viscosity.zlm, E->viscosity.z410);
+        fprintf(E->fp,
+                "fas=%g %g %g %g %g %g %g %g %g %g\n",
+                E->control.clapeyron410, E->control.clapeyron670,
+                E->control.Ra_410, E->control.Ra_670,
+                E->control.transT410, E->control.transT670,
+                E->control.width410, E->control.width670,
+                E->viscosity.zlm, E->viscosity.z410);
         fflush(E->fp);
     }
 
