@@ -867,7 +867,7 @@ struct TRACES
 
 struct All_variables
 {
-#include "Convection_variables.h"
+#include "convection_variables.h"
 #include "viscosity_descriptions.h"
 #include "temperature_descriptions.h"
 #include "advection.h"
