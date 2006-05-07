@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     double time;
 
     parallel_process_initialization(&E, argc, argv);
+    gethostname(E.parallel.machinename, 160);
 
     E.monitor.solution_cycles = 0;
 
@@ -74,8 +75,8 @@ int main(int argc, char **argv)
 
     if(E.parallel.me == 0)
     {
-        fprintf(E->fp, "Input parameters taken from file '%s'\n", argv[1]);
-        fprintf(E->fp, "Initialization complete after %g seconds\n\n", 
+        fprintf(E.fp, "Input parameters taken from file '%s'\n", argv[1]);
+        fprintf(E.fp, "Initialization complete after %g seconds\n\n", 
                 CPU_time0() - time);
         fflush(E.fp);
         initial_time = CPU_time0() - time;

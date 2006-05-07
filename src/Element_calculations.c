@@ -85,14 +85,14 @@ void assemble_forces(struct All_variables *E, int penalty)
 		E->F[a] = 0.0;
 
 	/*for(a=0;a<npno;a++)
-	 * E->H[a]=0.0; */
+	 *  E->H[a]=0.0; */
 
 	for(e = 1; e <= nel; e++)
 	{
 
 		get_elt_f(E, e, elt_f, penalty, 1);
-		/*get_elt_h(E,e,elt_h,penalty);
-		 * E->H[e] = elt_h[0]; *//* due to single pressure node per element */
+		/*get_elt_h(E,e,elt_h,penalty); */
+		/*E->H[e] = elt_h[0]; *//* due to single pressure node per element */
 
 		for(a = 1; a <= ends; a++)
 		{
@@ -108,8 +108,8 @@ void assemble_forces(struct All_variables *E, int penalty)
 	}
 
 /*
-  for(a=0;a<neq;a++)
-   fprintf(E->fp,"bb %d %g\n",a,  E->F[a]); 
+    for(a=0;a<neq;a++)
+        fprintf(E->fp,"bb %d %g\n",a,  E->F[a]); 
 */
 
 	exchange_id_d20(E, E->F, lev);

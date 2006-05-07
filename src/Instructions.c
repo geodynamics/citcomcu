@@ -956,7 +956,7 @@ void read_initial_settings(struct All_variables *E)
     input_float("permeability", &(E->data.permeability), "3.0e-10");
 
 
-    (E->problem_settings) (E);
+    (E->problem_settings)(E);   /* calls read_convection_settings() */
 
     viscosity_parameters(E);
 

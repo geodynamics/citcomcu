@@ -117,9 +117,9 @@ PARAGONOPTIM=-O4
 #	Choose the actual flags for your machine here ...
 ####################################################################
 
-FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
-LDFLAGS= $(LinuxLDFLAGS)
-OPTIM= $(LinuxOPTIM)
+FLAGS=$(LinuxFLAGS)
+LDFLAGS=$(LinuxLDFLAGS)
+OPTIM=$(LinuxOPTIM)
 
 #FLAGS= $(SOLARISFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
 #LDFLAGS= $(SOLARISLDFLAGS)

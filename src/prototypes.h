@@ -150,6 +150,9 @@ void gather_TG_to_me0(struct All_variables *E, float *TG);
 void propogator_down_process(struct All_variables *E, float *Tadi);
 double sum_across_depth(struct All_variables *E, double temp1);
 /* Instructions.c */
+int get_process_identifier(void);
+void unique_copy_file(struct All_variables *E, char *name, char *comment);
+void initialize_parser(struct All_variables *E, int argc, char **argv);
 void read_instructions(struct All_variables *E, int argc, char **argv);
 void allocate_common_vars(struct All_variables *E);
 void interruption(int signal_number);
@@ -158,11 +161,11 @@ void global_derived_values(struct All_variables *E);
 void read_initial_settings(struct All_variables *E);
 void check_bc_consistency(struct All_variables *E);
 void set_up_nonmg_aliases(struct All_variables *E);
-void report(struct All_variables *E, char *string);
-void record(struct All_variables *E, char *string);
 void common_initial_fields(struct All_variables *E);
 void initial_pressure(struct All_variables *E);
 void initial_velocity(struct All_variables *E);
+void report(struct All_variables *E, char *string);
+void record(struct All_variables *E, char *string);
 /* Nodal_mesh.c */
 void node_locations(struct All_variables *E);
 void pre_interpolation(struct All_variables *E);
@@ -185,8 +188,6 @@ void output_temp(struct All_variables *E, int file_number);
 void process_restart(struct All_variables *E);
 void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen);
 /* Pan_problem_misc_functions.c */
-int get_process_identifier(void);
-void unique_copy_file(struct All_variables *E, char *name, char *comment);
 void thermal_buoyancy(struct All_variables *E);
 double SIN_D(double x);
 double COT_D(double x);
@@ -220,8 +221,8 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
-void setup_parser(struct All_variables *E, int ac, char **av);
-void shutdown_parser(struct All_variables *E);
+void setup_parser(int ac, char **av);
+void shutdown_parser(void);
 int add_to_parameter_list(register char *name, register char *value);
 int compute_parameter_hash_table(register char *s);
 int input_int(char *name, int *value, char *interpret);

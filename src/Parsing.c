@@ -346,7 +346,7 @@ int input_string(char *name, char *value, char *Default)
     essential = found = 0;
 
 
-    if(Default != NULL)         /* Cannot use "Essential" as this is a valid input */
+    if(Default != NULL) /* Cannot use "Essential" as this is a valid input */
         strcpy(value, Default);
     else
         essential = 1;
