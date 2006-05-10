@@ -53,26 +53,26 @@ void *Malloc1();
 
 /* #define Malloc0 malloc */
 
-#define LIDN 0x1
+#define LIDN 0x1        
 #define VBX 0x2
 #define VBZ 0x4
 #define VBY 0x8
-#define TBX 0x10
+#define TBX 0x10        /* Node has prescribed temperature ??? */ /* FIXME */
 #define TBZ 0x20
 #define TBY 0x40
-#define TZEDGE 0x80
-#define TXEDGE 0x100
-#define TYEDGE 0x200
-#define VXEDGE 0x400
-#define VZEDGE 0x800
-#define VYEDGE 0x1000
-#define INTX 0x2000
+#define TZEDGE 0x80     /**< Node is on a constant z boundary surface (temperature) */
+#define TXEDGE 0x100    /**< Node is on a constant x boundary surface (temperature) */
+#define TYEDGE 0x200    /**< Node is on a constant y boundary surface (temperature) */
+#define VXEDGE 0x400    /**< Node is on a constant x boundary surface (velocity) */
+#define VZEDGE 0x800    /**< Node is on a constant z boundary surface (velocity) */
+#define VYEDGE 0x1000   /**< Node is on a constant y boundary surface (velocity) */
+#define INTX 0x2000     /* Node has ...(interpolation in x)??? */ /* FIXME: interior node? these are used in the functions convection_initial_temperatures() and process_restart_tc(), both of which are defined in Convection.c*/
 #define INTZ 0x4000
 #define INTY 0x8000
 #define SBX 0x10000
 #define SBZ 0x20000
 #define SBY 0x40000
-#define FBX 0x80000
+#define FBX 0x80000  /* Node has prescribed heat flux in x ??? */ /* FIXME */
 #define FBZ 0x100000
 #define FBY 0x200000
 
@@ -85,9 +85,9 @@ void *Malloc1();
 #define COMPRESS_BINARY "/usr/bin/compress"
 #endif
 
-#define MAX_LEVELS 12
-#define MAX_F    10
-#define MAX_S    30
+#define MAX_LEVELS 12   /**< Maximum number of multigrid levels */
+#define MAX_F      10   
+#define MAX_S      30
 
 /* Macros */
 
@@ -95,7 +95,7 @@ void *Malloc1();
 #define min(A,B) (((A) < (B)) ? (A) : (B))
 #define SWAP(a,b) {temp=(a);(a)=(b);(b)=temp;}
 
-typedef float higher_precision;     /* matrix coeffs etc */ /* FIXME: this should be double not float
+typedef float higher_precision;     /* matrix coeffs etc */ /* FIXME: this should be double not float */
 typedef double higher_precision1;   /* intermediate calculations for finding above coeffs */ /*FIXME: rename to std_precision (should be float, but double is fine too) */
 
 
@@ -511,19 +511,20 @@ struct Parallel
 /* ======================================================================== */
 
 /**
- * General information concerning the finite element mesh.
+ * General information concerning the finite element (FE) mesh.
  */
 struct MESH_DATA
 {
-    int nsd;                    /* Spatial extent 1,2,3d */
-    int dof;                    /* degrees of freedom per node */
-    int levmax;
-    int levmin;
-    int levels;
-    int mgunitx;
-    int mgunitz;
-    int mgunity;
-    int NEQ[MAX_LEVELS];        /* All other values refer to the biggest mesh (& lid)  */
+    int nsd;            /**< Spatial extent 1,2,3d */
+    int dof;            /**< Degrees of freedom per node */
+    int levmax;         /**< Finest FE grid */
+    int levmin;         /**< Coarsest FE grid */
+    int levels;         /**< Number of multigrid levels */
+    int mgunitx;        /**< Number of elements in x in coarsest grid */
+    int mgunitz;        /**< Number of elements in z in coarsest grid */
+    int mgunity;        /**< Number of elements in y in coarsest grid */
+    
+    int NEQ[MAX_LEVELS];/* All other values refer to the biggest mesh (& lid) */
     int NNO[MAX_LEVELS];
     int NNOV[MAX_LEVELS];
     int NLNO[MAX_LEVELS];
@@ -541,18 +542,21 @@ struct MESH_DATA
     int ELY[MAX_LEVELS];
     int LNDS[MAX_LEVELS];
     int LELS[MAX_LEVELS];
+    
     int neqd;
-    int neq;
-    int nno;
-    int nnov;
+    int neq;            /**< Number of equations in finest mesh solution */
+    int nno;            /**< Number of nodes in finest mesh */
+    int nnov;           
     int nlno;
-    int npno;
-    int nel;
+    int npno;           /**< Number of solid pressure nodes in finest mesh */
+    int nel;            /**< Number of elements in finest mesh */
     int snel;
+    
     int nex[4];                 /* general form of ... */
     int elx;
     int elz;
     int ely;
+    
     int nnx[4];                 /* general form of ... */
     int rnox;
     int rnoz;
@@ -564,7 +568,8 @@ struct MESH_DATA
     int nzs;
     int nys;
     int nmx;
-    int nsf;                    /* nodes for surface observables */
+    int nsf;            /**< Number of nodes for surface observables */
+
     int toptbc;
     int bottbc;
     int topvbc;
@@ -579,8 +584,9 @@ struct MESH_DATA
 
     int periodic_x;
     int periodic_y;
+
     double volume;
-    float layer[4];             /* dimensionless dimensions */
+    float layer[4];     /**< Dimensionless dimensions */
     float lidz;
     float bl1width[4], bl2width[4], bl1mag[4], bl2mag[4];
     float hwidth[4], magnitude[4], offset[4], width[4]; /* grid compression information */
@@ -594,8 +600,12 @@ struct MESH_DATA
     int matrix_size[MAX_LEVELS];
 };
 
+
+/**
+ * Horizontal averages.
+ */
 struct HAVE
-{                               /* horizontal averages */
+{
     float *T;
     float *C;
     float *Tadi;
@@ -607,8 +617,11 @@ struct HAVE
     float *V[4];
 };
 
+/**
+ * Horizontally sliced data, including topography.
+ */
 struct SLICE
-{                               /* horizontally sliced data, including topography */
+{
     float *tpg;
     float *tpgb;
     float *grv;
@@ -624,7 +637,7 @@ struct SLICE
     float *shflux;
     float *bhflux;
     float *cen_mflux;
-    float *vxsurf[3];           /* surface velocity vectors */
+    float *vxsurf[3];           /**< Surface velocity vectors */
     float *vline;               /* for kernels, velocity at force term */
     float *vlinek;
     float *tpglong;
@@ -657,8 +670,8 @@ struct TOTAL
 
 struct MONITOR
 {
-    char node_output[100][6];   /* recording the format of the output data */
-    char sobs_output[100][6];   /* recording the format of the output data */
+    char node_output[100][6];   /**< Recording the format of the output data */
+    char sobs_output[100][6];   /**< Recording the format of the output data */
     int node_output_cols;
     int sobs_output_cols;
 
@@ -723,11 +736,16 @@ struct CONTROL
 {
     int PID;
 
-    char output_written_external_command[500];  /* a unix command to run when output files have been created */
+    /** A unix command to run when output files have been created */
+    char output_written_external_command[500];
 
-    int ORTHO, ORTHOZ;          /* indicates levels of mesh symmetry */
-    char B_is_good[MAX_LEVELS]; /* general information controlling program flow */
-    char Ahat_is_good[MAX_LEVELS];  /* general information controlling program flow */
+    int ORTHO, ORTHOZ;          /**< Indicates levels of mesh symmetry */
+    
+    /** General information controlling program flow */
+    char B_is_good[MAX_LEVELS];
+    /** General information controlling program flow */
+    char Ahat_is_good[MAX_LEVELS];
+
     char old_P_file[100];
     char data_file[100];
     char data_file2[100];
@@ -737,16 +755,19 @@ struct CONTROL
     char which_running_data[1000];
     char which_observable_data[1000];
 
+
     char PROBLEM_TYPE[20];      /* one of ... */
     int KERNEL;
     int CONVECTION;
     int SLAB;
+
     char GEOMETRY[20];          /* one of ... */
     int CART2D;
     int CART2pt5D;
     int CART3D;
     int Rsphere;
     int AXI;
+
     char SOLVER_TYPE[20];       /* one of ... */
     int DIRECT;
     int restart;
@@ -755,6 +776,7 @@ struct CONTROL
     int NMULTIGRID;
     int EMULTIGRID;
     int DIRECTII;
+
     char NODE_SPACING[20];      /* turns into ... */
     int GRID_TYPE;
     int COMPRESS;
@@ -967,7 +989,7 @@ struct All_variables
     float *heatflux;
     float *heatflux_adv;
     float *edot;                /* strain rate invariant */
-    float *Mass;                /* lumped mass matrix (diagonal elements) for p-g solver etc. */
+    float *Mass;/* lumped mass matrix (diagonal elements) for P-G solver etc. */
     float *tw;
     float *X[4], *SX[4];
     float *XX[MAX_LEVELS][4], *SXX[MAX_LEVELS][4], *MASS[MAX_LEVELS];
@@ -983,10 +1005,11 @@ struct All_variables
     float *VB[4], *TB[4];       /* boundary conditions for V,T defined everywhere */
     float *TW[MAX_LEVELS];      /* nodal weightings */
 
+    
     int *surf_node, *surf_element;
-    int *mat;                   /* properties of mat */
-    unsigned int *node;         /* properties of node */
-    unsigned int *NODE[MAX_LEVELS];
+    int *mat;                       /* properties of mat */
+    unsigned int *node;             /**< Properties of node at levmax */
+    unsigned int *NODE[MAX_LEVELS]; /**< Node properties at all levels */
     unsigned int *Element;
     unsigned int *eqn;
     unsigned int *EQN[MAX_LEVELS];
@@ -1005,13 +1028,17 @@ struct All_variables
     struct Shape_function_dA *gDA;
 
 
-    struct Shape_function1 M;   /* master-element shape funtions */
-    struct Shape_function1_dx Mx;
-    struct Shape_function N;
-    struct Shape_function_dx Nx;
+
+    struct Shape_function1 M;    /**< Master-element shape funtions */
+    struct Shape_function1_dx Mx;/**< Master-element shape function gradients */
+    struct Shape_function N;     /**< Element shape functions */
+    struct Shape_function_dx Nx; /**< Element shape function gradients */
+
     struct Shape_function1 L;   /* master-element shape funtions */
     struct Shape_function1_dx Lx;
 
+
+    
     void (*build_forcing_term) ();
     void (*iterative_solver) ();
     void (*next_buoyancy_field) ();
