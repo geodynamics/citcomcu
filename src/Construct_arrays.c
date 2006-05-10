@@ -692,7 +692,7 @@ void construct_elt_ks(struct All_variables *E)
     const int n = loc_mat_size[E->mesh.nsd];
 
     report(E, "storing elt k matrices");
-    /* report_always("storing elt k matrices"); */
+    /* report_always(E, "storing elt k matrices"); */
 
     for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
     {
