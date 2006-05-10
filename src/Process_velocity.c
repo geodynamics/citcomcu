@@ -34,11 +34,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/*  Here are the routines which process the results of each velocity solution, and call
-    the relevant output routines. At this point, the velocity and pressure fields have
-    been calculated and stored at the nodes. The only properties of the velocity field
-    which are already known are those required to check convergence of the iterative
-    scheme and so on. */
+/*  
+ *  Here are the routines which process the results of each velocity solution,
+ *  and call the relevant output routines. At this point, the velocity and 
+ *  pressure fields have been calculated and stored at the nodes. The only
+ *  properties of the velocity field which are already known are those 
+ *  required to check convergence of the iterative scheme and so on.
+ */
 
 #include <math.h>
 #include <malloc.h>
@@ -54,8 +56,10 @@ void process_new_velocity(struct All_variables *E, int ii)
 
     if(been_here == 0)
     {
-        E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) / /* Million years */
-            (E->data.therm_diff * 3600.0 * 24.0 * 365.25 * 1.0e6);
+        E->monitor.time_scale = 
+            pow(E->monitor.length_scale, 2.0)  /  /* Million years */  (
+                E->data.therm_diff * 3600.0 * 24.0 * 365.25 * 1.0e6
+            );
         been_here++;
     }
 
@@ -127,7 +131,9 @@ void get_ele_visc(struct All_variables *E, float *EV)
 }
 
 
-void get_surf_stress(struct All_variables *E, float *SXX, float *SYY, float *SZZ, float *SXY, float *SXZ, float *SZY)
+void get_surf_stress(struct All_variables *E,
+                     float *SXX, float *SYY, float *SZZ,
+                     float *SXY, float *SXZ, float *SZY)
 {
     int i, node, stride;
 
@@ -187,7 +193,9 @@ void averages(struct All_variables *E)
     else
         for(i = 1; i <= E->lmesh.nno; i++)
         {
-            temp[i] = E->V[1][i] * E->V[1][i] + E->V[2][i] * E->V[2][i] + E->V[3][i] * E->V[3][i];
+            temp[i] = E->V[1][i] * E->V[1][i] + 
+                      E->V[2][i] * E->V[2][i] + 
+                      E->V[3][i] * E->V[3][i];
         }
 
     return_horiz_ave(E, temp, E->Have.vrms);

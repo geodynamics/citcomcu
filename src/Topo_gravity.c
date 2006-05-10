@@ -83,7 +83,7 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
     higher_precision eltg[24][1], eltgb[24][1];
 
     const int dims = E->mesh.nsd;
-    const int Tsize = 5;        /* maximum values, applicable to 3d, harmless for 2d */
+    const int Tsize = 5; /* maximum values, applicable to 3d, harmless for 2d */
     //const int Ssize = 4;
     const int ends = enodes[dims];
     //const int noz = E->lmesh.noz;
@@ -156,7 +156,10 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
                 resb[m] -= eltkb[ends * dims * m + l] * eub[l];
             }
 
-        /* Put relevant (vertical & surface) parts of element residual into surface residual */
+        /* 
+         * Put relevant (vertical & surface) parts of element residual
+         * into surface residual
+         */
 
         for(m = 1; m <= ends; m++)
         {                       /* for bottom elements */
