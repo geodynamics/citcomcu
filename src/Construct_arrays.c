@@ -77,7 +77,12 @@ void construct_ien(struct All_variables *E)
                     element = (r - 1) * pmax * qmax + (q - 1) * pmax + p;
                     start = (r - 1) * pnmax * qnmax + (q - 1) * pnmax + p;
                     for(rr = 1; rr <= ends; rr++)
-                        E->IEN[lev][element].node[rr] = start + offset[rr].vector[0] + offset[rr].vector[1] * pnmax + offset[rr].vector[2] * pnmax * qnmax;
+                    {
+                        E->IEN[lev][element].node[rr] = 
+                            start + offset[rr].vector[0] 
+                                  + offset[rr].vector[1] * pnmax 
+                                  + offset[rr].vector[2] * pnmax * qnmax;
+                    }
                 }
 
 
@@ -92,8 +97,8 @@ void construct_ien(struct All_variables *E)
             {
                 node = E->IEN[lev][e].node[a];
                 E->NEI[lev].nels[node]++;
-                E->NEI[lev].element[(node - 1) * ends + E->NEI[lev].nels[node] - 1] = e;
-                E->NEI[lev].lnode[(node - 1) * ends + E->NEI[lev].nels[node] - 1] = a;
+                E->NEI[lev].element[(node-1)*ends + E->NEI[lev].nels[node] - 1] = e;
+                E->NEI[lev].lnode[(node-1)*ends + E->NEI[lev].nels[node] - 1] = a;
             }
 
     }                           /* end loop for lev */
@@ -120,10 +125,16 @@ void construct_ien(struct All_variables *E)
         fprintf(E->fp, "output_IEN_arrays \n");
         if(dims == 2)
             for(i = 1; i <= E->mesh.nel; i++)
-                fprintf(E->fp, "%d %d %d %d %d\n", i, E->ien[i].node[1], E->ien[i].node[2], E->ien[i].node[3], E->ien[i].node[4]);
+                fprintf(E->fp, "%d %d %d %d %d\n", i,
+                        E->ien[i].node[1], E->ien[i].node[2],
+                        E->ien[i].node[3], E->ien[i].node[4]);
         else if(dims == 3)
             for(i = 1; i <= E->mesh.nel; i++)
-                fprintf(E->fp, "%d %d %d %d %d %d %d %d %d\n", i, E->ien[i].node[1], E->ien[i].node[2], E->ien[i].node[3], E->ien[i].node[4], E->ien[i].node[5], E->ien[i].node[6], E->ien[i].node[7], E->ien[i].node[8]);
+                fprintf(E->fp, "%d %d %d %d %d %d %d %d %d\n", i,
+                        E->ien[i].node[1], E->ien[i].node[2],
+                        E->ien[i].node[3], E->ien[i].node[4],
+                        E->ien[i].node[5], E->ien[i].node[6],
+                        E->ien[i].node[7], E->ien[i].node[8]);
     }
 
     return;
@@ -202,18 +213,27 @@ void construct_id(struct All_variables *E)
         fprintf(E->fp, "output_ID_arrays \n");
         if(dims == 2)
             for(i = 1; i <= E->lmesh.nno; i++)
-                fprintf(E->fp, "%d %d %d %d \n", eqn_count, i, E->ID[lev][i].doff[1], E->ID[lev][i].doff[2]);
+                fprintf(E->fp,
+                        "%d %d %d %d \n",
+                        eqn_count, i,
+                        E->ID[lev][i].doff[1],
+                        E->ID[lev][i].doff[2]);
         else if(dims == 3)
             for(i = 1; i <= E->lmesh.nno; i++)
-                fprintf(E->fp, "%d %d %d %d %d\n", eqn_count, i, E->ID[lev][i].doff[1], E->ID[lev][i].doff[2], E->ID[lev][i].doff[3]);
+                fprintf(E->fp,
+                        "%d %d %d %d %d\n",
+                        eqn_count, i,
+                        E->ID[lev][i].doff[1],
+                        E->ID[lev][i].doff[2],
+                        E->ID[lev][i].doff[3]);
     }
 
     return;
 }
 
-/*==========================================================
-  Function to construct  the LM array from the ID and IEN arrays 
-  ========================================================== */
+/* ==============================================================
+   Function to construct  the LM array from the ID and IEN arrays 
+   ============================================================== */
 
 void construct_lm(struct All_variables *E)
 {
@@ -267,7 +287,7 @@ void construct_lm(struct All_variables *E)
 }
 
 
-/* =====================================================
+/* ===========================================================
  *    Function to build the local node matrix indexing maps
  *
  *    Shijie Zhong modified it in 1998 to only store half of
@@ -275,7 +295,7 @@ void construct_lm(struct All_variables *E)
  *    of stiffness matrix. This also affects how the matrix
  *    operation is done in assembling A*f, thus affecting
  *    a lot of routines.
- * ===================================================== */
+ * =========================================================== */
 
 
 void construct_node_maps(struct All_variables *E)
@@ -671,27 +691,21 @@ void construct_elt_ks(struct All_variables *E)
     const int dims = E->mesh.nsd;
     const int n = loc_mat_size[E->mesh.nsd];
 
-    if(E->control.verbose && E->parallel.me == 0)
-        fprintf(stderr, "storing elt k matrices\n");
-    if(E->parallel.me == 0)
-        fprintf(stderr, "storing elt k matrices\n");
+    report(E, "storing elt k matrices");
+    /* report_always("storing elt k matrices"); */
 
     for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
     {
-
         E->parallel.idb = 1;
 
         for(el = 1; el <= E->lmesh.NEL[lev]; el++)
         {
-
             get_elt_k(E, el, E->elt_k[lev][el].k, lev, 0);  /* not for penalty */
 
             if(E->control.augmented_Lagr)
                 get_aug_k(E, el, E->elt_k[lev][el].k, lev);
 
             build_diagonal_of_K(E, el, E->elt_k[lev][el].k, lev);
-
-
         }
 
         exchange_id_d20(E, E->BI[lev], lev);    /*correct BI   */
@@ -699,22 +713,34 @@ void construct_elt_ks(struct All_variables *E)
         for(j = 0; j < E->lmesh.NEQ[lev]; j++)
         {
             if(E->BI[lev][j] == 0.0)
-                fprintf(stderr, "me= %d level %d, equation %d/%d has zero diagonal term\n", E->parallel.me, lev, j, E->mesh.NEQ[lev]);
-            assert(E->BI[lev][j] != 0 /* diagonal of matrix = 0, not acceptable */ );
+                fprintf(stderr,
+                        "me= %d level %d, equation %d/%d "
+                        "has zero diagonal term\n",
+                        E->parallel.me, lev, j, E->mesh.NEQ[lev]);
+            /* diagonal of matrix = 0, not acceptable! */
+            assert(E->BI[lev][j] != 0);
             E->BI[lev][j] = (float)1.0 / E->BI[lev][j];
         }
     }
 
     if(E->control.verbose)
+    {
         for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
             for(el = 1; el <= E->lmesh.NEL[lev]; el++)
                 for(j = 1; j <= enodes[E->mesh.nsd]; j++)
                     for(k = 1; k <= enodes[E->mesh.nsd]; k++)
                     {
                         ii = (j * n + k) * dims - (dims * n + dims);
-                        /*  fprintf(E->fp,"stiff_for_e %d %d %d %g %g %g %g \n",el,j,k,E->elt_k[lev][el].k[ii],E->elt_k[lev][el].k[ii+1],E->elt_k[lev][el].k[ii+n],E->elt_k[lev][el].k[ii+n+1]);      */
+                        /*  fprintf(E->fp,
+                         *          "stiff_for_e %d %d %d %g %g %g %g \n",
+                         *          el, j, k,
+                         *          E->elt_k[lev][el].k[ii],
+                         *          E->elt_k[lev][el].k[ii+1],
+                         *          E->elt_k[lev][el].k[ii+n],
+                         *          E->elt_k[lev][el].k[ii+n+1]);
+                         */
                     }
-
+    }
     return;
 }
 
@@ -722,22 +748,17 @@ void construct_elt_ks(struct All_variables *E)
 
 void construct_elt_gs(struct All_variables *E)
 {
-    //int el, lev, a;
     int el, lev;
 
-    //const int dims = E->mesh.nsd;
-    //const int dofs = E->mesh.dof;
-    //const int ends = enodes[dims];
-
-    if(E->control.verbose && E->parallel.me == 0)
-        fprintf(stderr, "storing elt g matrices\n");
+    report(E, "storing elt g matrices");
 
     for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
+    {
         for(el = 1; el <= E->lmesh.NEL[lev]; el++)
         {
             get_elt_g(E, el, E->elt_del[lev][el].g, lev);
         }
-
+    }
     return;
 }
 
