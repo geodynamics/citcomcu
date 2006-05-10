@@ -143,6 +143,7 @@ CFILES= Advection_diffusion.c\
 	Stokes_flow_Incomp.c\
 	Instructions.c\
 	Nodal_mesh.c\
+	Output_related.c\
 	Output.c\
 	Pan_problem_misc_functions.c\
 	Parallel_related.c\
@@ -231,9 +232,15 @@ Instructions.o: $(HEADER) Instructions.c
 Nodal_mesh.o: $(HEADER) Nodal_mesh.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Nodal_mesh.c
 
+Output_related.o: $(HEADER) Output_related.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output_related.c
+
 Output.o: $(HEADER) Output.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output.c
 	
+Output_hdf5.o: $(HEADER) Output_hdf5.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output_hdf5.c
+
 Pan_problem_misc_functions.o: $(HEADER)  Pan_problem_misc_functions.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Pan_problem_misc_functions.c
 		

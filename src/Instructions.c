@@ -71,7 +71,7 @@ void unique_copy_file(struct All_variables *E, char *name, char *comment)
 
 void initialize_parser(struct All_variables *E, int argc, char **argv)
 {
-    int verbose_mode = (E->parallel.me == 0); /* only process 0 outputs */
+    int verbose_mode = (E->parallel.me == 0);
 
     if(argc > 1)
     {
@@ -1005,17 +1005,17 @@ void set_up_nonmg_aliases(struct All_variables *E)
 {   
     int i;
 
-    E->eco = E->ECO[E->mesh.levmax];
-    E->ien = E->IEN[E->mesh.levmax];
-    E->id = E->ID[E->mesh.levmax];
-    E->lm = E->LMD[E->mesh.levmax];
-    E->Vi = E->VI[E->mesh.levmax];
-    E->EVi = E->EVI[E->mesh.levmax];
+    E->eco  = E->ECO[E->mesh.levmax];
+    E->ien  = E->IEN[E->mesh.levmax];
+    E->id   = E->ID[E->mesh.levmax];
+    E->lm   = E->LMD[E->mesh.levmax];
+    E->Vi   = E->VI[E->mesh.levmax];
+    E->EVi  = E->EVI[E->mesh.levmax];
     E->node = E->NODE[E->mesh.levmax];
-    E->tw = E->TW[E->mesh.levmax];
+    E->tw   = E->TW[E->mesh.levmax];
     E->Mass = E->MASS[E->mesh.levmax];
-    E->gDA = E->GDA[E->mesh.levmax];
-    E->gNX = E->GNX[E->mesh.levmax];
+    E->gDA  = E->GDA[E->mesh.levmax];
+    E->gNX  = E->GNX[E->mesh.levmax];
 
     for(i = 1; i <= E->mesh.nsd; i++)
         E->X[i] = E->XX[E->mesh.levmax][i];
@@ -1075,24 +1075,3 @@ void initial_velocity(struct All_variables *E)
 }
 
 /* ========================================== */
-
-void report(struct All_variables *E, char *string)
-{
-    if(E->control.verbose && E->parallel.me == 0)
-    {
-        fprintf(stderr, "%s\n", string);
-        fflush(stderr);
-    }
-    return;
-}
-
-void record(struct All_variables *E, char *string)
-{
-    if(E->control.verbose)
-    {
-        fprintf(E->fp, "%s\n", string);
-        fflush(E->fp);
-    }
-    return;
-}
-

@@ -164,8 +164,6 @@ void set_up_nonmg_aliases(struct All_variables *E);
 void common_initial_fields(struct All_variables *E);
 void initial_pressure(struct All_variables *E);
 void initial_velocity(struct All_variables *E);
-void report(struct All_variables *E, char *string);
-void record(struct All_variables *E, char *string);
 /* Nodal_mesh.c */
 void node_locations(struct All_variables *E);
 void pre_interpolation(struct All_variables *E);
@@ -189,6 +187,17 @@ void process_restart(struct All_variables *E);
 void output_velo_related(struct All_variables *E, int file_number);
 void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen);
 /* Output_hdf5.c */
+void hdf5_init_model(struct All_variables *E);
+void hdf5_init_surf_top(struct All_variables *E);
+void hdf5_init_surf_botm(struct All_variables *E);
+void hdf5_output_coord(struct All_variables *E);
+void hdf5_output_velo(struct All_variables *E);
+void hdf5_output_temp(struct All_variables *E);
+void hdf5_output_visc(struct All_variables *E);
+/* Output_related.c */
+void record(struct All_variables *E, char *string);
+void report(struct All_variables *E, char *string);
+void report_always(struct All_variables *E, char *string);
 /* Pan_problem_misc_functions.c */
 void thermal_buoyancy(struct All_variables *E);
 double SIN_D(double x);
@@ -223,20 +232,20 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
-void setup_parser(char *filename, int verbose);
+void setup_parser(char *filename, int verbose_output);
 void shutdown_parser(void);
 int add_to_parameter_list(register char *name, register char *value);
 int compute_parameter_hash_table(register char *s);
-int input_int(char *name, int *value, char *interpret);
 int input_string(char *name, char *value, char *Default);
 int input_boolean(char *name, int *value, char *interpret);
 int input_float(char *name, float *value, char *interpret);
+int input_int(char *name, int *value, char *interpret);
 int input_double(char *name, double *value, char *interpret);
-int input_int_vector(char *name, int number, int *value);
 int input_char_vector(char *name, int number, char *value);
+int input_int_vector(char *name, int number, int *value);
 int input_float_vector(char *name, int number, float *value);
 int input_double_vector(char *name, int number, double *value);
-int interpret_control_string(char *interpret, int *essential, double **Default, double **minvalue, double **maxvalue);
+int interpret_control_string(char *interpret, int *essential, double *Default, double *minvalue, double *maxvalue);
 /* Phase_change.c */
 void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4);
 /* Process_buoyancy.c */
