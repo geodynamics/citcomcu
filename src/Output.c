@@ -55,107 +55,190 @@
 /* FIXME: break up this function into components and move it to Obsolete.c */
 void output_velo_related(struct All_variables *E, int file_number)
 {
-    //int el, els, i, j, k, ii, m, node, fd;
     int i;
-    //int nox, noz, noy, nfx, nfz, nfy1, nfy2, size1, size2;
     char output_file[255];
-    //static float *SV, *EV;
     static int been_here = 0;
-    //float vs;
-
-    //const int nno = E->mesh.nno;
 
     if(been_here == 0)
     {
-        sprintf(output_file, "%s.coord.%d", E->control.data_file2, E->parallel.me);
+        sprintf(output_file,
+                "%s.coord.%d",
+                E->control.data_file2, E->parallel.me);
+     
         E->filed[13] = fopen(output_file, "w");
         been_here++;
         fprintf(E->filed[13], "%6d\n", E->lmesh.nno);
+        
         if(E->control.CART3D)
             for(i = 1; i <= E->lmesh.nno; i++)
-                fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->X[1][i], E->X[2][i], E->X[3][i]);
+                fprintf(E->filed[13],
+                        "%.5e %.5e %.5e\n",
+                        E->X[1][i], E->X[2][i], E->X[3][i]);
         else
             for(i = 1; i <= E->lmesh.nno; i++)
-                fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->SX[1][i], E->SX[2][i], E->SX[3][i]);
+                fprintf(E->filed[13],
+                        "%.5e %.5e %.5e\n",
+                        E->SX[1][i], E->SX[2][i], E->SX[3][i]);
+
         fclose(E->filed[13]);
     }
 
     if(E->parallel.me < E->parallel.nprocz)
     {
-        sprintf(output_file, "%s.ave.%d.%d", E->control.data_file2, E->parallel.me, file_number);
+        sprintf(output_file,
+                "%s.ave.%d.%d",
+                E->control.data_file2, E->parallel.me, file_number);
+
         E->filed[10] = fopen(output_file, "w");
 
-        fprintf(E->filed[10], "%6d %6d %.5e %.5e %.5e %.4e %.4e %.5e %.5e\n", E->lmesh.noz, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut, E->slice.Nub, E->data.T_adi0, E->data.T_adi1, E->monitor.Sigma_interior, E->monitor.Sigma_max);
+        fprintf(E->filed[10],
+                "%6d %6d %.5e %.5e %.5e %.4e %.4e %.5e %.5e\n",
+                E->lmesh.noz, E->advection.timesteps, E->monitor.elapsed_time,
+                E->slice.Nut, E->slice.Nub, E->data.T_adi0, E->data.T_adi1,
+                E->monitor.Sigma_interior, E->monitor.Sigma_max);
+
         for(i = 1; i <= E->lmesh.noz; i++)
-            fprintf(E->filed[10], "%.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e\n", E->Have.T[i], E->Have.vrms[i], E->Have.Vi[i], E->Have.Rho[i], E->Have.F[i], E->Have.f[i], E->Have.C[i], E->Have.Tadi[i]);
+            fprintf(E->filed[10],
+                    "%.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e\n",
+                    E->Have.T[i], E->Have.vrms[i], E->Have.Vi[i],
+                    E->Have.Rho[i], E->Have.F[i], E->Have.f[i],
+                    E->Have.C[i], E->Have.Tadi[i]);
+
         fclose(E->filed[10]);
     }
 
 
     if(file_number % (10 * E->control.record_every) == 0)
     {
-        sprintf(output_file, "%s.temp.%d.%d", E->control.data_file2, E->parallel.me, file_number);
+        sprintf(output_file,
+                "%s.temp.%d.%d",
+                E->control.data_file2, E->parallel.me, file_number);
+
         E->filed[10] = fopen(output_file, "w");
-        fprintf(E->filed[10], "%6d %6d %.5e\n", E->lmesh.nno, E->advection.timesteps, E->monitor.elapsed_time);
+        fprintf(E->filed[10], 
+                "%6d %6d %.5e\n", 
+                E->lmesh.nno, 
+                E->advection.timesteps, 
+                E->monitor.elapsed_time);
+
         if(file_number % (20 * E->control.record_every) == 0)
         {
             if(E->control.composition == 0)
                 for(i = 1; i <= E->lmesh.nno; i++)
-//        fprintf(E->filed[10],"%.5e %.4e %.4e %.5e %.5e %.5e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->V[1][i],E->V[2][i],E->V[3][i]);
-//       fprintf(E->filed[10],"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-                    fprintf(E->filed[10], "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+//                  fprintf(E->filed[10],
+//                          "%.5e %.4e %.4e %.5e %.5e %.5e\n",
+//                          E->T[i], E->heatflux[i], E->heatflux_adv[i],
+//                          E->V[1][i], E->V[2][i], E->V[3][i]);
+//                  fprintf(E->filed[10],
+//                          "%.5e %.4e %.4e\n",
+//                          E->T[i],E->heatflux[i],E->heatflux_adv[i]);
+                    fprintf(E->filed[10],
+                            "%.5e %.4e %.4e\n", 
+                            E->T[i], E->V[3][i], E->heatflux_adv[i]);
             else if(E->control.composition)
                 for(i = 1; i <= E->lmesh.nno; i++)
-//      fprintf(E->filed[10],"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-                    fprintf(E->filed[10], "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+//                  fprintf(E->filed[10],
+//                          "%.5e %.4e %.4e %.4e\n",
+//                          E->T[i], E->heatflux[i],
+//                          E->heatflux_adv[i], E->C[i]);
+                    fprintf(E->filed[10],
+                            "%.5e %.4e %.4e %.4e\n", 
+                            E->T[i], E->V[3][i], 
+                            E->heatflux_adv[i], E->C[i]);
         }
         else
         {
             if(E->control.composition == 0)
                 for(i = 1; i <= E->lmesh.nno; i++)
-//      fprintf(E->filed[10],"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-                    fprintf(E->filed[10], "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+//                  fprintf(E->filed[10],
+//                          "%.5e %.4e %.4e\n",
+//                          E->T[i], E->heatflux[i], E->heatflux_adv[i]);
+                    fprintf(E->filed[10],
+                            "%.5e %.4e %.4e\n", 
+                            E->T[i], E->V[3][i], E->heatflux_adv[i]);
             else if(E->control.composition)
                 for(i = 1; i <= E->lmesh.nno; i++)
-//      fprintf(E->filed[10],"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-                    fprintf(E->filed[10], "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+//                  fprintf(E->filed[10],
+//                          "%.5e %.4e %.4e %.4e\n",
+//                          E->T[i], E->heatflux[i],
+//                          E->heatflux_adv[i], E->C[i]);
+                    fprintf(E->filed[10],
+                            "%.5e %.4e %.4e %.4e\n",
+                            E->T[i], E->V[3][i],
+                            E->heatflux_adv[i], E->C[i]);
         }
         fclose(E->filed[10]);
 
         if(E->parallel.me_loc[3] == E->parallel.nprocz - 1)
         {
-            sprintf(output_file, "%s.th_t.%d.%d", E->control.data_file2, E->parallel.me, file_number);
+            sprintf(output_file,
+                    "%s.th_t.%d.%d", 
+                    E->control.data_file2, E->parallel.me, file_number);
+
             E->filed[11] = fopen(output_file, "w");
-            fprintf(E->filed[11], "%6d %6d %.5e %.5e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut);
+            fprintf(E->filed[11], 
+                    "%6d %6d %.5e %.5e\n", 
+                    E->lmesh.nsf, E->advection.timesteps, 
+                    E->monitor.elapsed_time, E->slice.Nut);
+
             for(i = 1; i <= E->lmesh.nsf; i++)
             {
-                fprintf(E->filed[11], "%.5e %.5e %.5e %.5e\n", E->slice.tpg[i], E->slice.shflux[i], E->Fas410_b[i], E->Fas670_b[i]);
+                fprintf(E->filed[11], 
+                        "%.5e %.5e %.5e %.5e\n", 
+                        E->slice.tpg[i], E->slice.shflux[i], 
+                        E->Fas410_b[i], E->Fas670_b[i]);
             }
+
             fclose(E->filed[11]);
         }
+
         if(E->parallel.me_loc[3] == 0)
         {
-            sprintf(output_file, "%s.th_b.%d.%d", E->control.data_file2, E->parallel.me, file_number);
+            sprintf(output_file, 
+                    "%s.th_b.%d.%d", 
+                    E->control.data_file2, 
+                    E->parallel.me, file_number);
+
             E->filed[11] = fopen(output_file, "w");
-            fprintf(E->filed[11], "%6d %6d %.5e %.5e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nub);
+            fprintf(E->filed[11], 
+                    "%6d %6d %.5e %.5e\n", 
+                    E->lmesh.nsf, E->advection.timesteps, 
+                    E->monitor.elapsed_time, E->slice.Nub);
+
             for(i = 1; i <= E->lmesh.nsf; i++)
             {
-                fprintf(E->filed[11], "%.5e %.5e %.5e %.5e\n", E->slice.tpgb[i], E->slice.bhflux[i], E->Fas410_b[i], E->Fas670_b[i]);
+                fprintf(E->filed[11], 
+                        "%.5e %.5e %.5e %.5e\n", 
+                        E->slice.tpgb[i], E->slice.bhflux[i], 
+                        E->Fas410_b[i], E->Fas670_b[i]);
             }
             fclose(E->filed[11]);
         }
 
     }
 
-    if(E->control.composition && file_number % (10 * E->control.record_every) == 0)
+    if(E->control.composition && 
+       file_number % (10 * E->control.record_every) == 0)
     {
-        sprintf(output_file, "%s.traces.%d", E->control.data_file2, E->parallel.me);
+        sprintf(output_file, 
+                "%s.traces.%d", 
+                E->control.data_file2, E->parallel.me);
+
         E->filed[10] = fopen(output_file, "w");
-        fprintf(E->filed[10], "%6d %6d %.5e\n", E->advection.markers, E->advection.timesteps, E->monitor.elapsed_time);
+        fprintf(E->filed[10], 
+                "%6d %6d %.5e\n", 
+                E->advection.markers, E->advection.timesteps, 
+                E->monitor.elapsed_time);
+
         for(i = 1; i <= E->advection.markers; i++)
-            fprintf(E->filed[10], "%g %g %g %d %d\n", E->XMC[1][i], E->XMC[2][i], E->XMC[3][i], E->CElement[i], E->C12[i]);
+            fprintf(E->filed[10], 
+                    "%g %g %g %d %d\n", 
+                    E->XMC[1][i], E->XMC[2][i], E->XMC[3][i], 
+                    E->CElement[i], E->C12[i]);
+
         for(i = 1; i <= E->lmesh.nel; i++)
             fprintf(E->filed[10], "%g\n", E->CE[i]);
+
         fclose(E->filed[10]);
     }
 
