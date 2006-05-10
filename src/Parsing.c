@@ -42,11 +42,28 @@
 #include <sys/types.h>
 #include <string.h>
 
+/** \def MAXLINE
+ * \brief Maximum length of line in input file
+ */
+/** \def MAXNAME
+ * \brief Maximum length of name
+ */
+/** \def MAXVALUE
+ * \brief Maximum length of value
+ */
+/** \def MAXFILENAME
+ * \brief Maximum length of par file name
+ */
+/** \def MAXVECTOR
+ * \brief Maximum number of elements for unspecified vectors
+ */
+
 #define MAXLINE     1024        /* max length of line in input file */
 #define MAXNAME     64          /* max length of name */
 #define MAXVALUE    1024        /* max length of value */
 #define MAXFILENAME 64          /* max length of par file name */
 #define MAXVECTOR   10          /* max # of elements for unspecified vectors */
+
 
 /* abbreviations: */
 #define AL          struct arglist
@@ -61,15 +78,32 @@
 #define BUFMAX      ext_par.bufmax
 #define LISTFILE    ext_par.listout
 
+
+/** \def LISTINC
+ * \brief Increment size for arglist
+ */
+/** \def BUFINC
+ * \brief Increment size for argbuf
+ */
+
 #define LISTINC     32          /* increment size for arglist */
 #define BUFINC      1024        /* increment size for argbuf */
 
-/**
+/** \def STRANGE_NUM
+ * \brief Used to indicate the absence of a Default value.
+ * 
  * A recognizable numerical value to indicate the lack of a Default
  * value, when parsing a particular parameter.
  */
 #define STRANGE_NUM -98765.4321
 
+/** \struct ext_par
+ * \brief Global variables for getpar.
+ */
+/** \var struct ext_par ext_par
+ * \brief Global variable for getpar.
+ *
+ */
 
 struct ext_par                  /* global variables for getpar */
 {
@@ -85,6 +119,9 @@ struct ext_par                  /* global variables for getpar */
     FILE *listout;
 } ext_par;
 
+/** \struct arglist
+ * Structure of list set up by setpar
+ */
 struct arglist                  /* structure of list set up by setpar */
 {
     int argname_offset;
@@ -92,11 +129,34 @@ struct arglist                  /* structure of list set up by setpar */
     int hash;
 };
 
+
+/** \var int VERBOSE
+ * \brief 
+ */
+/** \var int DESCRIBE
+ * \brief
+ */
+/** \var int BEGINNER
+ * \brief
+ */
+
 static int VERBOSE = 0;
 static int DESCRIBE = 0;
 static int BEGINNER = 0;
 
 
+/**
+ * \brief Set up an input file parser.
+ * 
+ * This method reads the entire input file into memory, parsing all
+ * key/value pairs separated by an '=' sign. Note that neither keys
+ * nor values can contain any whitespace characters. Shell-style comments,
+ * which start from the '#' character to the end of the line, are allowed
+ * in the input file.
+ *
+ * @param filename The filename of the input file to parse.
+ * @param verbose_output If false, overrides VERBOSE settings in input file.
+ */
 void setup_parser(char *filename, int verbose_output)
 {
     FILE *fp;
@@ -172,7 +232,12 @@ loop:   /* loop over entries on each line */
     return;
 }
 
-void shutdown_parser()
+/**
+ * \brief Cleans up the memory used by the input file parser.
+ *
+ * Free the memory used in maintaining the list of parameters.
+ */
+void shutdown_parser(void)
 {
     if(ARGLIST != NULL) free(ARGLIST);
     if(ARGBUF != NULL) free(ARGBUF);
@@ -180,9 +245,23 @@ void shutdown_parser()
     ARGLIST = NULL;
 }
 
-/* add an entry to arglist, expanding memory if necessary */
+
+/**
+ * \brief Remember the value assigned to a given name.
+ * 
+ * Store the given (name,value) pair into the global list of parameters.
+ * Note that a hash value is calculated in order to speed up the string
+ * comparisons on name. Note that multiple names with different values
+ * may be specified inside the input file, which will just be appended
+ * to the parameter list. Since the input_*() functions read the list
+ * backwards, only the last assignment in the file is used to determine
+ * the value.
+ * 
+ * @param name Name of the parameter, as read from the input file.
+ * @param value Value of the given parameter, as a string.
+ */
 int add_to_parameter_list(register char *name, register char *value)
-{
+{   /* add an entry to arglist, expanding memory if necessary */
     struct arglist *alptr;
     int len;
     register char *ptr;
@@ -229,6 +308,14 @@ int add_to_parameter_list(register char *name, register char *value)
     return 0; /* successfully added value to list */
 }
 
+/**
+ * \brief Compute a hash value for use in the parameter list.
+ *
+ * This method computes a hash value from the first four
+ * characters of an input string s.
+ * 
+ * @param s Input string for the hash.
+ */
 int compute_parameter_hash_table(register char *s)
 {
     register int h;
@@ -247,9 +334,12 @@ int compute_parameter_hash_table(register char *s)
     return h;
 }
 
-/* in the case of a string default=NULL forces input */
+
+/**
+ *
+ */
 int input_string(char *name, char *value, char *Default)
-{
+{   /* in the case of a string default=NULL forces input */
     struct arglist *alptr;
     int h, found;
     char *str;
@@ -789,6 +879,32 @@ int input_double_vector(char *name, int number, double *value)
 
 /* ======================================================================== */
 
+/**
+ * \brief Parse the string denoting the value of a numerical parameter.
+ * 
+ * Given an input string which represents some value read from the input
+ * file, parse 
+ *
+ * Examples of valid interpret strings include:
+ * 
+ * <pre> 
+ *  "essential"     - Require parameter (MUST be specified in input file)
+ *  "100"           - Default value of 100
+ *  "100,1,nomax"   - Default value of 100, with minimum value of 1
+ *  "100,nomin,300" - Default value of 100, with maximum value of 300
+ * </pre>
+ * 
+ * Note that if any of the numerical output variables are not found in
+ * the input string, they are assigned an arbitrarily chosen unlikely
+ * return value (cf. STRANGE_NUM). Check against this constant before
+ * casting any of these return output values.
+ * 
+ * @param interpret Input string denoting value of numerical parameter
+ * @param essential Output flag for essential parameter
+ * @param Default  Output double containing default value of parameter
+ * @param minvalue Output double containing min allowed value of parameter
+ * @param maxvalue Output double containing max allowed value of parameter
+ */
 int interpret_control_string(char   *interpret,
                              int    *essential,
                              double *Default,
@@ -837,7 +953,7 @@ int interpret_control_string(char   *interpret,
         sscanf(substring, "%lf", minvalue);
     }
 
-    if((substring = strtok(NULL, ",")) == NULL) /* maxvalue */
+    if((substring = strstr(substring, ",")) == NULL) /* maxvalue */
     {
         /* no maximum */
         if(DESCRIBE)
