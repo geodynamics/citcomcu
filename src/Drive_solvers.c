@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 #include <math.h>
@@ -42,45 +42,45 @@
 
 void general_stokes_solver(struct All_variables *E)
 {
-	//float vmag;
-	double *delta_U;
-	//double *force, Udot_mag, dUdot_mag;
-	double Udot_mag, dUdot_mag;
-	double time;
-	//int count, i, j, k;
-	int count, i;
+    //float vmag;
+    double *delta_U;
+    //double *force, Udot_mag, dUdot_mag;
+    double Udot_mag, dUdot_mag;
+    double time;
+    //int count, i, j, k;
+    int count, i;
 
-	static float *oldU;
-	static int visits = 0;
+    static float *oldU;
+    static int visits = 0;
 
-	//const int nno = E->lmesh.nno;
-	const int neq = E->lmesh.neq;
-	//const int dims = E->mesh.nsd;
-	//const int vpts = vpoints[E->mesh.nsd];
+    //const int nno = E->lmesh.nno;
+    const int neq = E->lmesh.neq;
+    //const int dims = E->mesh.nsd;
+    //const int vpts = vpoints[E->mesh.nsd];
 
-	if(visits == 0)
-	{
-		oldU = (float *)malloc((neq + 2) * sizeof(float));
-		for(i = 1; i <= neq; i++)
-			oldU[i] = 0.0;
-		visits++;
-	}
+    if(visits == 0)
+    {
+        oldU = (float *)malloc((neq + 2) * sizeof(float));
+        for(i = 1; i <= neq; i++)
+            oldU[i] = 0.0;
+        visits++;
+    }
 
-	dUdot_mag = 0.0;
+    dUdot_mag = 0.0;
 
-	delta_U = (double *)malloc((neq + 2) * sizeof(double));
+    delta_U = (double *)malloc((neq + 2) * sizeof(double));
 
-	/* FIRST store the old velocity field */
+    /* FIRST store the old velocity field */
 
-	E->monitor.elapsed_time_vsoln1 = E->monitor.elapsed_time_vsoln;
-	E->monitor.elapsed_time_vsoln = E->monitor.elapsed_time;
+    E->monitor.elapsed_time_vsoln1 = E->monitor.elapsed_time_vsoln;
+    E->monitor.elapsed_time_vsoln = E->monitor.elapsed_time;
 
-	if(E->parallel.me == 0)
-		time = CPU_time0();
+    if(E->parallel.me == 0)
+        time = CPU_time0();
 
-	velocities_conform_bcs(E, E->U);
+    velocities_conform_bcs(E, E->U);
 
-	assemble_forces(E, 0);
+    assemble_forces(E, 0);
 
 /*	
 	if(E->parallel.me==0)
@@ -90,43 +90,43 @@ void general_stokes_solver(struct All_variables *E)
 	}
 */
 
-	count = 1;
+    count = 1;
 
-	do
-	{
+    do
+    {
 
-		if(E->viscosity.update_allowed)
-			get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
+        if(E->viscosity.update_allowed)
+            get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
 
-		construct_stiffness_B_matrix(E);
+        construct_stiffness_B_matrix(E);
 
-		solve_constrained_flow_iterative(E);
+        solve_constrained_flow_iterative(E);
 
-		if(E->viscosity.SDEPV)
-		{
-			for(i = 1; i <= neq; i++)
-			{
-				delta_U[i] = E->U[i] - oldU[i];
-				oldU[i] = E->U[i];
-			}
-			Udot_mag = sqrt(global_vdot(E, E->U, E->U, E->mesh.levmax));
-			dUdot_mag = sqrt(global_vdot(E, delta_U, delta_U, E->mesh.levmax));
+        if(E->viscosity.SDEPV)
+        {
+            for(i = 1; i <= neq; i++)
+            {
+                delta_U[i] = E->U[i] - oldU[i];
+                oldU[i] = E->U[i];
+            }
+            Udot_mag = sqrt(global_vdot(E, E->U, E->U, E->mesh.levmax));
+            dUdot_mag = sqrt(global_vdot(E, delta_U, delta_U, E->mesh.levmax));
 
-			if(Udot_mag != 0.0)
-				dUdot_mag /= Udot_mag;
+            if(Udot_mag != 0.0)
+                dUdot_mag /= Udot_mag;
 
-			if(E->control.sdepv_print_convergence < E->monitor.solution_cycles && E->parallel.me == 0)
-			{
-				fprintf(stderr, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
-				fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
-				fflush(E->fp);
-			}
-			count++;
-		}						/* end for SDEPV   */
+            if(E->control.sdepv_print_convergence < E->monitor.solution_cycles && E->parallel.me == 0)
+            {
+                fprintf(stderr, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
+                fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
+                fflush(E->fp);
+            }
+            count++;
+        }                       /* end for SDEPV   */
 
-	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && E->viscosity.SDEPV);
+    } while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && E->viscosity.SDEPV);
 
-	free((void *)delta_U);
+    free((void *)delta_U);
 
-	return;
+    return;
 }

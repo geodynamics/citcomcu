@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 /*  Functions which construct the shape function values at all of the gauss
@@ -52,121 +52,121 @@
 
 void construct_shape_functions(struct All_variables *E)
 {
-	//int i, j, k, d, dd, el;
-	int i, j, k, d, dd;
-	//int remapj, remapk;
+    //int i, j, k, d, dd, el;
+    int i, j, k, d, dd;
+    //int remapj, remapk;
 
-	/* first zero ALL entries, even those not used in 2d. */
+    /* first zero ALL entries, even those not used in 2d. */
 
-	for(i = 0; i < GNVI; i++)
-	{
-		E->N.vpt[i] = 0.0;
-		E->Nx.vpt[i] = 0.0;
-		E->Nx.vpt[GNVI + i] = 0.0;
-		E->Nx.vpt[2 * GNVI + i] = 0.0;
-	}
+    for(i = 0; i < GNVI; i++)
+    {
+        E->N.vpt[i] = 0.0;
+        E->Nx.vpt[i] = 0.0;
+        E->Nx.vpt[GNVI + i] = 0.0;
+        E->Nx.vpt[2 * GNVI + i] = 0.0;
+    }
 
-	for(i = 0; i < GNPI; i++)
-	{
-		E->N.ppt[i] = 0.0;
-		E->Nx.ppt[i] = 0.0;
-		E->Nx.ppt[GNPI + i] = 0.0;
-		E->Nx.ppt[2 * GNPI + i] = 0.0;
-	}
+    for(i = 0; i < GNPI; i++)
+    {
+        E->N.ppt[i] = 0.0;
+        E->Nx.ppt[i] = 0.0;
+        E->Nx.ppt[GNPI + i] = 0.0;
+        E->Nx.ppt[2 * GNPI + i] = 0.0;
+    }
 
-	for(i = 0; i < GN1VI; i++)
-	{
-		E->M.vpt[i] = 0.0;
-		E->Mx.vpt[i] = 0.0;
-		E->Mx.vpt[GN1VI + i] = 0.0;
-	}
+    for(i = 0; i < GN1VI; i++)
+    {
+        E->M.vpt[i] = 0.0;
+        E->Mx.vpt[i] = 0.0;
+        E->Mx.vpt[GN1VI + i] = 0.0;
+    }
 
-	for(i = 0; i < GN1PI; i++)
-	{
-		E->M.ppt[i] = 0.0;
-		E->Mx.ppt[i] = 0.0;
-		E->Mx.ppt[GN1PI + i] = 0.0;
-	}
+    for(i = 0; i < GN1PI; i++)
+    {
+        E->M.ppt[i] = 0.0;
+        E->Mx.ppt[i] = 0.0;
+        E->Mx.ppt[GN1PI + i] = 0.0;
+    }
 
-	for(i = 0; i < GN1VI; i++)
-	{
-		E->L.vpt[i] = 0.0;
-		E->Lx.vpt[i] = 0.0;
-		E->Lx.vpt[GN1VI + i] = 0.0;
-	}
-
-
-	for(i = 1; i <= enodes[E->mesh.nsd]; i++)
-	{
-		/*  for each node  */
-
-		for(j = 1; j <= vpoints[E->mesh.nsd]; j++)
-		{
-
-			/* for each integration point  */
-			E->N.vpt[GNVINDEX(i, j)] = 1.0;
-			for(d = 1; d <= E->mesh.nsd; d++)
-			{
-				E->N.vpt[GNVINDEX(i, j)] *= lpoly(bb[d - 1][i], g_point[j].x[d - 1]);
-			}
-			for(dd = 1; dd <= E->mesh.nsd; dd++)
-			{
-				E->Nx.vpt[GNVXINDEX(dd - 1, i, j)] = lpolydash(bb[dd - 1][i], g_point[j].x[dd - 1]);
-				for(d = 1; d <= E->mesh.nsd; d++)
-					if(d != dd)
-						E->Nx.vpt[GNVXINDEX(dd - 1, i, j)] *= lpoly(bb[d - 1][i], g_point[j].x[d - 1]);
-			}
-		}
+    for(i = 0; i < GN1VI; i++)
+    {
+        E->L.vpt[i] = 0.0;
+        E->Lx.vpt[i] = 0.0;
+        E->Lx.vpt[GN1VI + i] = 0.0;
+    }
 
 
-		for(j = 1; j <= ppoints[E->mesh.nsd]; j++)
-		{
-			/* for each p-integration point  */
-			E->N.ppt[GNPINDEX(i, j)] = 1.0;
-			for(d = 1; d <= E->mesh.nsd; d++)
-			{
-				E->N.ppt[GNPINDEX(i, j)] *= lpoly(bb[d - 1][i], p_point[j].x[d - 1]);
-			}
-			for(dd = 1; dd <= E->mesh.nsd; dd++)
-			{
-				E->Nx.ppt[GNPXINDEX(dd - 1, i, j)] = lpolydash(bb[dd - 1][i], p_point[j].x[dd - 1]);
-				for(d = 1; d <= E->mesh.nsd; d++)
-					if(d != dd)
-					{
-						E->Nx.ppt[GNPXINDEX(dd - 1, i, j)] *= lpoly(bb[d - 1][i], p_point[j].x[d - 1]);
-					}
-			}
-		}
+    for(i = 1; i <= enodes[E->mesh.nsd]; i++)
+    {
+        /*  for each node  */
 
-	}
+        for(j = 1; j <= vpoints[E->mesh.nsd]; j++)
+        {
+
+            /* for each integration point  */
+            E->N.vpt[GNVINDEX(i, j)] = 1.0;
+            for(d = 1; d <= E->mesh.nsd; d++)
+            {
+                E->N.vpt[GNVINDEX(i, j)] *= lpoly(bb[d - 1][i], g_point[j].x[d - 1]);
+            }
+            for(dd = 1; dd <= E->mesh.nsd; dd++)
+            {
+                E->Nx.vpt[GNVXINDEX(dd - 1, i, j)] = lpolydash(bb[dd - 1][i], g_point[j].x[dd - 1]);
+                for(d = 1; d <= E->mesh.nsd; d++)
+                    if(d != dd)
+                        E->Nx.vpt[GNVXINDEX(dd - 1, i, j)] *= lpoly(bb[d - 1][i], g_point[j].x[d - 1]);
+            }
+        }
+
+
+        for(j = 1; j <= ppoints[E->mesh.nsd]; j++)
+        {
+            /* for each p-integration point  */
+            E->N.ppt[GNPINDEX(i, j)] = 1.0;
+            for(d = 1; d <= E->mesh.nsd; d++)
+            {
+                E->N.ppt[GNPINDEX(i, j)] *= lpoly(bb[d - 1][i], p_point[j].x[d - 1]);
+            }
+            for(dd = 1; dd <= E->mesh.nsd; dd++)
+            {
+                E->Nx.ppt[GNPXINDEX(dd - 1, i, j)] = lpolydash(bb[dd - 1][i], p_point[j].x[dd - 1]);
+                for(d = 1; d <= E->mesh.nsd; d++)
+                    if(d != dd)
+                    {
+                        E->Nx.ppt[GNPXINDEX(dd - 1, i, j)] *= lpoly(bb[d - 1][i], p_point[j].x[d - 1]);
+                    }
+            }
+        }
+
+    }
 
 
 
-	for(j = 1; j <= onedvpoints[E->mesh.nsd]; j++)
-		for(k = 1; k <= onedvpoints[E->mesh.nsd]; k++)
-		{
-			E->M.vpt[GMVINDEX(j, k)] = 1.0;
-			E->L.vpt[GMVINDEX(j, k)] = 1.0;
-			for(d = 1; d <= E->mesh.nsd - 1; d++)
-			{
-				E->M.vpt[GMVINDEX(j, k)] *= lpoly(bb[d - 1][j], s_point[k].x[d - 1]);
-				E->L.vpt[GMVINDEX(j, k)] *= lpoly(bb[d - 1][j], l_1d[k].x[d - 1]);
-			}
+    for(j = 1; j <= onedvpoints[E->mesh.nsd]; j++)
+        for(k = 1; k <= onedvpoints[E->mesh.nsd]; k++)
+        {
+            E->M.vpt[GMVINDEX(j, k)] = 1.0;
+            E->L.vpt[GMVINDEX(j, k)] = 1.0;
+            for(d = 1; d <= E->mesh.nsd - 1; d++)
+            {
+                E->M.vpt[GMVINDEX(j, k)] *= lpoly(bb[d - 1][j], s_point[k].x[d - 1]);
+                E->L.vpt[GMVINDEX(j, k)] *= lpoly(bb[d - 1][j], l_1d[k].x[d - 1]);
+            }
 
-			for(dd = 1; dd <= E->mesh.nsd - 1; dd++)
-			{
-				E->Mx.vpt[GMVXINDEX(dd - 1, j, k)] = lpolydash(bb[dd - 1][j], s_point[k].x[d - 1]);
-				E->Lx.vpt[GMVXINDEX(dd - 1, j, k)] = lpolydash(bb[dd - 1][j], l_1d[k].x[d - 1]);
-				for(d = 1; d <= E->mesh.nsd - 1; d++)
-					if(d != dd)
-					{
-						E->Mx.vpt[GMVXINDEX(dd - 1, j, k)] *= lpoly(bb[d - 1][j], s_point[k].x[d - 1]);
-						E->Lx.vpt[GMVXINDEX(dd - 1, j, k)] *= lpoly(bb[d - 1][j], l_1d[k].x[d - 1]);
-					}
-			}
-		}
+            for(dd = 1; dd <= E->mesh.nsd - 1; dd++)
+            {
+                E->Mx.vpt[GMVXINDEX(dd - 1, j, k)] = lpolydash(bb[dd - 1][j], s_point[k].x[d - 1]);
+                E->Lx.vpt[GMVXINDEX(dd - 1, j, k)] = lpolydash(bb[dd - 1][j], l_1d[k].x[d - 1]);
+                for(d = 1; d <= E->mesh.nsd - 1; d++)
+                    if(d != dd)
+                    {
+                        E->Mx.vpt[GMVXINDEX(dd - 1, j, k)] *= lpoly(bb[d - 1][j], s_point[k].x[d - 1]);
+                        E->Lx.vpt[GMVXINDEX(dd - 1, j, k)] *= lpoly(bb[d - 1][j], l_1d[k].x[d - 1]);
+                    }
+            }
+        }
 
-	return;
+    return;
 }
 
 
@@ -176,37 +176,37 @@ void construct_shape_functions(struct All_variables *E)
  */
 double lpoly(int p, double y)
 {
-	double value;
+    double value;
 
-	switch (p)
-	{
-	case 1:
-		value = 0.5 * (1 - y);
-		break;
-	case 2:
-		value = 0.5 * (1 + y);
-		break;
-	default:
-		value = 0.0;
-	}
+    switch (p)
+    {
+    case 1:
+        value = 0.5 * (1 - y);
+        break;
+    case 2:
+        value = 0.5 * (1 + y);
+        break;
+    default:
+        value = 0.0;
+    }
 
-	return value;
+    return value;
 }
 
 double lpolydash(int p, double y)
 {
-	double value;
-	switch (p)
-	{
-	case 1:
-		value = -0.5;
-		break;
-	case 2:
-		value = 0.5;
-		break;
-	default:
-		value = 0.0;
-	}
+    double value;
+    switch (p)
+    {
+    case 1:
+        value = -0.5;
+        break;
+    case 2:
+        value = 0.5;
+        break;
+    default:
+        value = 0.0;
+    }
 
-	return value;
+    return value;
 }

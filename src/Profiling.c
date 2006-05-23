@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 /* Profiling functions .... return elapsed CPU time etc. 
@@ -56,36 +56,36 @@
 float CPU_time(void)
 {
 #if defined(RUSAGE_STYLE_TIME)
-	struct rusage rusage;
-	double time;
+    struct rusage rusage;
+    double time;
 
-	getrusage(RUSAGE_SELF, &rusage);
-	time = rusage.ru_utime.tv_sec + 1.0e-6 * rusage.ru_utime.tv_usec;
+    getrusage(RUSAGE_SELF, &rusage);
+    time = rusage.ru_utime.tv_sec + 1.0e-6 * rusage.ru_utime.tv_usec;
 #elif defined(TIMES_STYLE_TIME)
 
-	struct tms time_now;
-	time_t utime;
-	long sometime;
+    struct tms time_now;
+    time_t utime;
+    long sometime;
 
-	float time;
-	static float initial_time;
-	static int visit = 0;
+    float time;
+    static float initial_time;
+    static int visit = 0;
 
-	if(visit == 0)
-	{
-		sometime = times(&time_now);
-		initial_time = (float)time_now.tms_utime / (float)CLK_TCK;
-		visit++;
-	}
+    if(visit == 0)
+    {
+        sometime = times(&time_now);
+        initial_time = (float)time_now.tms_utime / (float)CLK_TCK;
+        visit++;
+    }
 
-	sometime = times(&time_now);
-	time = (float)time_now.tms_utime / (float)CLK_TCK - initial_time;
-	return (time);
+    sometime = times(&time_now);
+    time = (float)time_now.tms_utime / (float)CLK_TCK - initial_time;
+    return (time);
 
 #else /* stupid, break nothing "timer" */
-	static float time;
-	time += 0.0001;
+    static float time;
+    time += 0.0001;
 #endif
 
-	return (float)time;
+    return (float)time;
 }

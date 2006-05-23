@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 /*  Here are the routines which process the results of each velocity solution, and call
@@ -43,164 +43,164 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/types.h>
-#include <stdlib.h>				/* for "system" command */
+#include <stdlib.h>             /* for "system" command */
 
 #include "element_definitions.h"
 #include "global_defs.h"
 
 void process_new_velocity(struct All_variables *E, int ii)
 {
-	static int been_here = 0;
+    static int been_here = 0;
 
-	if(been_here == 0)
-	{
-		E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) /	/* Million years */
-			(E->data.therm_diff * 3600.0 * 24.0 * 365.25 * 1.0e6);
-		been_here++;
-	}
+    if(been_here == 0)
+    {
+        E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) / /* Million years */
+            (E->data.therm_diff * 3600.0 * 24.0 * 365.25 * 1.0e6);
+        been_here++;
+    }
 
 
-	if(((ii % E->control.record_every) == 0))
-	{
-		/* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
+    if(((ii % E->control.record_every) == 0))
+    {
+        /* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
 
-		get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
+        get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
 
-		averages(E);
+        averages(E);
 
-		output_velo_related(E, ii);	/* also topo */
-	}
+        output_velo_related(E, ii); /* also topo */
+    }
 
-	return;
+    return;
 }
 
 /* ===============================================   */
 
 void get_surface_velo(struct All_variables *E, float *SV)
 {
-	//FILE *fp;
-	//char output_file[255];
+    //FILE *fp;
+    //char output_file[255];
 
-	//int el, els, i, m, node, lev;
-	int i, m, node, lev;
+    //int el, els, i, m, node, lev;
+    int i, m, node, lev;
 
-	//const int dims = E->mesh.nsd;
-	//const int ends = enodes[dims];
-	const int nno = E->lmesh.nno;
+    //const int dims = E->mesh.nsd;
+    //const int ends = enodes[dims];
+    const int nno = E->lmesh.nno;
 
-	lev = E->mesh.levmax;
+    lev = E->mesh.levmax;
 
-	m = 0;
+    m = 0;
 
-	for(node = 1; node <= nno; node++)
-		if((node - 1) % E->lmesh.noz == 0)
-		{
-			i = (node - 1) / E->lmesh.noz + 1;
-			SV[(i - 1) * 2 + 1] = E->V[1][node];
-			SV[(i - 1) * 2 + 2] = E->V[2][node];
-		}
+    for(node = 1; node <= nno; node++)
+        if((node - 1) % E->lmesh.noz == 0)
+        {
+            i = (node - 1) / E->lmesh.noz + 1;
+            SV[(i - 1) * 2 + 1] = E->V[1][node];
+            SV[(i - 1) * 2 + 2] = E->V[2][node];
+        }
 
-	return;
+    return;
 }
 
 /* ===============================================   */
 
 void get_ele_visc(struct All_variables *E, float *EV)
 {
-	int el, j, lev;
+    int el, j, lev;
 
-	const int nel = E->lmesh.nel;
-	const int vpts = vpoints[E->mesh.nsd];
+    const int nel = E->lmesh.nel;
+    const int vpts = vpoints[E->mesh.nsd];
 
-	lev = E->mesh.levmax;
+    lev = E->mesh.levmax;
 
-	for(el = 1; el <= nel; el++)
-	{
-		EV[el] = 0.0;
-		for(j = 1; j <= vpts; j++)
-			EV[el] += E->EVI[lev][(el - 1) * vpts + j];
+    for(el = 1; el <= nel; el++)
+    {
+        EV[el] = 0.0;
+        for(j = 1; j <= vpts; j++)
+            EV[el] += E->EVI[lev][(el - 1) * vpts + j];
 
-		EV[el] /= vpts;
-	}
+        EV[el] /= vpts;
+    }
 
-	return;
+    return;
 }
 
 
 void get_surf_stress(struct All_variables *E, float *SXX, float *SYY, float *SZZ, float *SXY, float *SXZ, float *SZY)
 {
-	int i, node, stride;
+    int i, node, stride;
 
-	stride = E->lmesh.nsf * 6;
+    stride = E->lmesh.nsf * 6;
 
-	for(node = 1; node <= E->lmesh.nno; node++)
-		if(((node - 1) % E->lmesh.noz) == 0)
-		{
-			i = (node - 1) / E->lmesh.noz + 1;
-			E->stress[(i - 1) * 6 + 1] = SXX[node];
-			E->stress[(i - 1) * 6 + 2] = SZZ[node];
-			E->stress[(i - 1) * 6 + 3] = SYY[node];
-			E->stress[(i - 1) * 6 + 4] = SXY[node];
-			E->stress[(i - 1) * 6 + 5] = SXZ[node];
-			E->stress[(i - 1) * 6 + 6] = SZY[node];
-		}
-		else if(((node - 2) % E->lmesh.noz) == 0)
-		{
-			i = (node - 2) / E->lmesh.noz + 1;
-			E->stress[stride + (i - 1) * 6 + 1] = SXX[node];
-			E->stress[stride + (i - 1) * 6 + 2] = SZZ[node];
-			E->stress[stride + (i - 1) * 6 + 3] = SYY[node];
-			E->stress[stride + (i - 1) * 6 + 4] = SXY[node];
-			E->stress[stride + (i - 1) * 6 + 5] = SXZ[node];
-			E->stress[stride + (i - 1) * 6 + 6] = SZY[node];
-		}
+    for(node = 1; node <= E->lmesh.nno; node++)
+        if(((node - 1) % E->lmesh.noz) == 0)
+        {
+            i = (node - 1) / E->lmesh.noz + 1;
+            E->stress[(i - 1) * 6 + 1] = SXX[node];
+            E->stress[(i - 1) * 6 + 2] = SZZ[node];
+            E->stress[(i - 1) * 6 + 3] = SYY[node];
+            E->stress[(i - 1) * 6 + 4] = SXY[node];
+            E->stress[(i - 1) * 6 + 5] = SXZ[node];
+            E->stress[(i - 1) * 6 + 6] = SZY[node];
+        }
+        else if(((node - 2) % E->lmesh.noz) == 0)
+        {
+            i = (node - 2) / E->lmesh.noz + 1;
+            E->stress[stride + (i - 1) * 6 + 1] = SXX[node];
+            E->stress[stride + (i - 1) * 6 + 2] = SZZ[node];
+            E->stress[stride + (i - 1) * 6 + 3] = SYY[node];
+            E->stress[stride + (i - 1) * 6 + 4] = SXY[node];
+            E->stress[stride + (i - 1) * 6 + 5] = SXZ[node];
+            E->stress[stride + (i - 1) * 6 + 6] = SZY[node];
+        }
 
-	return;
+    return;
 }
 
 void averages(struct All_variables *E)
 {
-	//int lev, i, j, el;
-	int lev, i;
-	float *temp, z_thld;
+    //int lev, i, j, el;
+    int lev, i;
+    float *temp, z_thld;
 
-	lev = E->mesh.levmax;
+    lev = E->mesh.levmax;
 
-	temp = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+    temp = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
 
-	visc_from_gint_to_nodes(E, E->EVI[lev], temp, lev);
-	return_horiz_ave(E, temp, E->Have.Vi);
-	return_horiz_ave(E, E->C, E->Have.C);
+    visc_from_gint_to_nodes(E, E->EVI[lev], temp, lev);
+    return_horiz_ave(E, temp, E->Have.Vi);
+    return_horiz_ave(E, E->C, E->Have.C);
 
-	z_thld = -0.1;
+    z_thld = -0.1;
 //  fprintf(E->fp,"oooo\n");fflush(E->fp);
-	E->monitor.Sigma_interior = return_bulk_value(E, E->C, z_thld, 0);
+    E->monitor.Sigma_interior = return_bulk_value(E, E->C, z_thld, 0);
 
-	z_thld = E->viscosity.zcomp + 0.1;
-	E->monitor.Sigma_max = return_bulk_value(E, E->C, z_thld, 0);
+    z_thld = E->viscosity.zcomp + 0.1;
+    E->monitor.Sigma_max = return_bulk_value(E, E->C, z_thld, 0);
 
-	if(E->mesh.nsd == 2)
-		for(i = 1; i <= E->lmesh.nno; i++)
-		{
-			temp[i] = E->V[1][i] * E->V[1][i] + E->V[2][i] * E->V[2][i];
-		}
-	else
-		for(i = 1; i <= E->lmesh.nno; i++)
-		{
-			temp[i] = E->V[1][i] * E->V[1][i] + E->V[2][i] * E->V[2][i] + E->V[3][i] * E->V[3][i];
-		}
+    if(E->mesh.nsd == 2)
+        for(i = 1; i <= E->lmesh.nno; i++)
+        {
+            temp[i] = E->V[1][i] * E->V[1][i] + E->V[2][i] * E->V[2][i];
+        }
+    else
+        for(i = 1; i <= E->lmesh.nno; i++)
+        {
+            temp[i] = E->V[1][i] * E->V[1][i] + E->V[2][i] * E->V[2][i] + E->V[3][i] * E->V[3][i];
+        }
 
-	return_horiz_ave(E, temp, E->Have.vrms);
+    return_horiz_ave(E, temp, E->Have.vrms);
 
-	for(i = 1; i <= E->lmesh.noz; i++)
-		E->Have.vrms[i] = sqrt(E->Have.vrms[i]);
+    for(i = 1; i <= E->lmesh.noz; i++)
+        E->Have.vrms[i] = sqrt(E->Have.vrms[i]);
 
 /*
   plume_buoyancy_flux(E);
 */
 
 
-	free((void *)temp);
+    free((void *)temp);
 
-	return;
+    return;
 }

@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 #include "element_definitions.h"
@@ -39,22 +39,22 @@
 
 void set_cg_defaults(struct All_variables *E)
 {
-	E->build_forcing_term = assemble_forces_iterative;
-	E->solve_stokes_problem = solve_constrained_flow_iterative;
-	E->solver_allocate_vars = cg_allocate_vars;
-	return;
+    E->build_forcing_term = assemble_forces_iterative;
+    E->solve_stokes_problem = solve_constrained_flow_iterative;
+    E->solver_allocate_vars = cg_allocate_vars;
+    return;
 }
 
 void cg_allocate_vars(struct All_variables *E)
 {
-	/* Nothing required ONLY by conj-grad stuff  */
-	/* printf("here here\n"); */
-	return;
+    /* Nothing required ONLY by conj-grad stuff  */
+    /* printf("here here\n"); */
+    return;
 }
 
 void assemble_forces_iterative(struct All_variables *E)
 {
-	assemble_forces(E, 0);
-	strip_bcs_from_residual(E, E->F, E->mesh.levmax);
-	return;
+    assemble_forces(E, 0);
+    strip_bcs_from_residual(E, E->F, E->mesh.levmax);
+    return;
 }

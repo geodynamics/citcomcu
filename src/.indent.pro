@@ -6,7 +6,7 @@
 --comment-line-length80
 
 /* Setting indentation options */
---use-tabs
+--no-tabs
 --tab-size4
 --indent-level4 
 --parameter-indentation4 /* Indent parameter types in old-style func defs */
@@ -34,7 +34,7 @@
 --no-blank-lines-after-declarations
 --blank-lines-after-procedures
 
-/* Put the `*' character at the left of comments. */
+/* Put the '*' character at the left of comments. */
 --start-left-side-of-comments
 
 /* Preserve access and modification times on output files */

@@ -31,7 +31,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
 #include "element_definitions.h"
@@ -40,27 +40,27 @@
 
 void set_2dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 2;
-	E->mesh.dof = 2;
+    E->mesh.nsd = 2;
+    E->mesh.dof = 2;
 }
 
 
 void set_2pt5dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 2;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 2;
+    E->mesh.dof = 3;
 }
 
 
 void set_3ds_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 3;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 3;
+    E->mesh.dof = 3;
 }
 
 
 void set_3dc_defaults(struct All_variables *E)
 {
-	E->mesh.nsd = 3;
-	E->mesh.dof = 3;
+    E->mesh.nsd = 3;
+    E->mesh.dof = 3;
 }
