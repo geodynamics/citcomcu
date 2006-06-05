@@ -1,0 +1,75 @@
+# test strings
+mystring0=thisisatest
+
+# test boolean on/off
+mybool0=off
+mybool1=on
+
+# test integers both positive and negative
+myint0=42
+myint1=-42
+
+# test floats
+myfloat00=123.45         # fixed
+myfloat01=+123.45        # pos, fixed
+myfloat02=-123.45        # neg, fixed
+myfloat03=1.2345e2       # exponent
+myfloat04=1.2345e+2      # exponent (pos)
+myfloat05=1.2345e-2      # exponent (neg)
+myfloat06=+1.2345e2      # pos, exponent
+myfloat07=+1.2345e+2     # pos, exponent (pos)
+myfloat08=+1.2345e-2     # pos, exponent (neg)
+myfloat09=-1.2345e2      # neg, exponent
+myfloat10=-1.2345e+2     # neg, exponent (pos)
+myfloat11=-1.2345e-2     # neg, exponent (neg)
+myfloat12=.12345         # dot
+myfloat13=+.12345        # pos, dot
+myfloat14=-.12345        # neg, dot
+myfloat15=.12345e3       # dot, exponent
+myfloat16=.12345e+2      # dot, exponent (pos)
+myfloat17=.12345e-2      # dot, exponent (neg)
+myfloat18=+.12345e2      # pos, dot, exponent
+myfloat19=+.12345e+2     # pos, dot, exponent (pos)
+myfloat20=+.12345e-2     # pos, dot, exponent (neg)
+myfloat21=-.12345e2      # neg, dot, exponent
+myfloat22=-.12345e+2     # neg, dot, exponent (pos)
+myfloat23=-.12345e-2     # neg, dot, exponent (neg)
+
+
+# test doubles
+mydouble00=123.4567         # fixed
+mydouble01=+123.4567        # pos, fixed
+mydouble02=-123.4567        # neg, fixed
+mydouble03=1.234567e2       # exponent
+mydouble04=1.234567e+2      # exponent (pos)
+mydouble05=1.234567e-2      # exponent (neg)
+mydouble06=+1.234567e2      # pos, exponent
+mydouble07=+1.234567e+2     # pos, exponent (pos)
+mydouble08=+1.234567e-2     # pos, exponent (neg)
+mydouble09=-1.234567e2      # neg, exponent
+mydouble10=-1.234567e+2     # neg, exponent (pos)
+mydouble11=-1.234567e-2     # neg, exponent (neg)
+mydouble12=.1234567         # dot
+mydouble13=+.1234567        # pos, dot
+mydouble14=-.1234567        # neg, dot
+mydouble15=.1234567e3       # dot, exponent
+mydouble16=.1234567e+2      # dot, exponent (pos)
+mydouble17=.1234567e-2      # dot, exponent (neg)
+mydouble18=+.1234567e2      # pos, dot, exponent
+mydouble19=+.1234567e+2     # pos, dot, exponent (pos)
+mydouble20=+.1234567e-2     # pos, dot, exponent (neg)
+mydouble21=-.1234567e2      # neg, dot, exponent
+mydouble22=-.1234567e+2     # neg, dot, exponent (pos)
+mydouble23=-.1234567e-2     # neg, dot, exponent (neg)
+
+# test vectors
+my_double_vector=0.0,0.33333,0.66666,1.0
+my_float_vector=0.0,0.5,1.0
+my_int_vector=1,2,3
+my_char_vector=a,b,c
+
+
+# control verbosity of input file parser
+VERBOSE=on
+DESCRIBE=off
+BEGINNER=off
