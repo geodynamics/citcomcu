@@ -4,6 +4,8 @@ This module provides a similar interface to Citcom's input-file parser.
 """
 
 # TODO: use properly named exception subclasses
+# TODO: implement control string (c.f. last function in Parsing.c)
+# TODO: make parsefile() work with file-like objects instead of file name
 
 def strip_comments(line):
     """Strip all shell-style comments (first '#' to EOL) from line."""
@@ -23,7 +25,6 @@ def parse_eqn(stmt):
     parameter name and parameter value."""
     k = stmt.find('=')
     if k < 0:
-        # XXX: use a properly named exception
         raise Exception('%r is not an assignment!' % stmt)
     name, value = stmt[:k], stmt[(k+1):]
     return (name, value)
@@ -58,7 +59,7 @@ def input_method(cast, vectorize=False):
             if kw.get("essential", False):
                 raise Exception("Required parameter %r is missing!" % name)
             return kw.get("default", None)
-        if vector:
+        if vectorize:
             values = self.params[name].split(',')
             return [ cast(x) for x in values ]
         value = cast(self.params[name])
