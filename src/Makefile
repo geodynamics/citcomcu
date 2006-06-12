@@ -4,11 +4,13 @@
 
 #
 #  NOTES:
-#  1) Macro substitution is different for different version of make, for SGI, CRAY, HP
-#  It seems necessary to go through and replace the CEXT ... FOBJFLAG macros manually.
+#  1) Macro substitution is different for different version of make, 
+#  for SGI, CRAY, HP.  It seems necessary to go through and replace the 
+#  CEXT ... FOBJFLAG macros manually.
 #
-#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows, add machines
-#  where necessary, try and find a better way than just defining "const" to be null. 
+#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows, 
+#  add machines where necessary, try and find a better way than just defining 
+#  "const" to be null. 
 #
 ##############################################################################
 #	Individual Machine Variations
@@ -117,7 +119,7 @@ PARAGONOPTIM=-O4
 #	Choose the actual flags for your machine here ...
 ####################################################################
 
-FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
+FLAGS= $(LinuxFLAGS)
 LDFLAGS= $(LinuxLDFLAGS)
 OPTIM= $(LinuxOPTIM)
 
