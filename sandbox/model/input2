@@ -1,0 +1,34 @@
+# Start up file
+
+# Input and Output Files Information
+
+    datafile="out/output1"  # directory and file head for output file(s)
+    maxstep=20              # max time steps
+    storage_spacing=1       # write data every ...
+
+# Grid and Multiprocessor Information
+
+    nprocx=2    # number of processors in x direction
+    nprocy=2    # number of processors in y direction
+    nprocz=2    # number of processors in z direction
+
+    nodex=10
+    nodey=10
+    nodez=10
+
+# Coordinate Information
+
+    dimenx=1.0  # box size in x direction
+    dimeny=1.0  # box size in y direction
+    dimenz=1.0  # box size in z direction
+
+
+## Data input and program debugging
+
+    verbose=off
+
+## Input Parser options
+    
+    DESCRIBE=off    # describe what parameter names are being searched
+    BEGINNER=off    # warn when parameters are overwritten
+    VERBOSE=off     # print parameter name, type, and value
