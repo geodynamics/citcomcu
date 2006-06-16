@@ -2,7 +2,7 @@
 
 # Input and Output Files Information
 
-    datafile="out/output1"  # directory and file head for output file(s)
+    datafile="out/output2"  # directory and file head for output file(s)
     maxstep=20              # max time steps
     storage_spacing=1       # write data every ...
 
