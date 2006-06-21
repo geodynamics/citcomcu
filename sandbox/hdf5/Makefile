@@ -6,3 +6,6 @@ pytables.o: pytables.c pytables.h
 
 2d-array: 2d-array.c pytables.o
 	gcc $^ -o $@ -lhdf5
+
+3d-array: 3d-array.c pytables.o
+	gcc $^ -o $@ -lhdf5
