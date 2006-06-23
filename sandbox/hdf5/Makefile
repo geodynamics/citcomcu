@@ -9,3 +9,6 @@ pytables.o: pytables.c pytables.h
 
 3d-array: 3d-array.c pytables.o
 	gcc $^ -o $@ -lhdf5
+
+hyperslab: hyperslab.c pytables.o
+	mpicc $^ -o $@ -lhdf5
