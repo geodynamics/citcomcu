@@ -4,11 +4,13 @@
 
 #
 #  NOTES:
-#  1) Macro substitution is different for different version of make, for SGI, CRAY, HP
-#  It seems necessary to go through and replace the CEXT ... FOBJFLAG macros manually.
+#  1) Macro substitution is different for different version of make, for SGI,
+#     CRAY, HP, etc. It seems necessary to go through and replace the
+#     CEXT ... FOBJFLAG macros manually.
 #
-#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows, add machines
-#  where necessary, try and find a better way than just defining "const" to be null. 
+#  2) Put FLAGS=$(YOUR_MACHINE_FLAGS) chosen from the list that follows, add
+#     machines, where necessary, try and find a better way than just defining
+#     "const" to be null. 
 #
 ##############################################################################
 #	Individual Machine Variations
@@ -176,11 +178,25 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 
 default: citcom.mpi
 
+citcom.mpi: $(OBJFILES) $(HEADER) Makefile
+	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
+
 clean:
 	rm -f *.o
 
 clean-all:
 	rm -f *.o citcom.mpi
+
+smaller: 
+	compress $(CFILES)
+
+larger:
+	uncompress $(CFILES)
+
+
+####################################################################
+# File dependencies follow
+####################################################################
 
 global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
 		
@@ -272,19 +288,9 @@ Topo_gravity.o: $(HEADER) Topo_gravity.c
 
 Viscosity_structures.o: $(HEADER) Viscosity_structures.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Viscosity_structures.c
-	
 
 Blas_lapack_interfaces.f: Blas_lapack_interfaces.F
 	$(CPP) $(OPTIM) -P Blas_lapack_interfaces.F Blas_lapack_interfaces.f
 	$(F77) $(OPTIM) $(FOPTIM) -c Blas_lapack_interfaces.f
-	
-
-smaller: 
-	compress $(CFILES)
-
-larger:
-	uncompress $(CFILES)
 
 
-citcom.mpi: $(OBJFILES)  $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
