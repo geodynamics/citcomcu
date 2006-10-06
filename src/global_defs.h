@@ -217,8 +217,8 @@ struct HarmBc
 
 struct Shape_function_dA
 {
-	float vpt[8];
-	float ppt[1];
+	float vpt[8+1];
+	float ppt[1+1];
 };
 
 struct Shape_function1_dA
