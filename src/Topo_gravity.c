@@ -136,8 +136,8 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 				eu[m * dims + 2] = E->V[3][node];
 		}
 
-		get_elt_k(E, el, eltk, lev, 0);
-		get_elt_k(E, elb, eltkb, lev, 0);
+		get_elt_k(E, el, eltk, lev, 1);
+		get_elt_k(E, elb, eltkb, lev, 1);
 		get_elt_f(E, el, eltf, 0, 0);
 		get_elt_f(E, elb, eltfb, 0, 0);
 		get_elt_g(E, el, eltg, lev);

@@ -125,7 +125,7 @@ void assemble_forces(struct All_variables *E, int penalty)
   Function to supply the element k matrix for a given element e.
   ==============================================================  */
 
-void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int penalty)
+void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int iconv)
 {
 	double bdbmu[4][4];
 	//double bdbl[4][4];
@@ -172,7 +172,7 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 	{
 		get_rtf(E, el, 0, rtf, lev);
 
-		if((el - 1) % E->lmesh.ELZ[lev] == 0)
+		if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
 			construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 0);
 
 		for(k = 1; k <= vpts; k++)
@@ -835,7 +835,7 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 							{
 								if(!got_elt_k)
 								{
-									get_elt_k(E, el, elt_k, E->mesh.levmax, penalty);
+									get_elt_k(E, el, elt_k, E->mesh.levmax, 1);
 									got_elt_k = 1;
 								}
 								q = dims * (b - 1) + j - 1;
@@ -885,7 +885,7 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 							{
 								if(!got_elt_k)
 								{
-									get_elt_k(E, el, elt_k, E->mesh.levmax, penalty);
+									get_elt_k(E, el, elt_k, E->mesh.levmax, 1);
 									got_elt_k = 1;
 								}
 								q = dims * (b - 1) + j - 1;
