@@ -772,7 +772,7 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 	double force[9], force_at_gs[9];
 	//double vector[4], magnitude;
 	//double tmp, rtf[4][9];
-	double rtf[4][9];
+	//double rtf[4][9];
 	double elt_k[24 * 24];
 
 	//struct Shape_function GN;
@@ -857,7 +857,7 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 	else if(E->control.Rsphere)
 	{
 
-		get_rtf(E, el, 0, rtf, E->mesh.levmax);
+		//get_rtf(E, el, 0, rtf, E->mesh.levmax);
 		if((el - 1) % E->lmesh.elz == 0)
 			construct_c3x3matrix_el(E, el, &Cc, &Ccx, E->mesh.levmax, 0);
 
