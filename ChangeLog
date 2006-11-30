@@ -1,3 +1,17 @@
+2006-11-30 07:51  tan2
+
+	* src/Makefile: Using "-O2" optimization flag by default, as it has
+	  been reported that Intel
+	  compiler on Itanium 64bit CPU will generate wrong code with "-O3"
+
+2006-11-30 07:34  tan2
+
+	* ChangeLog: Updated ChangeLog upto r5385
+
+2006-11-30 05:11  tan2
+
+	* NEWS: Described new features and bug fixes in NEWS
+
 2006-10-30 20:52  tan2
 
 	* src/Element_calculations.c: Commented out unused coordinate
