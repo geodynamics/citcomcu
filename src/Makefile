@@ -67,7 +67,7 @@ CRAYOPTIM=
 #IBM AIX systems
 AIXFLAGS= -D__aix__
 AIXLDFLAGS=
-AIXOPTIM= -O3 -qarch=pwr -qopt=pwr -Ublas
+AIXOPTIM= -O2 -qarch=pwr -qopt=pwr -Ublas
 ####################################
 
 ####################################
@@ -106,7 +106,7 @@ SGIOPTIM=-O -fsingle
 LinuxFLAGS=
 LinuxLDFLAGS=
 #LinuxOPTIM=-g
-LinuxOPTIM=-O3
+LinuxOPTIM=-O2
 
 ####################################
 #PARAGON 
