@@ -1,0 +1,25 @@
+Please send CitcomCU bug reports to cig-mc@geodynamics.org.
+
+
+Version 1.0.2
+
+* Fix a bug in kinematic velocity boundary conditions in spherical geometry.
+  If kinematic boundary condition is used in spherical geometry, CitcomCU
+  may impose incorrect velocity as the boundary conditions and gives 
+  incorrect results. The error is only significant near the poles though.
+  See Issue 59 in the bug tracker (http://geodynamics.org/roundup) for more
+  detail.
+
+* Fixed an off-by-one bug. This bug doesn't affect the results of CitcomCU. 
+  See Issue 58 in the bug tracker (http://geodynamics.org/roundup) for more
+  detail.
+
+
+Version 1.0.1
+
+* A few minor fixes for the function and variable declarations.
+
+
+Version 1.0.0
+
+* Initial public release.
