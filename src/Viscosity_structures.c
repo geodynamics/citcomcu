@@ -4,7 +4,7 @@
  * within the Earth's mantle. Cartesian and regional-spherical geometries
  * are implemented. See the file README contained with this distribution
  * for further details.
- * 
+ *
  * Copyright (C) 1994-2005 California Institute of Technology
  * Copyright (C) 2000-2005 The University of Colorado
  *
@@ -19,18 +19,18 @@
  *     2750 East Washington Blvd, Suite 210
  *     Pasadena, CA 91007
  *
- * This program is free software; you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or any
  * later version.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
@@ -99,31 +99,6 @@ void viscosity_parameters(struct All_variables *E)
 	input_boolean("VISC_GUESS", &(E->viscosity.guess), "off");
 	input_string("visc_old_file", E->viscosity.old_file, " ");
 
-	if(E->viscosity.RHEOL == 1)
-	{
-		for(l = 1; l <= E->viscosity.num_mat; l++)
-		{
-			E->viscosity.E[l - 1] = E->viscosity.E[l - 1] / (E->data.gas_const * E->data.ref_temperature);
-			E->viscosity.T[l - 1] = E->viscosity.T[l - 1] / E->data.ref_temperature;
-			temp = exp(E->viscosity.E[l - 1] / (1.0 + E->viscosity.T[l - 1]));
-			E->viscosity.N0[l - 1] = E->viscosity.N0[l - 1] / temp;
-		}
-	}
-	else if(E->viscosity.RHEOL == 2)
-	{
-		if(E->parallel.me == 0)
-			fprintf(stderr, "this option for rheology is not supported\n");
-		parallel_process_termination();
-	}
-	else if(E->viscosity.RHEOL == 3)
-	{
-		for(l = 1; l <= E->viscosity.num_mat; l++)
-		{
-			E->viscosity.E[l - 1] = E->viscosity.E[l - 1] / (E->data.gas_const * E->data.ref_temperature);
-			E->viscosity.Z[l - 1] = E->viscosity.Z[l - 1] * E->data.density * E->data.grav_acc * E->monitor.length_scale / (E->data.gas_const * E->data.ref_temperature);
-		}
-	}
-
 	return;
 }
 
@@ -160,10 +135,6 @@ void get_viscosity_option(struct All_variables *E)
 
 void viscosity_for_system(struct All_variables *E)
 {
-	if(!E->viscosity.update_allowed)
-	{
-		get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
-	}
 
 	get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
 
@@ -270,29 +241,12 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 	if(visits == 0)
 	{
-		Tadi = (float *)malloc((noz + 1) * sizeof(float));
-
-		if(E->control.Rsphere)
-			slope = (1.0 - E->data.visc_factor) / (E->sphere.ro - E->sphere.ri);
-		else if(E->control.CART3D)
-			slope = (1.0 - E->data.visc_factor);
-
-		for(i = noz; i >= 1; i--)
-			E->Have.Tadi[i] = 0.0;
-
-		E->data.T_adi0 = 0;
-		E->data.T_adi1 = 0;
-
-		return_horiz_ave(E, E->T, E->Have.T);
-
-
 		fprintf(E->fp, "\tRheological option : %d\n", E->viscosity.RHEOL);
 
 		for(l = 1; l <= E->viscosity.num_mat; l++)
 		{
 			fprintf(E->fp, "\tlayer %d/%d: E=%g T1=%g N0=%g Z0=%g\n", l, E->viscosity.num_mat, E->viscosity.E[l - 1], E->viscosity.T[l - 1], E->viscosity.N0[l - 1], E->viscosity.Z[l - 1]);
 		}
-		fprintf(E->fp, "\tslope : %g %g\n", slope, E->data.visc_factor);
 		fflush(E->fp);
 
 	}
@@ -318,46 +272,12 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 		if(E->viscosity.RHEOL == 0)
 		{
-
-			temp2 = one;
-
-			if(E->control.adi_heating)
-			{
-				temp = 0;
-				E->data.T_adi0 = 0;
-
-				if(E->parallel.me_loc[3] == E->parallel.nprocz - 1)
-				{
-					for(i = noz; i > 1; i--)
-						if(Xtmp[3][i] < (2 * E->viscosity.zlith - ztop))
-						{
-							temp = E->Have.T[i];
-							break;
-						}
-					E->data.T_adi0 = temp;
-				}
-
-				E->Have.Tadi[noz] = temp;
-				for(i = noz; i > 1; i--)
-				{
-					if(Xtmp[3][i] < (2 * E->viscosity.zlith - ztop))
-						temp = temp + E->data.disptn_number * (E->expansivity[i] + E->expansivity[i - 1]) * (E->Have.T[i] + E->Have.T[i - 1] + 2 * E->data.surf_temp) / 4.0 * (Xtmp[3][i] - Xtmp[3][i - 1]);
-					E->Have.Tadi[i - 1] = temp;
-				}
-
-				propogator_down_process(E, E->Have.Tadi);
-
-				temp2 = one - E->data.T_adi1 + E->data.T_adi0;
-
-			}					// end for adi_heating
-
 			for(i = 1; i <= nel; i++)
 			{
 				l = E->mat[i];
 				e = (i - 1) % E->lmesh.elz + 1;
 
 				tempa = E->viscosity.N0[l - 1];
-				temp1 = (E->Have.Tadi[e] + E->Have.Tadi[e + 1]) * 0.5 - E->data.T_adi0;
 
 				for(kk = 1; kk <= ends; kk++)
 					TT[kk] = E->T[E->ien[i].node[kk]];
@@ -365,13 +285,11 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 				for(jj = 1; jj <= vpts; jj++)
 				{
 					temp = 1.0e-32;
-					zz = 0.0;
 					for(kk = 1; kk <= ends; kk++)
 					{
 						temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
-						zz += Xtmp[3][E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk, jj)];
 					}
-					EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l - 1] * (temp2 - (temp - temp1)) / temp2) * (E->data.visc_factor + slope * (zz - zbotm));
+					EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l - 1] * (one - temp ));
 				}
 			}
 		}
@@ -398,9 +316,6 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 		}
 		else if(E->viscosity.RHEOL == 2)
 		{
-		}
-		else if(E->viscosity.RHEOL == 3)
-		{
 			for(i = 1; i <= nel; i++)
 			{
 				l = E->mat[i];
@@ -418,10 +333,12 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 						temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
 						zz += Xtmp[3][E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk, jj)];
 					}
-					EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l - 1] + (1 - zz) * E->viscosity.Z[l - 1]) / temp - (E->viscosity.E[l - 1] + E->viscosity.Z[l - 1]));
-/*               EEta[(i-1)*vpts + jj] = tempa*exp(E->viscosity.E[l-1]*(E->viscosity.T[l-1]-temp));  */
+					EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l - 1] + (1 - zz) * E->viscosity.Z[l - 1]) /(temp + E->viscosity.T[l - 1]) );
 				}
 			}
+		}
+		else if(E->viscosity.RHEOL == 3)
+		{
 		}
 
 		visits++;
@@ -430,9 +347,9 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 
 /*
-	fprintf(E->fp,"aaa\n"); 
-	for(i=1;i<=nel;i++)   
-		fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]); 
+	fprintf(E->fp,"aaa\n");
+	for(i=1;i<=nel;i++)
+		fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]);
 */
 
 	return;
