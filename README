@@ -175,7 +175,16 @@ Sect. 5. Rheology
 
 The first parameter "rheol" specifies the type of rheological equation
 that one may use. You need to check Viscosity_structures.c to see what are
-available and it is very easy to implement your own. 
+available and it is very easy to implement your own. There are three 
+rheological equations (options) available with this routine: rheol=0,1,or 2.
+  * For rheol=0, eta = N0*exp[E(1-T)], where N0 is the pre-exponential 
+    factor, and all are nondimensional.
+  * For rheol=1, eta = N0*exp[E/(T+T_offset)], where T_offset is the 
+    nondimensional surface temperature caused by nondimensionalization of 
+    absolute temperature.
+  * For rheol=2, eta = N0*exp{[E+(1-z)*V]/(T+T_offset)}, where (1-z) is the 
+    nondimensional depth and V is nondimensional activation volume.
+
 The second parameter "TDEPV" is a switch for temperature-dependent viscosity.
 The parameter "VISC_UPDATE" is a switch for whether viscosity is to be updated.
 It's clear that if "TDEPV" is on, then "VISC_UPDATE" should also be on.
