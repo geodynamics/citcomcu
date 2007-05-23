@@ -13,6 +13,7 @@ void process_heating(struct All_variables *E);
 /* Boundary_conditions.c */
 void velocity_boundary_conditions(struct All_variables *E);
 void temperature_boundary_conditions(struct All_variables *E);
+void custom_temperature_boundary_conditions(struct All_variables *E);
 void velocity_refl_vert_bc(struct All_variables *E);
 void temperature_refl_vert_bc(struct All_variables *E);
 void temperature_imposed_botm_bcs(struct All_variables *E, float *BC[], int dirn);

@@ -183,6 +183,8 @@ void temperature_boundary_conditions(struct All_variables *E)
 		horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, FBZ, 1, E->mesh.levmax);
 	}
 
+	/* User-defined boundary conditions */
+	custom_temperature_boundary_conditions(E);
 
 
 	if(E->mesh.periodic_x || E->mesh.periodic_y)
@@ -203,6 +205,14 @@ void temperature_boundary_conditions(struct All_variables *E)
 
 	return;
 }
+
+
+void custom_temperature_boundary_conditions(struct All_variables *E)
+{
+	temperature_imposed_botm_bcs(E, E->TB, 2);
+	return;
+}
+
 
 /* ========================================== */
 
