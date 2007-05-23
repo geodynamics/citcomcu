@@ -4,7 +4,7 @@
  * within the Earth's mantle. Cartesian and regional-spherical geometries
  * are implemented. See the file README contained with this distribution
  * for further details.
- * 
+ *
  * Copyright (C) 1994-2005 California Institute of Technology
  * Copyright (C) 2000-2005 The University of Colorado
  *
@@ -19,18 +19,18 @@
  *     2750 East Washington Blvd, Suite 210
  *     Pasadena, CA 91007
  *
- * This program is free software; you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or any
  * later version.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
@@ -49,7 +49,7 @@ void velocity_boundary_conditions(struct All_variables *E)
 
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-		if(E->mesh.botvbc != 1)
+		if(E->mesh.botvbc == 0)
 		{
 			horizontal_bc(E, E->VB, 1, 1, 0.0, VBX, 0, lv);
 			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 1, lv);
@@ -58,25 +58,7 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 0, lv);
 			horizontal_bc(E, E->VB, 1, 2, E->control.VBYbotval, SBY, 1, lv);
 		}
-		if(E->mesh.topvbc != 1)
-		{
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, VBX, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, VBY, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, SBX, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, SBY, 1, lv);
-		}
-	}
-
-	if(E->mesh.periodic_x || E->mesh.periodic_y)
-		velocity_apply_periodic_bcs(E);
-	else
-		velocity_refl_vert_bc(E);	/* default */
-
-	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
-	{
-		if(E->mesh.botvbc == 1)
+		else if(E->mesh.botvbc == 1)
 		{
 			horizontal_bc(E, E->VB, 1, 1, E->control.VBXbotval, VBX, 1, lv);
 			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 1, lv);
@@ -85,7 +67,17 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 0, lv);
 			horizontal_bc(E, E->VB, 1, 2, 0.0, SBY, 0, lv);
 		}
-		if(E->mesh.topvbc == 1)
+
+		if(E->mesh.topvbc == 0)
+		{
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, VBX, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, VBY, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, SBX, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, SBY, 1, lv);
+		}
+                else if(E->mesh.topvbc == 1)
 		{
 			E->control.VBXtopval = E->control.plate_vel;
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, VBX, 1, lv);
@@ -96,6 +88,12 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, SBY, 0, lv);
 		}
 	}
+
+
+	if(E->mesh.periodic_x || E->mesh.periodic_y)
+		velocity_apply_periodic_bcs(E);
+	else
+		velocity_refl_vert_bc(E);	/* default */
 
 
 	if(E->control.verbose)
