@@ -67,6 +67,24 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 0, lv);
 			horizontal_bc(E, E->VB, 1, 2, 0.0, SBY, 0, lv);
 		}
+		else if(E->mesh.botvbc == 2)
+		{
+			horizontal_bc(E, E->VB, 1, 1, 0.0, VBX, 0, lv);
+			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 0, lv);
+			horizontal_bc(E, E->VB, 1, 2, 0.0, VBY, 0, lv);
+			horizontal_bc(E, E->VB, 1, 1, E->control.VBXbotval, SBX, 1, lv);
+			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 1, lv);
+			horizontal_bc(E, E->VB, 1, 2, E->control.VBYbotval, SBY, 1, lv);
+		}
+		else if(E->mesh.botvbc == 3)
+		{
+			horizontal_bc(E, E->VB, 1, 1, E->control.VBXbotval, VBX, 1, lv);
+			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 0, lv);
+			horizontal_bc(E, E->VB, 1, 2, E->control.VBYbotval, VBY, 1, lv);
+			horizontal_bc(E, E->VB, 1, 1, 0.0, SBX, 0, lv);
+			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 1, lv);
+			horizontal_bc(E, E->VB, 1, 2, 0.0, SBY, 0, lv);
+		}
 
 		if(E->mesh.topvbc == 0)
 		{
@@ -85,6 +103,25 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, VBY, 1, lv);
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, SBX, 0, lv);
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, SBY, 0, lv);
+		}
+		else if(E->mesh.topvbc == 2)
+		{
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, VBX, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, VBY, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, SBX, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, SBY, 1, lv);
+		}
+                else if(E->mesh.topvbc == 3)
+		{
+			E->control.VBXtopval = E->control.plate_vel;
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, VBX, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, VBY, 1, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, SBX, 0, lv);
+			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 1, lv);
 			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, SBY, 0, lv);
 		}
 	}
