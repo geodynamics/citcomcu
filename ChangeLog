@@ -1,3 +1,89 @@
+2007-05-25 20:35  tan2
+
+	* src/plume-input, src/plume.jpg: Add sample input file of the
+	  plume problem and image of the results
+
+2007-05-25 20:24  tan2
+
+	* src/Convection.c: Set up the inflow/outflow profiles
+
+2007-05-25 20:21  tan2
+
+	* src/Citcom.c: Disable maxT check, since the plume temperature can
+	  exceed 1.5
+
+2007-05-25 19:50  tan2
+
+	* src/Boundary_conditions.c: The botm bcs should be imposed on the
+	  3rd dimension
+
+2007-05-23 23:11  tan2
+
+	* src/prototypes.h: Forgot to update the prototypes
+
+2007-05-23 23:10  tan2
+
+	* src/Boundary_conditions.c: Added two functions for inflow/outflow
+	  temperature and velocity BC for side (currently x-direction)
+	  boundary
+
+2007-05-23 20:53  tan2
+
+	* src/Boundary_conditions.c, src/prototypes.h: Added a function for
+	  user-defined tbc. Right now, this function adds a circular, high
+	  temperature region for the plume source
+
+2007-05-23 20:30  tan2
+
+	* src/Boundary_conditions.c: Added flags for "flow-through"
+	  boundary conditions for the top and bottom boundaries.
+	  
+	  When topvbc or botvbc is set to 2, the vertical vbc is dVz/dz=0,
+	  the horizontal vbc is dVh/dh=const.
+	  
+	  When topvbc or botvbc is set to 3, the vertical vbc is dVz/dz=0,
+	  the horizontal
+	  vbc is Vh=const.
+
+2007-05-23 20:18  tan2
+
+	* src/Boundary_conditions.c: Changed the order of statements
+
+2007-05-23 18:27  tan2
+
+	* .: A branch for inflow/outflow boundary conditions.
+	  
+	  This work starts out as a feature request by Norm Sleep, who like
+	  to model
+	  plume-lithosphere interaction as the model in:
+	  
+	  Moore, W. B., G. Schubert, and P. Tackley (1998)
+	  Three-dimensional
+	  simulations of plume-lithosphere interaction at the Hawaiian
+	  swell,
+	  Science, 279, 1008-1011.
+	  
+	  Shijie then provides a patch from his old work:
+	  
+	  Zhong, S.J. and A. B. Watts (2002) Constraints on the dynamics of
+	  mantle
+	  plumes from uplift of Hawaiian islands, EPSL, 203, 105-116.
+	  
+	  The patch is quite specific to the model and is hard to integrate
+	  into the
+	  main trunk. So the patch will reside in this branch only. The
+	  branch most
+	  likely will not receive further development.
+
+2007-05-16 00:14  tan2
+
+	* README: Added the description of viscosity laws
+
+2007-05-16 00:11  tan2
+
+	* src/Viscosity_structures.c: Cleaned up Viscosity_structures.c by 
+	  Shijie Zhong
+
 2006-11-30 07:51  tan2
 
 	* src/Makefile: Using "-O2" optimization flag by default, as it has

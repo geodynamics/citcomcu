@@ -1,6 +1,27 @@
 Please send CitcomCU bug reports to cig-mc@geodynamics.org.
 
 
+Version 1.0.2-br-inflow:
+
+* A branch for inflow/outflow boundary conditions. This work starts out as a feature request by 
+  Norm Sleep, who like to model plume-lithosphere interaction as the model in:
+
+  Moore, W. B., G. Schubert, and P. Tackley (1998) Three-dimensional
+  simulations of plume-lithosphere interaction at the Hawaiian swell,
+  Science, 279, 1008-1011.
+
+  Shijie then provides a patch from his old work:
+
+  Zhong, S.J. and A. B. Watts (2002) Constraints on the dynamics of mantle
+  plumes from uplift of Hawaiian islands, EPSL, 203, 105-116.
+
+  The patch is quite specific to the model and is hard to integrate into the
+  main trunk. So the patch will reside in this branch only. The branch most
+  likely will not receive further development.
+
+* Cleaned up Viscosity_structures.c by Shijie Zhong
+
+
 Version 1.0.2
 
 * Fix a bug in kinematic velocity boundary conditions in spherical geometry.
