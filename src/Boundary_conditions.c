@@ -213,7 +213,7 @@ void temperature_boundary_conditions(struct All_variables *E)
 
 void custom_temperature_boundary_conditions(struct All_variables *E)
 {
-	temperature_imposed_botm_bcs(E, E->TB, 2);
+	temperature_imposed_botm_bcs(E, E->TB, 3);
 	return;
 }
 
