@@ -4,7 +4,7 @@
  * within the Earth's mantle. Cartesian and regional-spherical geometries
  * are implemented. See the file README contained with this distribution
  * for further details.
- * 
+ *
  * Copyright (C) 1994-2005 California Institute of Technology
  * Copyright (C) 2000-2005 The University of Colorado
  *
@@ -19,22 +19,22 @@
  *     2750 East Washington Blvd, Suite 210
  *     Pasadena, CA 91007
  *
- * This program is free software; you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or any
  * later version.
  *
- * This program is distributed in the hope that it will be useful, but 
- * WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/* Assumes parameter list is opened and reads the things it needs. 
+/* Assumes parameter list is opened and reads the things it needs.
    Variables are initialized etc, default values are set */
 
 
@@ -185,6 +185,10 @@ void convection_initial_fields(struct All_variables *E)
 
 void convection_boundary_conditions(struct All_variables *E)
 {
+	/* Setup V & T profiles for sidewall BCs */
+	if(E->mesh.sidevbc)
+		setup_plume_problem(E);
+
 	velocity_boundary_conditions(E);	/* universal */
 	temperature_boundary_conditions(E);
 
@@ -267,7 +271,7 @@ void convection_initial_temperature(struct All_variables *E)
 /*             if (ii==noz2)    {
                   E->T[node] = con*modified_plgndr_a(ll,mm,x1)*cos(mm*y1);
                   }
-             if (ii==noz2)   
+             if (ii==noz2)
                E->T[node] =
               0.01*modified_plgndr_a(ll,mm,x1);
  */
@@ -305,14 +309,14 @@ void convection_initial_temperature(struct All_variables *E)
      if (E->control.Rsphere)
       for (j=1;j<=E->lmesh.nno;j++)
           fprintf(fp,"X[%06d] = %.4e Z[%06d] = %.4e Y[%06d] = %.4e T[%06d] = %.4e \n",j,E->SX[1][j],j,E->SX[2][j],j,E->SX[3][j],j,E->T[j]);
-     else 
+     else
       for (j=1;j<=E->lmesh.nno;j++)
           fprintf(fp,"X[%06d] = %.4e Z[%06d] = %.4e Y[%06d] = %.4e T[%06d] = %.4e \n",j,E->X[1][j],j,E->X[2][j],j,E->X[3][j],j,E->T[j]);
-      }        
+      }
 
    fclose(fp);
 
-   exit(11); 
+   exit(11);
 */
 
 	thermal_buoyancy(E);
@@ -661,7 +665,7 @@ void setup_plume_problem(struct All_variables *E)
 
 	for(i = 1; i <= noz; i++)
 	{
-		temp = 0.5 * E->X[3][i] / sqrt(E->control.plate_age);
+		temp = 0.5 * (E->X[3][noz] - E->X[3][i]) / sqrt(E->control.plate_age);
 		E->segment.Tz[i] = erf(temp);
 	}
 
@@ -669,12 +673,14 @@ void setup_plume_problem(struct All_variables *E)
 	for(i = 1; i <= noz; i++)
 	{
 		l = E->mat[i];
-		if(E->viscosity.RHEOL == 1)
+		E->Have.Vi[i] = 1.0;
+		if(E->viscosity.RHEOL == 0)
+			E->Have.Vi[i] = E->viscosity.N0[l - 1] * exp(E->viscosity.E[l - 1] * (1 - E->segment.Tz[i]));
+		else if(E->viscosity.RHEOL == 1)
 			E->Have.Vi[i] = E->viscosity.N0[l - 1] * exp(E->viscosity.E[l - 1] / (E->viscosity.T[l - 1] + E->segment.Tz[i]));
 		else if(E->viscosity.RHEOL == 2)
 			E->Have.Vi[i] = E->viscosity.N0[l - 1] * exp((E->viscosity.E[l - 1] + (1 - E->X[3][i]) * E->viscosity.Z[l - 1]) / (E->viscosity.T[l - 1] + E->segment.Tz[i]));
-		else if(E->viscosity.RHEOL == 3)
-			E->Have.Vi[i] = E->viscosity.N0[l - 1] * exp((E->viscosity.E[l - 1] + (1 - E->X[3][i]) * E->viscosity.Z[l - 1]) / E->segment.Tz[i] - (E->viscosity.E[l - 1] + E->viscosity.Z[l - 1]));
+
 		if(i > 1)
 		{
 			temp += (1 / E->Have.Vi[i] + 1 / E->Have.Vi[i - 1]) * (E->X[3][i] - E->X[3][i - 1]) * 0.5;
@@ -689,16 +695,16 @@ void setup_plume_problem(struct All_variables *E)
 		{
 			temp1 += (1 / E->Have.Vi[i] + 1 / E->Have.Vi[i - 1]) * (E->X[3][i] - E->X[3][i - 1]) * 0.5;
 		}
-		E->segment.Vx[i] = -temp * temp1 + E->control.plate_vel;
-		fprintf(E->fp, "visc %d %g %g %g\n", i, E->Have.Vi[i], E->segment.Tz[i], E->segment.Vx[i]);
+		E->segment.Vx[i] = temp1 * temp;
+		fprintf(E->fp, "sidevbc %d %g %g %g %g\n", i, E->X[3][i], E->Have.Vi[i], E->segment.Tz[i], E->segment.Vx[i]);
 	}
 
 	/* non-dimensionalize other parameters */
 	E->segment.plume_radius /= E->monitor.length_scale;
 	E->segment.plume_DT /= E->data.ref_temperature;
 	E->segment.plume_coord[1] /= E->monitor.length_scale;
-	if(E->mesh.nsd == 3)
-		E->segment.plume_coord[3] /= E->monitor.length_scale;
+	E->segment.plume_coord[2] /= E->monitor.length_scale;
+	fprintf(E->fp, "plume %g %g %g %g\n", E->segment.plume_radius, E->segment.plume_DT, E->segment.plume_coord[1], E->segment.plume_coord[2]);
 
 	return;
 }
