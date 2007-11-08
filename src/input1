@@ -13,7 +13,7 @@
 
 	stokes_flow_only=0	# 1: only solve velocity once; 0: time-dependent problem.
 	maxstep=20000 		# max time steps
-	storage_spacing=10	# write data every ...
+	storage_spacing=50	# write data every ...
 
 # 2. Geometry, Ra numbers, Internal heating, Thermochemical/Purely thermal convection
 
@@ -34,16 +34,16 @@
 	
 # 3. Grid And Multiprocessor Information
 
-	nprocx=1		# number of processors in x or theta dir	
+	nprocx=2		# number of processors in x or theta dir	
 	nprocz=1		# number of processors in z or r dir
-	nprocy=1		# number of processors in y or fi dir
+	nprocy=2		# number of processors in y or fi dir
 
-	nodex=5  nodez=5  nodey=5 	# only relevant with conj-grad
+	nodex=33 nodez=33 nodey=33	# only relevant with conj-grad
 
-	mgunitx=2		# multigrid base level in x or t 
-	mgunitz=2		# multigrid base level in z or r
-	mgunity=2		# multigrid base level in y or f
-	levels=2		# and how many times it gets doubled
+	mgunitx=6		# multigrid base level in x or t 
+	mgunitz=6		# multigrid base level in z or r
+	mgunity=6		# multigrid base level in y or f
+	levels=4		# and how many times it gets doubled
 
 # 4. Coordinate Information
 
@@ -208,7 +208,7 @@
 	DESCRIBE=off		# 
 	BEGINNER=off		#
 	VERBOSE=off		#
-	verbose=on 		#
+	verbose=off		#
 	COMPRESS=off		#
 	see_convergence=1
 
