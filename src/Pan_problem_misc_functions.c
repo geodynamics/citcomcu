@@ -66,7 +66,10 @@ void unique_copy_file(struct All_variables *E, char *name, char *comment)
 	{
 		sprintf(unique_name, "%06d.%s-%s", E->control.PID, comment, name);
 		sprintf(command, "cp -f %s %s\n", name, unique_name);
+#if 0
+        /* disable copying file, since some MPI implementation doesn't support system call. */
 		system(command);
+#endif
 	}
 
 	return;

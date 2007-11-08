@@ -345,6 +345,27 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 	}
 
+for(i = 1; i <= E->lmesh.nel; i++) {
+
+    /* get temperature field on vpts */
+        for(jj = 1; jj <= vpts; jj++) {
+                TT[jj] = 0.0;
+                        for(kk = 1; kk <= ends; kk++)
+                                     TT[jj] += E->T[E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk,jj)];
+                                         }
+
+                                             /* write to the log files */
+                                                 for(jj = 1; jj <= vpts; jj++) {
+                                                         fprintf(E->fp, "%d %d %e %e\n", i, jj,
+                                                                         E->EVI[E->mesh.levmax][(i - 1) * vpts + jj],
+                                                                                         TT[jj]);
+                                                                                             }
+                                                                                              
+                                                                                                
+                                                                                                }
+
+
+
 
 /*
 	fprintf(E->fp,"aaa\n");
