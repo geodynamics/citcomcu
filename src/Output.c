@@ -120,6 +120,13 @@ void output_velo_related(struct All_variables *E, int file_number)
 		}
 		fclose(E->filed[10]);
 
+		sprintf(output_file, "%s.velo.%d.%d", E->control.data_file2, E->parallel.me, file_number);
+		E->filed[10] = fopen(output_file, "w");
+		fprintf(E->filed[10], "%6d %6d %.5e\n", E->lmesh.nno, E->advection.timesteps, E->monitor.elapsed_time);                                         
+		for(i = 1; i <= E->lmesh.nno; i++)
+			fprintf(E->filed[10], "%.6e %.6e %.6e\n", E->V[1][i], E->V[2][i], E->V[3][i]);
+		fclose(E->filed[10]);
+
 		if(E->parallel.me_loc[3] == E->parallel.nprocz - 1)
 		{
 			sprintf(output_file, "%s.th_t.%d.%d", E->control.data_file2, E->parallel.me, file_number);
