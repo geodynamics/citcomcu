@@ -684,9 +684,9 @@ double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, dou
 		r2 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
 		z0 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
 		z1 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		p1 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		p2 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		Ap = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		p1 = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		p2 = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		Ap = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
 		been_here++;
 	}
 
@@ -1103,13 +1103,13 @@ void gauss_seidel1(struct All_variables *E, double *d0, double *F, double *Ad, d
 		}
 
 
-	temp = (higher_precision *) malloc((neq + 1) * sizeof(higher_precision));
+	temp = (higher_precision *) malloc((neq + 2) * sizeof(higher_precision));
 
 	count = 0;
 
 	while(count < steps)
 	{
-		for(i = 0; i <= neq; i++)
+		for(i = 0; i <= neq + 1; i++)
 			temp[i] = zeroo;
 		for(i = 1; i <= nno; i++)
 		{
@@ -1196,14 +1196,14 @@ void gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, do
 
 	if(been_here == 0)
 	{
-		temp = (higher_precision *) malloc((E->lmesh.NEQ[E->mesh.levmax] + 1) * sizeof(higher_precision));
+		temp = (higher_precision *) malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(higher_precision));
 		temp1 = (higher_precision *) malloc((E->lmesh.NEQ[E->mesh.levmax] + 1) * sizeof(higher_precision));
 		been_here++;
 	}
 
 	while(count < steps)
 	{
-		for(i = 0; i <= neq; i++)
+		for(i = 0; i <= neq + 1; i++)
 			temp[i] = zeroo;
 
 		if(dims == 3)

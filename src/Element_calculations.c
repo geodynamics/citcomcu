@@ -377,9 +377,10 @@ void n_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level
 	//const int dofs = E->mesh.dof;
 	const int max_eqn = max_eqn_interaction[dims];
 
-	for(e = 0; e <= neq; e++)
+	for(e = 0; e <= neq + 1; e++)
 		Au[e] = 0.0;
 
+	u[neq + 1] = 0;
 	loc0 = 1;
 
 	for(e = 1; e <= nno; e++)

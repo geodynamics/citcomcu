@@ -906,7 +906,7 @@ void rebuild_BI_on_boundary(struct All_variables *E)
 
 	for(level = E->mesh.levmax; level >= E->mesh.levmin; level--)
 	{
-		for(j = 0; j < E->lmesh.NEQ[level]; j++)
+		for(j = 0; j <= E->lmesh.NEQ[level] + 1; j++)
 			E->temp[j] = 0.0;
 
 		for(i = 1; i <= E->lmesh.NNO[level]; i++)

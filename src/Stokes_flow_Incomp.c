@@ -130,7 +130,7 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 		s1 = (double *)malloc((npno + 1) * sizeof(double));
 		s2 = (double *)malloc((npno + 1) * sizeof(double));
 		Ah = (double *)malloc((neq + 1) * sizeof(double));
-		u1 = (double *)malloc((neq + 1) * sizeof(double));
+		u1 = (double *)malloc((neq + 2) * sizeof(double));
 		been_here = 1;
 		timea = CPU_time0();
 	}

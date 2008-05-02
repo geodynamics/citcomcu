@@ -192,7 +192,7 @@ void allocate_common_vars(struct All_variables *E)
 	E->segment.Vx = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
 
 	E->F = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
-	E->U = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
+	E->U = (double *)malloc((E->lmesh.neq + 2) * sizeof(double));
 	E->T = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
 	E->C = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
 	E->CE = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
@@ -361,7 +361,7 @@ void allocate_common_vars(struct All_variables *E)
 
 	for(i = 1; i <= E->lmesh.nno; i++)
 		E->T[i] = E->buoyancy[i] = 0.0;
-	for(i = 0; i < E->lmesh.neq; i++)
+	for(i = 0; i <= E->lmesh.neq + 1; i++)
 		E->U[i] = 0.0;
 
 	set_up_nonmg_aliases(E);
