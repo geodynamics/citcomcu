@@ -50,7 +50,7 @@ void general_stokes_solver(struct All_variables *E)
 	//int count, i, j, k;
 	int count, i;
 
-	static float *oldU;
+	static double *oldU;
 	static int visits = 0;
 
 	//const int nno = E->lmesh.nno;
@@ -60,7 +60,7 @@ void general_stokes_solver(struct All_variables *E)
 
 	if(visits == 0)
 	{
-		oldU = (float *)malloc((neq + 2) * sizeof(float));
+		oldU = (double *)malloc((neq + 2) * sizeof(double));
 		for(i = 1; i <= neq; i++)
 			oldU[i] = 0.0;
 		visits++;
