@@ -49,7 +49,6 @@ typedef struct compl
 	double imag;
 } COMPLEX;
 
-extern float Zj0[1000], Zj1[1000];
 
 
 /* ===================================================================
