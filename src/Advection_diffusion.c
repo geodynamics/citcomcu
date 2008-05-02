@@ -65,6 +65,7 @@ void advection_diffusion_parameters(struct All_variables *E)
 {
 	/* Set intial values, defaults & read parameters */
 
+	E->advection.fixed_timestep = 0.0;
 	E->advection.temp_iterations = 2;	/* petrov-galerkin iterations: minimum value. */
 	E->advection.total_timesteps = 1;
 	E->advection.sub_iterations = 1;
@@ -137,7 +138,6 @@ void PG_timestep_particle(struct All_variables *E)
 
 	if(been_here++ == 0)
 	{
-		E->advection.timesteps = 0;
 	}
 
 
@@ -254,7 +254,6 @@ void PG_timestep(struct All_variables *E)
 
 	if(been_here++ == 0)
 	{
-		E->advection.timesteps = 0;
 	}
 
 	E->advection.timesteps++;
@@ -816,13 +815,12 @@ void process_heating(struct All_variables *E)
 	E->rad_heat.total = E->control.Q0;
 
 	temp1 = E->data.disptn_number / E->control.Atemp;
+	temp3 = temp4 = 0;
 
 	if(E->control.visc_heating)
 	{
 
 		strain_rate_2_inv(E, E->heating_visc, 0);
-
-		temp4 = 0;
 
 		for(e = 1; e <= E->lmesh.nel; e++)
 		{
@@ -840,8 +838,6 @@ void process_heating(struct All_variables *E)
 
 	if(E->control.adi_heating)
 	{
-
-		temp3 = 0.0;
 
 		for(e = 1; e <= E->lmesh.nel; e++)
 		{

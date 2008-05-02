@@ -71,6 +71,9 @@ int main(int argc, char **argv)
 	gethostname(E.parallel.machinename, 160);
 
 	E.monitor.solution_cycles = 0;
+	E.monitor.elapsed_time = 0;
+	E.advection.timestep = 0;
+	E.advection.timesteps = 0;
 
 	if(E.parallel.me == 0)
 	{

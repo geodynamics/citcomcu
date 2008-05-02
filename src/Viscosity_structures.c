@@ -55,6 +55,7 @@ void viscosity_parameters(struct All_variables *E)
 	E->viscosity.update_allowed = 0;
 	E->viscosity.SDEPV = E->viscosity.TDEPV = 0;
 	E->viscosity.EXPX = 0;
+	E->viscosity.SMOOTH = 0;
 
 
 	for(i = 0; i < 40; i++)
