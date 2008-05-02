@@ -103,22 +103,6 @@ void parallel_domain_decomp1(struct All_variables *E)
 	E->parallel.nprocxy = E->parallel.nprocx * E->parallel.nprocy;
 	E->parallel.nproczy = E->parallel.nprocz * E->parallel.nprocy;
 
-	k = 0;
-	for(j = 0; j < E->parallel.nproc; j++)
-		for(i = 0; i <= j; i++)
-		{
-			E->parallel.mst[j][i][1] = k++;
-			E->parallel.mst[j][i][2] = k++;
-		}
-	for(j = 0; j < E->parallel.nproc; j++)
-		for(i = 0; i <= E->parallel.nproc; i++)
-			if(i > j)
-			{
-				E->parallel.mst[j][i][1] = E->parallel.mst[i][j][2];
-				E->parallel.mst[j][i][2] = E->parallel.mst[i][j][1];
-			}
-
-
 	/* for overlapping domain, good for e by e assemble */
 
 	/* z direction first */
@@ -995,14 +979,14 @@ void exchange_number_rec_markers(struct All_variables *E)
 		idb++;
 		S[k][0] = E->parallel.traces_transfer_number[k];
 		S[k][1] = E->parallel.me;
-		MPI_Isend(S[k], 2, MPI_INT, target_proc, E->parallel.mst1[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+		MPI_Isend(S[k], 2, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 	}							/* for k */
 
 	for(k = 1; k <= E->parallel.no_neighbors; k++)
 	{
 		target_proc = E->parallel.neighbors[k];
 		idb++;
-		MPI_Irecv(R[k], 2, MPI_INT, target_proc, E->parallel.mst1[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+		MPI_Irecv(R[k], 2, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 	}							/* for k */
 
 	MPI_Waitall(idb, request, status);
@@ -1040,12 +1024,12 @@ void exchange_markers(struct All_variables *E)
 			target_proc = E->parallel.neighbors[k];
 			idb++;
 			kk = E->parallel.traces_transfer_number[k] * 2 + 1;
-			MPI_Isend(E->PINS[k], kk, MPI_INT, target_proc, E->parallel.mst1[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Isend(E->PINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 			idb++;
 			kk = E->parallel.traces_transfer_number[k] * 2 * E->mesh.nsd + 1;
-			MPI_Isend(E->PVV[k], kk, MPI_FLOAT, target_proc, E->parallel.mst2[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Isend(E->PVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
 			idb++;
-			MPI_Isend(E->PXX[k], kk, MPI_DOUBLE, target_proc, E->parallel.mst3[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Isend(E->PXX[k], kk, MPI_DOUBLE, target_proc, 3, MPI_COMM_WORLD, &request[idb - 1]);
 		}
 	}							/* for k */
 
@@ -1056,12 +1040,12 @@ void exchange_markers(struct All_variables *E)
 			target_proc = E->parallel.neighbors[k];
 			idb++;
 			kk = E->parallel.traces_receive_number[k] * 2 + 1;
-			MPI_Irecv(E->RINS[k], kk, MPI_INT, target_proc, E->parallel.mst1[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Irecv(E->RINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 			idb++;
 			kk = E->parallel.traces_receive_number[k] * 2 * E->mesh.nsd + 1;
-			MPI_Irecv(E->RVV[k], kk, MPI_FLOAT, target_proc, E->parallel.mst2[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Irecv(E->RVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
 			idb++;
-			MPI_Irecv(E->RXX[k], kk, MPI_DOUBLE, target_proc, E->parallel.mst3[E->parallel.me][target_proc], MPI_COMM_WORLD, &request[idb - 1]);
+			MPI_Irecv(E->RXX[k], kk, MPI_DOUBLE, target_proc, 3, MPI_COMM_WORLD, &request[idb - 1]);
 		}
 	}							/* for k */
 
@@ -1122,7 +1106,7 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 				if(target_proc != E->parallel.me)
 				{
 					idb++;
-					MPI_Isend(S[k], E->parallel.NUM_NEQ[lev].pass[i][k], MPI_DOUBLE, target_proc, E->parallel.mst[E->parallel.me][target_proc][k], MPI_COMM_WORLD, &request[idb - 1]);
+					MPI_Isend(S[k], E->parallel.NUM_NEQ[lev].pass[i][k], MPI_DOUBLE, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 				}
 			}					/* for k */
 
@@ -1134,7 +1118,7 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 				if(target_proc != E->parallel.me)
 				{
 					idb++;
-					MPI_Irecv(R[k], E->parallel.NUM_NEQ[lev].pass[i][k], MPI_DOUBLE, target_proc, E->parallel.mst[E->parallel.me][target_proc][k], MPI_COMM_WORLD, &request[idb - 1]);
+					MPI_Irecv(R[k], E->parallel.NUM_NEQ[lev].pass[i][k], MPI_DOUBLE, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 				}
 			}					/* for k */
 
@@ -1210,7 +1194,7 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 				if(target_proc != E->parallel.me)
 				{
 					idb++;
-					MPI_Isend(S[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_FLOAT, target_proc, E->parallel.mst[E->parallel.me][target_proc][k], MPI_COMM_WORLD, &request[idb - 1]);
+					MPI_Isend(S[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_FLOAT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 				}
 			}					/* for k */
 
@@ -1222,7 +1206,7 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 				if(target_proc != E->parallel.me)
 				{
 					idb++;
-					MPI_Irecv(R[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_FLOAT, target_proc, E->parallel.mst[E->parallel.me][target_proc][k], MPI_COMM_WORLD, &request[idb - 1]);
+					MPI_Irecv(R[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_FLOAT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 				}
 			}					/* for k */
 

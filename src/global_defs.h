@@ -467,11 +467,6 @@ struct Parallel
 	int me_loc[4];
 	int num_b;
 
-	int mst[100][100][3];
-	int mst1[100][100];
-	int mst2[100][100];
-	int mst3[100][100];
-
 	int *IDD[MAX_LEVELS];
 	int *ELE_ORDER[MAX_LEVELS];
 	int *NODE_ORDER[MAX_LEVELS];
