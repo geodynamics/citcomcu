@@ -413,6 +413,7 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F, double acc, int
 
 	if(!(E->control.NMULTIGRID || E->control.EMULTIGRID))
 	{
+		valid = (residual < acc) ? 0 : 1;
 		cycles = E->control.v_steps_low;
 		time = CPU_time0();
 		residual = conj_grad(E, D1, r, Au, acc, &cycles, high_lev);
