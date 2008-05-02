@@ -682,8 +682,8 @@ void element_residual(struct All_variables *E, int el, struct Shape_function PG,
 
 				nodes[1] = loc[loc[a].node_nebrs[0][0]].node_nebrs[2][0];
 				nodes[2] = loc[loc[a].node_nebrs[0][1]].node_nebrs[2][0];
-				nodes[4] = loc[loc[a].node_nebrs[0][0]].node_nebrs[2][2];
-				nodes[3] = loc[loc[a].node_nebrs[0][1]].node_nebrs[2][2];
+				nodes[4] = loc[loc[a].node_nebrs[0][0]].node_nebrs[2][1];
+				nodes[3] = loc[loc[a].node_nebrs[0][1]].node_nebrs[2][1];
 
 				for(aid = 0, j = 1; j <= onedvpoints[E->mesh.nsd]; j++)
 					if(a == nodes[j])
