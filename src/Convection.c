@@ -87,6 +87,7 @@ void read_convection_settings(struct All_variables *E)
 	input_boolean("halfspace", &(E->convection.half_space_cooling), "off");
 	input_float("halfspage", &(E->convection.half_space_age), "nodefault");
 
+	/*
 	input_int("temperature_blobs", &(E->convection.temp_blobs), "0");
 	input_float_vector("temperature_blobx", E->convection.temp_blobs, E->convection.temp_blob_x);
 	input_float_vector("temperature_bloby", E->convection.temp_blobs, E->convection.temp_blob_y);
@@ -108,6 +109,7 @@ void read_convection_settings(struct All_variables *E)
 	input_float_vector("temperature_zonehw", E->convection.temp_zones, E->convection.temp_zonehw);
 	input_float_vector("temperature_zonemag", E->convection.temp_zones, E->convection.temp_zonemag);
 	input_int_vector("temperature_zonesticky", E->convection.temp_zones, E->convection.temp_zone_sticky);
+	*/
 
 	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32");
 	input_float_vector("perturbmag", E->convection.number_of_perturbations, E->convection.perturb_mag);
