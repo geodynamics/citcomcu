@@ -46,8 +46,11 @@
 #include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
-
+#ifdef USE_GGRD
+#include "hc.h"
+#endif
 int Emergency_stop;
+
 
 void read_instructions(struct All_variables *E, int argc, char **argv)
 {
@@ -73,7 +76,7 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 	 * from startup files. (See Parsing.c).
 	 * ==================================================  */
 
-	setup_parser(E, argc, argv);
+	setup_parser(E, argv[1]);
 
 	if(E->parallel.me == 0)
 		fprintf(stderr, "ok1\n");
@@ -524,15 +527,18 @@ void global_derived_values(struct All_variables *E)
 	 * record information about the progress of the 
 	 * program as it runs 
 	 */
-
+	
+#ifdef USE_GZDIR
+	sprintf(logfile, "%s/log%d", E->control.data_file, E->parallel.me);
+#else
 	sprintf(logfile, "%s.log%d", E->control.data_file, E->parallel.me);
-
+#endif
 	if((fp = fopen(logfile, "w")) == NULL)
 		E->fp = stdout;
 	else
 		E->fp = fp;
 
-	fprintf(E->fp, "visc_f %g %g\n", E->data.visc_factor, E->control.Q0);
+	//fprintf(E->fp, "visc_f %g %g\n", E->data.visc_factor, E->control.Q0);
 
 
 	if(E->control.NMULTIGRID || E->control.EMULTIGRID)
@@ -637,8 +643,11 @@ void read_initial_settings(struct All_variables *E)
 	char tmp_string[100];
 
 	/* first the problem type (defines subsequent behaviour) */
+	int m;
 
-	input_string("Problem", E->control.PROBLEM_TYPE, NULL);
+	m = E->parallel.me;
+
+	input_string("Problem", E->control.PROBLEM_TYPE, NULL, m);
 	if(strcmp(E->control.PROBLEM_TYPE, "convection") == 0)
 	{
 		E->control.CONVECTION = 1;
@@ -659,7 +668,7 @@ void read_initial_settings(struct All_variables *E)
 		set_convection_defaults(E);
 	}
 
-	input_string("Geometry", E->control.GEOMETRY, NULL);
+	input_string("Geometry", E->control.GEOMETRY, NULL, m);
 	if(strcmp(E->control.GEOMETRY, "cart2d") == 0)
 	{
 		E->control.CART2D = 1;
@@ -691,7 +700,7 @@ void read_initial_settings(struct All_variables *E)
 		set_2dc_defaults(E);
 	}
 
-	input_string("Solver", E->control.SOLVER_TYPE, NULL);
+	input_string("Solver", E->control.SOLVER_TYPE, NULL, m);
 	if(strcmp(E->control.SOLVER_TYPE, "cgrad") == 0)
 	{
 		E->control.CONJ_GRAD = 1;
@@ -721,57 +730,61 @@ void read_initial_settings(struct All_variables *E)
 	 * Default is no information recorded (apart from special things for given applications.
 	 */
 
-	input_string("datatypes", E->control.which_data_files, "");
-	input_string("averages", E->control.which_horiz_averages, "");
-	input_string("timelog", E->control.which_running_data, "");
-	input_string("observables", E->control.which_observable_data, "");
+	input_string("datatypes", E->control.which_data_files, "", m);
+	input_string("averages", E->control.which_horiz_averages, "", m);
+	input_string("timelog", E->control.which_running_data, "", m);
+	input_string("observables", E->control.which_observable_data, "", m);
 
-	input_string("datafile", E->control.data_file, "initialize");
-	input_string("process_command", E->control.output_written_external_command, "");
-	input_string("use_scratch", tmp_string, "local");
+	input_string("datafile", E->control.data_file, "initialize", m);
+	input_string("process_command", E->control.output_written_external_command, "", m);
+
+#ifdef USE_GZDIR
+	input_boolean("gzdir",&(E->control.gzdir),"on",m);
+#endif
+	input_string("use_scratch", tmp_string, "local", m);
 	if(strcmp(tmp_string, "local") == 0)
 		strcpy(E->control.data_file2, E->control.data_file);
 	else
 		sprintf(E->control.data_file2, "/scratch_%s/%s/%s", E->parallel.machinename, tmp_string, E->control.data_file);
 
-	input_boolean("AVS", &(E->control.AVS), "off");
-	input_boolean("CONMAN", &(E->control.CONMAN), "off");
+	input_boolean("AVS", &(E->control.AVS), "off", m);
+	input_boolean("CONMAN", &(E->control.CONMAN), "off", m);
 
 	if(E->control.NMULTIGRID || E->control.EMULTIGRID)
 	{
-		input_int("mgunitx", &(E->mesh.mgunitx), "1");
-		input_int("mgunitz", &(E->mesh.mgunitz), "1");
-		input_int("mgunity", &(E->mesh.mgunity), "1");
-		input_int("mgunitxl", &(E->lmesh.mgunitx), "1");
-		input_int("mgunitzl", &(E->lmesh.mgunitz), "1");
-		input_int("mgunityl", &(E->lmesh.mgunity), "1");
-		input_int("levels", &(E->mesh.levels), "0");
+		input_int("mgunitx", &(E->mesh.mgunitx), "1", m);
+		input_int("mgunitz", &(E->mesh.mgunitz), "1", m);
+		input_int("mgunity", &(E->mesh.mgunity), "1", m);
+		input_int("mgunitxl", &(E->lmesh.mgunitx), "1", m);
+		input_int("mgunitzl", &(E->lmesh.mgunitz), "1", m);
+		input_int("mgunityl", &(E->lmesh.mgunity), "1", m);
+		input_int("levels", &(E->mesh.levels), "0", m);
 	}
 
-	input_int("restart", &(E->control.restart), "0");
+	input_int("restart", &(E->control.restart), "0", m);
 
-	input_boolean("regular_grid", &(E->control.ORTHOZ), "off");
+	input_boolean("regular_grid", &(E->control.ORTHOZ), "off", m);
 
-	input_int("stokes_flow_only", &(E->control.stokes), "0");
+	input_int("stokes_flow_only", &(E->control.stokes), "0", m);
 
-	input_boolean("node_assemble", &(E->control.NASSEMBLE), "off");
+	input_boolean("node_assemble", &(E->control.NASSEMBLE), "off", m);
 	/* general mesh structure */
 
-	input_boolean("parallel_auto", &(E->parallel.automa), "off");
+	input_boolean("parallel_auto", &(E->parallel.automa), "off", m);
 	if(E->parallel.automa == 0)
 	{
-		input_int("nprocx", &(E->parallel.nprocx), "1");
-		input_int("nprocz", &(E->parallel.nprocz), "1");
-		input_int("nprocy", &(E->parallel.nprocy), "1");
+		input_int("nprocx", &(E->parallel.nprocx), "1", m);
+		input_int("nprocz", &(E->parallel.nprocz), "1", m);
+		input_int("nprocy", &(E->parallel.nprocy), "1", m);
 	}
 
-	input_boolean("verbose", &(E->control.verbose), "off");
-	input_boolean("see_convergence", &(E->control.print_convergence), "off");
-	input_boolean("COMPRESS", &(E->control.COMPRESS), "on");
-	input_float("sobtol", &(E->control.sob_tolerance), "0.0001");
+	input_boolean("verbose", &(E->control.verbose), "off", m);
+	input_boolean("see_convergence", &(E->control.print_convergence), "off", m);
+	input_boolean("COMPRESS", &(E->control.COMPRESS), "on", m);
+	input_float("sobtol", &(E->control.sob_tolerance), "0.0001", m);
 
-	input_int("obs_maxlongk", &(E->slice.maxlong), "100,1");
-	input_int("obs_minlongk", &(E->slice.minlong), "1,1");
+	input_int("obs_maxlongk", &(E->slice.maxlong), "100,1", m);
+	input_int("obs_minlongk", &(E->slice.minlong), "1,1", m);
 
 	/* for layers    */
 	E->viscosity.zlm = 1.0;
@@ -780,79 +793,104 @@ void read_initial_settings(struct All_variables *E)
 
 	if(E->control.CART3D)
 	{
-		input_float("z_lmantle", &(E->viscosity.zlm), "1.0");
-		input_float("z_410", &(E->viscosity.z410), "1.0");
-		input_float("z_lith", &(E->viscosity.zlith), "0.0");
+		input_float("z_lmantle", &(E->viscosity.zlm), "1.0", m);
+		input_float("z_410", &(E->viscosity.z410), "1.0", m);
+		input_float("z_lith", &(E->viscosity.zlith), "0.0", m);
 	}
 	else if(E->control.Rsphere)
 	{
-		input_float("r_lmantle", &(E->viscosity.zlm), "1.0");
-		input_float("r_410", &(E->viscosity.z410), "1.0");
-		input_float("r_lith", &(E->viscosity.zlith), "0.0");
+		input_float("r_lmantle", &(E->viscosity.zlm), "1.0", m);
+		input_float("r_410", &(E->viscosity.z410), "1.0", m);
+		input_float("r_lith", &(E->viscosity.zlith), "0.0", m);
 	}
+
+
+#ifdef USE_GGRD
+	/* ggrd control */
+	ggrd_init_master(&(E->control.ggrd));
+	input_boolean("ggrd_tinit",&(E->control.ggrd.use_temp),"off", m);
+	input_double("ggrd_tinit_scale",&(E->control.ggrd.temp.scale),"1.0", m);
+	input_boolean("ggrd_scale_with_prem",&(E->control.ggrd.temp.scale_with_prem),"off", m);
+	input_string("ggrd_tinit_gfile",E->control.ggrd.temp.gfile,"", m);
+	input_string("ggrd_tinit_dfile",E->control.ggrd.temp.dfile,"", m);
+	input_double("ggrd_tinit_offset",&(E->control.ggrd.temp.offset),"0.0", m);
+	/* comp */
+	input_boolean("ggrd_cinit",&(E->control.ggrd.use_comp),"off", m);
+	input_double("ggrd_cinit_scale",&(E->control.ggrd.comp.scale),"1.0", m);
+	input_string("ggrd_cinit_gfile",E->control.ggrd.comp.gfile,"", m);
+	input_string("ggrd_cinit_dfile",E->control.ggrd.comp.dfile,"", m);
+	input_double("ggrd_cinit_offset",&(E->control.ggrd.comp.offset),"0.0", m);
+	/* slab slice handling */
+	input_boolean("slab_slice",&(E->control.slab_slice),"off", m);
+	input_float("slab_theta_bound",&(E->control.slab_theta_bound),"1.0", m);
+	
+#endif
 
 	E->control.transT670 = 1500;
 	E->control.transT410 = 1500;
 
-	input_float("Ra_670", &(E->control.Ra_670), "0.0");
-	input_float("clapeyron670", &(E->control.clapeyron670), "0.0");
-	input_float("transT670", &(E->control.transT670), "0.0");
-	input_float("width670", &(E->control.width670), "0.0");
+	input_float("Ra_670", &(E->control.Ra_670), "0.0", m);
+	input_float("clapeyron670", &(E->control.clapeyron670), "0.0", m);
+	input_float("transT670", &(E->control.transT670), "0.0", m);
+	input_float("width670", &(E->control.width670), "0.0", m);
 
-	input_float("Ra_410", &(E->control.Ra_410), "0.0");
-	input_float("clapeyron410", &(E->control.clapeyron410), "0.0");
-	input_float("transT410", &(E->control.transT410), "0.0");
-	input_float("width410", &(E->control.width410), "0.0");
+	input_float("Ra_410", &(E->control.Ra_410), "0.0", m);
+	input_float("clapeyron410", &(E->control.clapeyron410), "0.0", m);
+	input_float("transT410", &(E->control.transT410), "0.0", m);
+	input_float("width410", &(E->control.width410), "0.0", m);
 
-	input_int("ll_max", &(E->sphere.llmax), "1");
-	input_int("nlong", &(E->sphere.noy), "1");
-	input_int("nlati", &(E->sphere.nox), "1");
-
-
-	input_int("topvbc", &(E->mesh.topvbc), "0");
-	input_int("botvbc", &(E->mesh.botvbc), "0");
-	input_int("sidevbc", &(E->mesh.sidevbc), "0");
-
-	input_boolean("periodicx", &(E->mesh.periodic_x), "off");
-	input_boolean("periodicy", &(E->mesh.periodic_y), "off");
-	input_boolean("depthdominated", &(E->control.depth_dominated), "off");
-	input_boolean("eqnzigzag", &(E->control.eqn_zigzag), "off");
-	input_boolean("eqnviscosity", &(E->control.eqn_viscosity), "off");
-
-	input_float("topvbxval", &(E->control.VBXtopval), "0.0");
-	input_float("botvbxval", &(E->control.VBXbotval), "0.0");
-	input_float("topvbyval", &(E->control.VBYtopval), "0.0");
-	input_float("botvbyval", &(E->control.VBYbotval), "0.0");
-
-	input_int("toptbc", &(E->mesh.toptbc), "1");
-	input_int("bottbc", &(E->mesh.bottbc), "1");
-	input_float("toptbcval", &(E->control.TBCtopval), "0.0");
-	input_float("bottbcval", &(E->control.TBCbotval), "1.0");
-
-	input_float("plate_velocity", &(E->control.plate_vel), "0.0");
-	input_float("plate_age", &(E->control.plate_age), "0.0");
-	input_float("plume_radius", &(E->segment.plume_radius), "0.0");
-	input_float("plume_DT", &(E->segment.plume_DT), "0.0");
-	input_float("plume_x", &(E->segment.plume_coord[1]), "0.0");
-	input_float("plume_y", &(E->segment.plume_coord[2]), "0.0");
-	input_float("plume_z", &(E->segment.plume_coord[3]), "0.0");
+	input_int("ll_max", &(E->sphere.llmax), "1", m);
+	input_int("nlong", &(E->sphere.noy), "1", m);
+	input_int("nlati", &(E->sphere.nox), "1", m);
 
 
-	input_string("gridxfile", E->mesh.gridfile[1], " ");
-	input_string("gridyfile", E->mesh.gridfile[2], " ");
-	input_string("gridzfile", E->mesh.gridfile[3], " ");
+	input_int("topvbc", &(E->mesh.topvbc), "0", m);
+	input_int("botvbc", &(E->mesh.botvbc), "0", m);
+	input_int("sidevbc", &(E->mesh.sidevbc), "0", m);
+
+	input_boolean("periodicx", &(E->mesh.periodic_x), "off", m);
+	input_boolean("periodicy", &(E->mesh.periodic_y), "off", m);
+	input_boolean("depthdominated", &(E->control.depth_dominated), "off", m);
+	input_boolean("eqnzigzag", &(E->control.eqn_zigzag), "off", m);
+	input_boolean("eqnviscosity", &(E->control.eqn_viscosity), "off", m);
+
+	input_float("topvbxval", &(E->control.VBXtopval), "0.0", m);
+	input_float("botvbxval", &(E->control.VBXbotval), "0.0", m);
+	input_float("topvbyval", &(E->control.VBYtopval), "0.0", m);
+	input_float("botvbyval", &(E->control.VBYbotval), "0.0", m);
+
+	input_int("toptbc", &(E->mesh.toptbc), "1", m);
+	input_int("bottbc", &(E->mesh.bottbc), "1", m);
+	input_float("toptbcval", &(E->control.TBCtopval), "0.0", m);
+	input_float("bottbcval", &(E->control.TBCbotval), "1.0", m);
+
+	input_float("plate_velocity", &(E->control.plate_vel), "0.0", m);
+	input_float("plate_age", &(E->control.plate_age), "0.0", m);
+	input_float("plume_radius", &(E->segment.plume_radius), "0.0", m);
+	input_float("plume_DT", &(E->segment.plume_DT), "0.0", m);
+	input_float("plume_x", &(E->segment.plume_coord[1]), "0.0", m);
+	input_float("plume_y", &(E->segment.plume_coord[2]), "0.0", m);
+	input_float("plume_z", &(E->segment.plume_coord[3]), "0.0", m);
+
+	/* check input temp / comp ranges */
+	input_boolean("check_t_irange", &(E->control.check_t_irange), "on", m);
+	input_boolean("check_c_irange", &(E->control.check_c_irange), "on", m);
+
+	input_string("gridxfile", E->mesh.gridfile[1], " ", m);
+	input_string("gridyfile", E->mesh.gridfile[2], " ", m);
+	input_string("gridzfile", E->mesh.gridfile[3], " ", m);
 
 
-	input_float("dimenx", &(E->mesh.layer[1]), "nodefault");
-	input_float("dimeny", &(E->mesh.layer[2]), "nodefault");
-	input_float("dimenz", &(E->mesh.layer[3]), "nodefault");
+	input_float("dimenx", &(E->mesh.layer[1]), "nodefault", m);
+	input_float("dimeny", &(E->mesh.layer[2]), "nodefault", m);
+	input_float("dimenz", &(E->mesh.layer[3]), "nodefault", m);
 
-	input_float("radius_inner", &(E->sphere.ri), "nodefault");
-	input_float("radius_outer", &(E->sphere.ro), "nodefault");
-	input_float("theta_north", &(E->sphere.ti), "nodefault");
-	input_float("theta_south", &(E->sphere.to), "nodefault");
-	input_float("fi_west", &(E->sphere.fi), "nodefault");
-	input_float("fi_east", &(E->sphere.fo), "nodefault");
+	input_float("radius_inner", &(E->sphere.ri), "nodefault", m);
+	input_float("radius_outer", &(E->sphere.ro), "nodefault", m);
+	input_float("theta_north", &(E->sphere.ti), "nodefault", m);
+	input_float("theta_south", &(E->sphere.to), "nodefault", m);
+	input_float("fi_west", &(E->sphere.fi), "nodefault", m);
+	input_float("fi_east", &(E->sphere.fo), "nodefault", m);
 	E->sphere.corner[1][1] = E->sphere.ti;
 	E->sphere.corner[2][1] = E->sphere.to;
 	E->sphere.corner[1][2] = E->sphere.fi;
@@ -860,77 +898,89 @@ void read_initial_settings(struct All_variables *E)
 	E->sphere.corner[1][3] = E->sphere.ri;
 	E->sphere.corner[2][3] = E->sphere.ro;
 
-	input_int("nodex", &(E->mesh.nox), "nodefault,1,nomax");
-	input_int("nodez", &(E->mesh.noz), "nodefault,1,nomax");
-	input_int("nodey", &(E->mesh.noy), "1,1,nomax");
-	input_boolean("aug_lagr", &(E->control.augmented_Lagr), "off");
-	input_double("aug_number", &(E->control.augmented), "0.0");
+	input_int("nodex", &(E->mesh.nox), "nodefault,1,nomax", m);
+	input_int("nodez", &(E->mesh.noz), "nodefault,1,nomax", m);
+	input_int("nodey", &(E->mesh.noy), "1,1,nomax", m);
+	input_boolean("aug_lagr", &(E->control.augmented_Lagr), "off", m);
+	input_double("aug_number", &(E->control.augmented), "0.0", m);
 
-	input_float("tole_compressibility", &(E->control.tole_comp), "0.0");
-	input_boolean("orthogonal", &(E->control.ORTHO), "on");
-	input_boolean("crust", &(E->control.crust), "off");
-	input_float("crust_width", &(E->crust.width), "0.0");
+	input_boolean("sdepv_print_convergence",&(E->control.sdepv_print_convergence),"off", m);
+	//input_float("tole_compressibility", &(E->control.tole_comp), "0.0", m);
+	input_boolean("orthogonal", &(E->control.ORTHO), "on", m);
+	input_boolean("crust", &(E->control.crust), "off", m);
+	input_float("crust_width", &(E->crust.width), "0.0", m);
 
-	input_int("storage_spacing", &(E->control.record_every), "10");
-	input_int("storage_always_before", &(E->control.record_all_until), "5");
+	input_int("storage_spacing", &(E->control.record_every), "10", m);
+	input_int("storage_always_before", &(E->control.record_all_until), "5", m);
 
-	input_boolean("precond", &(E->control.precondition), "off");
-	input_boolean("vprecond", &(E->control.vprecondition), "on");
-	input_int("mg_cycle", &(E->control.mg_cycle), "2,0,nomax");
-	input_int("down_heavy", &(E->control.down_heavy), "1,0,nomax");
-	input_int("up_heavy", &(E->control.up_heavy), "1,0,nomax");
-	input_double("accuracy", &(E->control.accuracy), "1.0e-4,0.0,1.0");
-	input_int("viterations", &(E->control.max_vel_iterations), "250,0,nomax");
+	input_boolean("precond", &(E->control.precondition), "off", m);
+	input_boolean("vprecond", &(E->control.vprecondition), "on", m);
+	input_int("mg_cycle", &(E->control.mg_cycle), "2,0,nomax", m);
+	input_int("down_heavy", &(E->control.down_heavy), "1,0,nomax", m);
+	input_int("up_heavy", &(E->control.up_heavy), "1,0,nomax", m);
+	input_double("accuracy", &(E->control.accuracy), "1.0e-4,0.0,1.0", m);
+	input_int("viterations", &(E->control.max_vel_iterations), "250,0,nomax", m);
 
 
-	input_int("vhighstep", &(E->control.v_steps_high), "1,0,nomax");
-	input_int("vlowstep", &(E->control.v_steps_low), "250,0,nomax");
-	input_int("vupperstep", &(E->control.v_steps_upper), "1,0,nomax");
-	input_int("piterations", &(E->control.p_iterations), "100,0,nomax");
-	input_int("maxsamevisc", &(E->control.max_same_visc), "25,0,nomax");
+	input_int("vhighstep", &(E->control.v_steps_high), "1,0,nomax", m);
+	input_int("vlowstep", &(E->control.v_steps_low), "250,0,nomax", m);
+	input_int("vupperstep", &(E->control.v_steps_upper), "1,0,nomax", m);
+	input_int("piterations", &(E->control.p_iterations), "100,0,nomax", m);
+	input_int("maxsamevisc", &(E->control.max_same_visc), "25,0,nomax", m);
 
 	/* data section */
 	E->data.therm_exp_factor = 1.0;
 	E->data.therm_diff_factor = 1.0;
 	E->data.visc_factor = 1.0;
 
-	input_float("ReferenceT", &(E->data.ref_temperature), "2600.0");
-	input_float("Q0", &(E->control.Q0), "0.0");
+	input_float("ReferenceT", &(E->data.ref_temperature), "2600.0", m);
+	input_float("Q0", &(E->control.Q0), "0.0", m);
 
-//  input_float("layerd",&(E->data.layer_km),"2870000.0");
+//  input_float("layerd",&(E->data.layer_km),"2870000.0", m);
 
 	if(E->control.CART3D)
-		input_float("layerd", &(E->monitor.length_scale), "2870000.0");
+		input_float("layerd", &(E->monitor.length_scale), "2870000.0", m);
 	else if(E->control.Rsphere)
-		input_float("radius", &(E->monitor.length_scale), "6370000.0");
+		input_float("radius", &(E->monitor.length_scale), "6370000.0", m);
 
-	input_float("gravacc", &(E->data.grav_acc), "9.81");
-	input_float("thermexp", &(E->data.therm_exp), "3.28e-5");
-	input_float("thermexp_factor", &(E->data.therm_exp_factor), "1.0");
-	input_float("visc_factor", &(E->data.visc_factor), "1.0");
-	input_float("thermdiff_factor", &(E->data.therm_diff_factor), "1.0");
-	input_float("cp", &(E->data.Cp), "1200.0");
-	input_float("thermdiff", &(E->data.therm_diff), "8.0e-7");
-	input_float("thermcond", &(E->data.therm_cond), "3.168");
-	input_float("density", &(E->data.density), "3340.0");
-	input_float("mdensity", &(E->data.melt_density), "2800.0");
-	input_float("wdensity", &(E->data.density_above), "1030.0");
-	input_float("rdensity", &(E->data.res_density), "3295.0");
-	input_float("heatflux", &(E->data.surf_heat_flux), "4.4e-2");
-	input_float("refvisc", &(E->data.ref_viscosity), "nodefault");
-	input_float("meltvisc", &(E->data.melt_viscosity), "nodefault");
-	input_float("surf_temp", &(E->data.surf_temp), "0.0");
-	input_float("dissipation_number", &(E->data.disptn_number), "0.0");
-	input_float("youngs", &(E->data.youngs_mod), "1.0e11");
-	input_float("Te", &(E->data.Te), "0.0");
-	input_float("Tsol0", &(E->data.T_sol0), "1373.0");
-	input_float("dTsoldz", &(E->data.dTsol_dz), "3.4e-3");
-	input_float("dTsoldF", &(E->data.dTsol_dF), "440.0");
-	input_float("dTdz", &(E->data.dT_dz), "0.48e-3");
-	input_float("deltaS", &(E->data.delta_S), "250.0");
-	input_float("gasconst", &(E->data.gas_const), "8.3");	/* not much cause to change these ! */
-	input_float("gravconst", &(E->data.grav_const), "6.673e-11");
-	input_float("permeability", &(E->data.permeability), "3.0e-10");
+
+	
+
+	input_float("gravacc", &(E->data.grav_acc), "9.81", m);
+	input_float("thermexp", &(E->data.therm_exp), "3.28e-5", m);
+	input_float("thermexp_factor", &(E->data.therm_exp_factor), "1.0", m);
+	input_float("visc_factor", &(E->data.visc_factor), "1.0", m);
+	input_float("thermdiff_factor", &(E->data.therm_diff_factor), "1.0", m);
+	input_float("cp", &(E->data.Cp), "1200.0", m);
+	input_float("thermdiff", &(E->data.therm_diff), "8.0e-7", m);
+	input_float("thermcond", &(E->data.therm_cond), "3.168", m);
+	input_float("density", &(E->data.density), "3340.0", m);
+	input_float("mdensity", &(E->data.melt_density), "2800.0", m);
+	input_float("wdensity", &(E->data.density_above), "1030.0", m);
+	input_float("rdensity", &(E->data.res_density), "3295.0", m);
+	input_float("heatflux", &(E->data.surf_heat_flux), "4.4e-2", m);
+	input_float("refvisc", &(E->data.ref_viscosity), "nodefault", m);
+	input_float("meltvisc", &(E->data.melt_viscosity), "nodefault", m);
+	input_float("surf_temp", &(E->data.surf_temp), "0.0", m);
+	input_float("dissipation_number", &(E->data.disptn_number), "0.0", m);
+	input_float("youngs", &(E->data.youngs_mod), "1.0e11", m);
+	input_float("Te", &(E->data.Te), "0.0", m);
+	input_float("Tsol0", &(E->data.T_sol0), "1373.0", m);
+	input_float("dTsoldz", &(E->data.dTsol_dz), "3.4e-3", m);
+	input_float("dTsoldF", &(E->data.dTsol_dF), "440.0", m);
+	input_float("dTdz", &(E->data.dT_dz), "0.48e-3", m);
+	input_float("deltaS", &(E->data.delta_S), "250.0", m);
+	input_float("gasconst", &(E->data.gas_const), "8.3",m);	/* not much cause to change these !
+	input_float("gravconst", &(E->data.grav_const), "6.673e-11", m);
+	input_float("permeability", &(E->data.permeability), "3.0e-10", m);
+
+	/* scaling */
+	E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) /E->data.therm_diff;
+	/* million years */
+	E->monitor.time_scale_ma = E->monitor.time_scale/(3600.0 * 24.0 * 365.25 * 1.0e6);
+	
+	E->monitor.velo_scale = E->data.therm_diff / (E->monitor.length_scale);
+	E->monitor.tau_scale = (E->data.ref_viscosity/E->monitor.time_scale); /* scaling stress */
 
 
 	(E->problem_settings) (E);

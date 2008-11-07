@@ -59,8 +59,10 @@ void node_locations(struct All_variables *E)
 	//int n00, nox, noz, noy, fn;
 	int nox, noz, noy;
 	double rad_conv;
-
+	int m;
 	//const int dims = E->mesh.nsd;
+
+	m = E->parallel.me;
 
 	rad_conv = M_PI / 180;
 
@@ -96,31 +98,31 @@ void node_locations(struct All_variables *E)
 
 	if(E->control.CART3D)
 	{
-		input_int("z_grid_layers", &(E->segment.zlayers), "1");
-		input_float_vector("zz", E->segment.zlayers, (E->segment.zzlayer));
-		input_int_vector("nz", E->segment.zlayers, (E->segment.nzlayer));
+		input_int("z_grid_layers", &(E->segment.zlayers), "1", m);
+		input_float_vector("zz", E->segment.zlayers, (E->segment.zzlayer), m);
+		input_int_vector("nz", E->segment.zlayers, (E->segment.nzlayer), m);
 
-		input_int("x_grid_layers", &(E->segment.xlayers), "1");
-		input_float_vector("xx", E->segment.xlayers, (E->segment.xxlayer));
-		input_int_vector("nx", E->segment.xlayers, (E->segment.nxlayer));
+		input_int("x_grid_layers", &(E->segment.xlayers), "1", m);
+		input_float_vector("xx", E->segment.xlayers, (E->segment.xxlayer), m);
+		input_int_vector("nx", E->segment.xlayers, (E->segment.nxlayer), m);
 
-		input_int("y_grid_layers", &(E->segment.ylayers), "1");
-		input_float_vector("yy", E->segment.ylayers, (E->segment.yylayer));
-		input_int_vector("ny", E->segment.ylayers, (E->segment.nylayer));
+		input_int("y_grid_layers", &(E->segment.ylayers), "1", m);
+		input_float_vector("yy", E->segment.ylayers, (E->segment.yylayer), m);
+		input_int_vector("ny", E->segment.ylayers, (E->segment.nylayer), m);
 	}
 	else if(E->control.Rsphere)
 	{
-		input_int("r_grid_layers", &(E->segment.zlayers), "1");
-		input_float_vector("rr", E->segment.zlayers, (E->segment.zzlayer));
-		input_int_vector("nr", E->segment.zlayers, (E->segment.nzlayer));
+		input_int("r_grid_layers", &(E->segment.zlayers), "1", m);
+		input_float_vector("rr", E->segment.zlayers, (E->segment.zzlayer), m);
+		input_int_vector("nr", E->segment.zlayers, (E->segment.nzlayer), m);
 
-		input_int("t_grid_layers", &(E->segment.xlayers), "1");
-		input_float_vector("tt", E->segment.xlayers, (E->segment.xxlayer));
-		input_int_vector("nt", E->segment.xlayers, (E->segment.nxlayer));
+		input_int("t_grid_layers", &(E->segment.xlayers), "1", m);
+		input_float_vector("tt", E->segment.xlayers, (E->segment.xxlayer), m);
+		input_int_vector("nt", E->segment.xlayers, (E->segment.nxlayer), m);
 
-		input_int("f_grid_layers", &(E->segment.ylayers), "1");
-		input_float_vector("ff", E->segment.ylayers, (E->segment.yylayer));
-		input_int_vector("nf", E->segment.ylayers, (E->segment.nylayer));
+		input_int("f_grid_layers", &(E->segment.ylayers), "1", m);
+		input_float_vector("ff", E->segment.ylayers, (E->segment.yylayer), m);
+		input_int_vector("nf", E->segment.ylayers, (E->segment.nylayer), m);
 	}
 
 

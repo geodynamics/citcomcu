@@ -47,6 +47,7 @@
   NOTE: this is not really general enough for new elements:
   it should be done through a pre-calculated lookup table.
   ======================================================== */
+int layers(struct All_variables *, float);
 
 void construct_ien(struct All_variables *E)
 {
@@ -784,11 +785,10 @@ void construct_mat_group(struct All_variables *E)
 		x3 = x3 / ends;
 
 		llayer = layers(E, x3);
-		if(llayer)
-		{						/* for layers:1-lith,2-upper and 3-lower mantle */
-			E->mat[el] = llayer;
+		if(llayer){
+		  /* for layers:1-lith,2-upper and 3-lower mantle */
+		  E->mat[el] = llayer;
 		}
-
 
 		/*    if (E->mat[el]==1 || E->mat[el]==2)   {
 		 * for (a=1;a<=ends;a++) {

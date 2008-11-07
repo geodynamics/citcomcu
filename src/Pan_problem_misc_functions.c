@@ -180,7 +180,7 @@ int read_previous_field(struct All_variables *E, float *field, char *name, char 
 	/* Define field name, read parameter file to determine file name and column number */
 
 	sprintf(input_token, "previous_%s_file", name);
-	if(!input_string(input_token, filename, "initialize"))
+	if(!input_string(input_token, filename, "initialize",E->parallel.me))
 	{
 		fprintf(E->fp, "No previous %s information found in input file\n", name);
 		fflush(E->fp);
@@ -484,27 +484,29 @@ void field_arbitrary_rectangle_file(struct All_variables *E, int parse_and_apply
 	//int in1, in2, in3;
 	//int number, node;
 	//int combine_option;
-
+	int m;
+	m=E->parallel.me;
+	
 	sprintf(read_string, "%s_rect", name);
-	input_int(read_string, &(RECT->numb), "0");
+	input_int(read_string, &(RECT->numb), "0",m);
 	sprintf(read_string, "%s_rectx1", name);
-	input_float_vector(read_string, RECT->numb, RECT->x1);
+	input_float_vector(read_string, RECT->numb, RECT->x1,m);
 	sprintf(read_string, "%s_rectx2", name);
-	input_float_vector(read_string, RECT->numb, RECT->x2);
+	input_float_vector(read_string, RECT->numb, RECT->x2,m);
 	sprintf(read_string, "%s_rectz1", name);
-	input_float_vector(read_string, RECT->numb, RECT->z1);
+	input_float_vector(read_string, RECT->numb, RECT->z1,m);
 	sprintf(read_string, "%s_rectz2", name);
-	input_float_vector(read_string, RECT->numb, RECT->z2);
+	input_float_vector(read_string, RECT->numb, RECT->z2,m);
 	sprintf(read_string, "%s_recty1", name);
-	input_float_vector(read_string, RECT->numb, RECT->y1);
+	input_float_vector(read_string, RECT->numb, RECT->y1,m);
 	sprintf(read_string, "%s_recty2", name);
-	input_float_vector(read_string, RECT->numb, RECT->y2);
+	input_float_vector(read_string, RECT->numb, RECT->y2,m);
 	sprintf(read_string, "%s_recthw", name);
-	input_float_vector(read_string, RECT->numb, RECT->halfw);
+	input_float_vector(read_string, RECT->numb, RECT->halfw,m);
 	sprintf(read_string, "%s_rectmag", name);
-	input_float_vector(read_string, RECT->numb, RECT->mag);
+	input_float_vector(read_string, RECT->numb, RECT->mag,m);
 	sprintf(read_string, "%s_rectovl", name);
-	input_char_vector(read_string, RECT->numb, RECT->overlay);
+	input_char_vector(read_string, RECT->numb, RECT->overlay,m);
 
 	if(parse_and_apply)
 		field_arbitrary_rectangle(E, RECT, field, BC, bcbitf, bcmask_on, bcmask_off);
@@ -599,23 +601,24 @@ void field_arbitrary_circle_file(struct All_variables *E, int parse_and_apply, s
 	//int in1;
 	//int number, node;
 	//int combine_option;
+	int m = E->parallel.me;
 
 	sprintf(read_string, "%s_circ", name);
-	input_int(read_string, &(CIRC->numb), "0");
+	input_int(read_string, &(CIRC->numb), "0",m);
 	sprintf(read_string, "%s_circx", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->x);
+	input_float_vector(read_string, CIRC->numb, CIRC->x,m);
 	sprintf(read_string, "%s_circz", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->z);
+	input_float_vector(read_string, CIRC->numb, CIRC->z,m);
 	sprintf(read_string, "%s_circy", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->y);
+	input_float_vector(read_string, CIRC->numb, CIRC->y,m);
 	sprintf(read_string, "%s_circrad", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->rad);
+	input_float_vector(read_string, CIRC->numb, CIRC->rad,m);
 	sprintf(read_string, "%s_circmag", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->mag);
+	input_float_vector(read_string, CIRC->numb, CIRC->mag,m);
 	sprintf(read_string, "%s_circhw", name);
-	input_float_vector(read_string, CIRC->numb, CIRC->halfw);
+	input_float_vector(read_string, CIRC->numb, CIRC->halfw,m);
 	sprintf(read_string, "%s_circovl", name);
-	input_char_vector(read_string, CIRC->numb, CIRC->overlay);
+	input_char_vector(read_string, CIRC->numb, CIRC->overlay,m);
 
 	if(parse_and_apply)
 		field_arbitrary_circle(E, CIRC, field, BC, bcbitf, bcmask_on, bcmask_off);
@@ -705,44 +708,45 @@ void field_arbitrary_harmonic_file(struct All_variables *E, int parse_and_apply,
 {
 	char read_string[500];
 	int i;
+	int m = E->parallel.me;
 
 	sprintf(read_string, "%s_harm", name);
-	input_int(read_string, &(HARM->numb), "0");
+	input_int(read_string, &(HARM->numb), "0",m);
 	sprintf(read_string, "%s_harms", name);
-	input_int(read_string, &(HARM->harms), "0,0,19");
+	input_int(read_string, &(HARM->harms), "0,0,19",m);
 	sprintf(read_string, "%s_harmoff", name);
-	input_float_vector(read_string, HARM->numb, HARM->off);
+	input_float_vector(read_string, HARM->numb, HARM->off,m);
 	sprintf(read_string, "%s_harmx1", name);
-	input_float_vector(read_string, HARM->numb, HARM->x1);
+	input_float_vector(read_string, HARM->numb, HARM->x1,m);
 	sprintf(read_string, "%s_harmx2", name);
-	input_float_vector(read_string, HARM->numb, HARM->x2);
+	input_float_vector(read_string, HARM->numb, HARM->x2,m);
 	sprintf(read_string, "%s_harmz1", name);
-	input_float_vector(read_string, HARM->numb, HARM->z1);
+	input_float_vector(read_string, HARM->numb, HARM->z1,m);
 	sprintf(read_string, "%s_harmz2", name);
-	input_float_vector(read_string, HARM->numb, HARM->z2);
+	input_float_vector(read_string, HARM->numb, HARM->z2,m);
 	sprintf(read_string, "%s_harmy1", name);
-	input_float_vector(read_string, HARM->numb, HARM->z1);
+	input_float_vector(read_string, HARM->numb, HARM->z1,m);
 	sprintf(read_string, "%s_harmy2", name);
-	input_float_vector(read_string, HARM->numb, HARM->z2);
+	input_float_vector(read_string, HARM->numb, HARM->z2,m);
 	sprintf(read_string, "%s_harmovl", name);
-	input_char_vector(read_string, HARM->numb, HARM->overlay);
+	input_char_vector(read_string, HARM->numb, HARM->overlay,m);
 
 	for(i = 0; i < HARM->harms; i++)
 	{
 		sprintf(read_string, "%s_harmkx%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->kx[i]);
+		input_float_vector(read_string, HARM->numb, HARM->kx[i],m);
 		sprintf(read_string, "%s_harmkz%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->kz[i]);
+		input_float_vector(read_string, HARM->numb, HARM->kz[i],m);
 		sprintf(read_string, "%s_harmky%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->ky[i]);
+		input_float_vector(read_string, HARM->numb, HARM->ky[i],m);
 		sprintf(read_string, "%s_harmka%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->ka[i]);
+		input_float_vector(read_string, HARM->numb, HARM->ka[i],m);
 		sprintf(read_string, "%s_harmphx%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->phx[i]);
+		input_float_vector(read_string, HARM->numb, HARM->phx[i],m);
 		sprintf(read_string, "%s_harmphz%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->phz[i]);
+		input_float_vector(read_string, HARM->numb, HARM->phz[i],m);
 		sprintf(read_string, "%s_harmphy%02d", name, i + 1);
-		input_float_vector(read_string, HARM->numb, HARM->phy[i]);
+		input_float_vector(read_string, HARM->numb, HARM->phy[i],m);
 	}
 
 	if(parse_and_apply)
@@ -837,3 +841,85 @@ double myatan(double y, double x)
 
 	return fi;
 }
+/* safe file open function */
+FILE *safe_fopen(char *name,char *mode)
+{
+  FILE *tmp;
+  char m2[300];
+  if((tmp=(FILE *)fopen(name,mode))==NULL){	
+    fprintf(stderr,"error: cannot fopen file %s, exiting\n",
+	    name);
+    parallel_process_termination();
+  }
+  return ((FILE *)tmp);
+}	
+/* 
+   like malloc, but with test 
+*/
+void *safe_malloc (size_t size)
+{
+  void *tmp;
+
+  if ((tmp = malloc(size)) == NULL) {
+    fprintf(stderr, "safe_malloc: could not allocate memory, n = %i, exiting\n", 
+	    (int)size);
+    parallel_process_termination();
+  }
+  return (tmp);
+}
+/* compute base vectors for conversion of polar to cartesian vectors
+   base[9]
+*/
+void calc_cbase_at_tp(float theta, float phi, float *base)
+{
+
+
+ double ct,cp,st,sp;
+  
+  ct=cos(theta);
+  cp=cos(phi);
+  st=sin(theta);
+  sp=sin(phi);
+  /* r */
+  base[0]= st * cp;
+  base[1]= st * sp;
+  base[2]= ct;
+  /* theta */
+  base[3]= ct * cp;
+  base[4]= ct * sp;
+  base[5]= -st;
+  /* phi */
+  base[6]= -sp;
+  base[7]= cp;
+  base[8]= 0.0;
+}
+/* given a base from calc_cbase_at_tp, convert a polar vector to
+   cartesian */
+void convert_pvec_to_cvec(float vr,float vt, float vp, float *base,
+			  float *cvec)
+{
+  int i;
+  for(i=0;i<3;i++){
+    cvec[i]  = base[i]  * vr;
+    cvec[i] += base[3+i]* vt;
+    cvec[i] += base[6+i]* vp;
+  }
+}
+/* convert r,theta,phi system to cartesian, xout[3] */
+void rtp2xyz(float r, float theta, float phi, float *xout)
+{
+  double rst;
+  rst = (double)r * sin((double)theta);
+  xout[0] = rst * cos((double)phi);	/* x */
+  xout[1] = rst * sin((double)phi); 	/* y */
+  xout[2] = (double)r * cos((double)theta);
+}
+void myerror(char *message, struct All_variables *E)
+{
+  E->control.verbose = 1;
+  record(E,message);
+  fprintf(stderr,"node %3i: error: %s\n",
+	  E->parallel.me,message);
+  parallel_process_termination();
+}
+

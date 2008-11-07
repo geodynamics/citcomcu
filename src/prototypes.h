@@ -66,7 +66,7 @@ void convection_boundary_conditions(struct All_variables *E);
 void convection_initial_temperature(struct All_variables *E);
 void process_restart_tc(struct All_variables *E);
 void convection_initial_markers1(struct All_variables *E);
-void convection_initial_markers(struct All_variables *E);
+void convection_initial_markers(struct All_variables *,int );
 void setup_plume_problem(struct All_variables *E);
 void PG_process(struct All_variables *E, int ii);
 /* Drive_solvers.c */
@@ -220,20 +220,20 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
-void setup_parser(struct All_variables *E, int ac, char **av);
-void shutdown_parser(struct All_variables *E);
-int add_to_parameter_list(register char *name, register char *value);
-int compute_parameter_hash_table(register char *s);
-int input_int(char *name, int *value, char *interpret);
-int input_string(char *name, char *value, char *Default);
-int input_boolean(char *name, int *value, char *interpret);
-int input_float(char *name, float *value, char *interpret);
-int input_double(char *name, double *value, char *interpret);
-int input_int_vector(char *name, int number, int *value);
-int input_char_vector(char *name, int number, char *value);
-int input_float_vector(char *name, int number, float *value);
-int input_double_vector(char *name, int number, double *value);
-int interpret_control_string(char *interpret, int *essential, double **Default, double **minvalue, double **maxvalue);
+void setup_parser(struct All_variables *, char *);
+void shutdown_parser(struct All_variables *);
+void add_to_parameter_list(char *, char *);
+int compute_parameter_hash_table(char *);
+int input_int(char *, int *, char *, int);
+int input_string(char *, char *, char *, int);
+int input_boolean(char *, int *, char *, int);
+int input_float(char *, float *, char *, int);
+int input_double(char *, double *, char *, int);
+int input_int_vector(char *, int, int *, int);
+int input_char_vector(char *, int, char *, int);
+int input_float_vector(char *, int, float *, int);
+int input_double_vector(char *, int, double *, int);
+int interpret_control_string(char *, int *, double *, double *, double *);
 /* Phase_change.c */
 void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4);
 /* Process_buoyancy.c */

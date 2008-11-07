@@ -64,6 +64,7 @@ struct el
 void advection_diffusion_parameters(struct All_variables *E)
 {
 	/* Set intial values, defaults & read parameters */
+  int m = E->parallel.me;
 
 	E->advection.fixed_timestep = 0.0;
 	E->advection.temp_iterations = 2;	/* petrov-galerkin iterations: minimum value. */
@@ -72,32 +73,32 @@ void advection_diffusion_parameters(struct All_variables *E)
 	E->advection.last_sub_iterations = 1;
 	E->advection.gamma = 0.5;
 	E->advection.ADVECTION = 1;
+	
+	input_boolean("ADV", &(E->advection.ADVECTION), "on",m);
 
-	input_boolean("ADV", &(E->advection.ADVECTION), "on");
+	input_int("minstep", &(E->advection.min_timesteps), "1",m);
+	input_int("maxstep", &(E->advection.max_timesteps), "1000",m);
+	input_int("maxtotstep", &(E->advection.max_total_timesteps), "1000000",m);
+	input_float("finetunedt", &(E->advection.fine_tune_dt), "0.9",m);
+	input_float("fixed_timestep", &(E->advection.fixed_timestep), "0.0",m);
+	input_int("adv_sub_iterations", &(E->advection.temp_iterations), "2,2,nomax",m);
+	input_float("maxadvtime", &(E->advection.max_dimensionless_time), "10.0",m);
 
-	input_int("minstep", &(E->advection.min_timesteps), "1");
-	input_int("maxstep", &(E->advection.max_timesteps), "1000");
-	input_int("maxtotstep", &(E->advection.max_total_timesteps), "1000000");
-	input_float("finetunedt", &(E->advection.fine_tune_dt), "0.9");
-	input_float("fixed_timestep", &(E->advection.fixed_timestep), "0.0");
-	input_int("adv_sub_iterations", &(E->advection.temp_iterations), "2,2,nomax");
-	input_float("maxadvtime", &(E->advection.max_dimensionless_time), "10.0");
+	input_float("sub_tolerance", &(E->advection.vel_substep_aggression), "0.005",m);
+	input_int("maxsub", &(E->advection.max_substeps), "25",m);
 
-	input_float("sub_tolerance", &(E->advection.vel_substep_aggression), "0.005");
-	input_int("maxsub", &(E->advection.max_substeps), "25");
-
-	input_float("liddefvel", &(E->advection.lid_defining_velocity), "0.01");
-	input_float("sublayerfrac", &(E->advection.sub_layer_sample_level), "0.5");
+	input_float("liddefvel", &(E->advection.lid_defining_velocity), "0.01",m);
+	input_float("sublayerfrac", &(E->advection.sub_layer_sample_level), "0.5",m);
 	E->control.adi_heating = 0;
 	E->control.visc_heating = 0;
-	input_int("adi_heating", &(E->control.adi_heating), "1");
-	input_int("visc_heating", &(E->control.visc_heating), "1");
+	input_int("adi_heating", &(E->control.adi_heating), "1",m);
+	input_int("visc_heating", &(E->control.visc_heating), "1",m);
 
 	E->viscosity.zcomp = E->control.Q0ER = 0;
 
-	input_int("markers_per_ele", &(E->advection.markers_per_ele), "0");
-	input_float("comp_depth", &(E->viscosity.zcomp), "0.0");
-	input_float("Q0_enriched", &(E->control.Q0ER), "0.0");
+	input_int("markers_per_ele", &(E->advection.markers_per_ele), "0",m);
+	input_float("comp_depth", &(E->viscosity.zcomp), "0.0",m);
+	input_float("Q0_enriched", &(E->control.Q0ER), "0.0",m);
 
 	E->viscosity.zcomp = 1.0 - E->viscosity.zcomp;
 

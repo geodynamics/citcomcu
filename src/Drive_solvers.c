@@ -50,16 +50,33 @@ void general_stokes_solver(struct All_variables *E)
 	//int count, i, j, k;
 	int count, i;
 
+	static double alpha,alpha1;
 	static double *oldU;
-	static int visits = 0;
+	static int damp=0,visits = 0;
 
 	//const int nno = E->lmesh.nno;
 	const int neq = E->lmesh.neq;
 	//const int dims = E->mesh.nsd;
 	//const int vpts = vpoints[E->mesh.nsd];
 
+	static int powerlaw; 
+	
 	if(visits == 0)
 	{
+	  
+	  powerlaw = (E->viscosity.SDEPV || E->viscosity.BDEPV)?(1):(0);
+	  if(powerlaw){
+	    /* damping factors */
+	    alpha = E->viscosity.sdepv_iter_damp;
+	    alpha1 = 1 - alpha;
+	    if(fabs(alpha-1) > 1e-7){
+	      if(E->parallel.me == 0)
+		fprintf(stderr,"damping stress dependent iteration velocities by %g\n",alpha);
+	      damp = 1;
+	    } else{
+	      damp = 0;
+	    }
+	  } /* end powerlaw */
 		oldU = (double *)malloc((neq + 2) * sizeof(double));
 		for(i = 1; i <= neq; i++)
 			oldU[i] = 0.0;
@@ -102,8 +119,14 @@ void general_stokes_solver(struct All_variables *E)
 
 		solve_constrained_flow_iterative(E);
 
-		if(E->viscosity.SDEPV)
+		if(powerlaw)
 		{
+
+		  if(damp){
+		    /* add some of the old solution */
+		    for(i = 1; i <= neq; i++)
+		      E->U[i] = alpha * E->U[i] + alpha1 * oldU[i];
+		  }
 			for(i = 1; i <= neq; i++)
 			{
 				delta_U[i] = E->U[i] - oldU[i];
@@ -115,16 +138,16 @@ void general_stokes_solver(struct All_variables *E)
 			if(Udot_mag != 0.0)
 				dUdot_mag /= Udot_mag;
 
-			if(E->control.sdepv_print_convergence < E->monitor.solution_cycles && E->parallel.me == 0)
+			if(E->control.sdepv_print_convergence  && (E->parallel.me == 0))
 			{
 				fprintf(stderr, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
 				fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
 				fflush(E->fp);
 			}
 			count++;
-		}						/* end for SDEPV   */
-
-	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && E->viscosity.SDEPV);
+		}						/* end for SDEPV / BDEPV  */
+		
+	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && powerlaw);
 
 	free((void *)delta_U);
 

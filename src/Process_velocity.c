@@ -50,28 +50,26 @@
 
 void process_new_velocity(struct All_variables *E, int ii)
 {
-	static int been_here = 0;
 
-	if(been_here == 0)
-	{
-		E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) /	/* Million years */
-			(E->data.therm_diff * 3600.0 * 24.0 * 365.25 * 1.0e6);
-		been_here++;
-	}
+  if(E->control.stokes || ((ii % E->control.record_every) == 0))
+    {
+      /* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
+      
+      get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
 
+      averages(E);
 
-	if(((ii % E->control.record_every) == 0))
-	{
-		/* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
+#ifdef USE_GZDIR
+      if(E->control.gzdir)
+	output_velo_related_gzdir(E, ii);	/* also topo */
+      else
+	output_velo_related(E, ii);	/* also topo */
+#else
+      output_velo_related(E, ii);	/* also topo */
+#endif
+    }
 
-		get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
-
-		averages(E);
-
-		output_velo_related(E, ii);	/* also topo */
-	}
-
-	return;
+  return;
 }
 
 /* ===============================================   */

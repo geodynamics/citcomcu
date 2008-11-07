@@ -18,11 +18,17 @@
 
 #COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
-LIB_PATH=
+GMT_DIR = ../../../GMTdev/GMT4.2.1/x86_64/
+NETCDF_DIR = ../../../netcdf-3.6.2/
+HC_DIR = ../../../hc/
+LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR) -L$(NETCDF_DIR)/lib/
 #LIB_LIST= -lmpi
-LIB_LIST=
+LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
 LIB= $(LIB_PATH) $(LIB_LIST) -lm
 
+DEFINES = -DUSE_GZDIR -DUSE_GGRD -DUSE_GMT4 -I$(HC_DIR)/\
+	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
+	-DPREM_MODEL_FILE=\"$(PWD)/prem/prem.dat\"
 
 ###################################################################
 #	Operating System Variables
@@ -107,7 +113,7 @@ SGIOPTIM=-O -fsingle
 LinuxFLAGS=
 LinuxLDFLAGS=
 #LinuxOPTIM=-g
-LinuxOPTIM=-O2
+LinuxOPTIM=-O2 $(DEFINES)
 
 ####################################
 #PARAGON 
@@ -160,7 +166,11 @@ CFILES= Advection_diffusion.c\
 	Solver_conj_grad.c\
 	Sphere_harmonics.c\
 	Topo_gravity.c\
-	Viscosity_structures.c
+	Viscosity_structures.c\
+	Output_gzdir.c\
+	Ggrd_handling.c
+
+
 
 HEADER = element_definitions.h\
 	 global_defs.h\
@@ -296,5 +306,9 @@ Blas_lapack_interfaces.f: Blas_lapack_interfaces.F
 
 Output_gzdir.o: $(HEADER) Output_gzdir.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output_gzdir.c
+
+
+Ggrd_handling.o: $(HEADER) Ggrd_handling.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Ggrd_handling.c
 
 

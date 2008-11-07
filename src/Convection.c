@@ -45,10 +45,13 @@
 #include "global_defs.h"
 #include <stdlib.h>				/* for "system" command */
 #include <string.h>
+void convection_initial_markers(struct All_variables *,int );
+
 
 void set_convection_defaults(struct All_variables *E)
 {
-	input_int("composition", &(E->control.composition), "0");
+  
+  input_int("composition", &(E->control.composition), "0", E->parallel.me);
 
 	if(E->control.composition)
 		E->next_buoyancy_field = PG_timestep_particle;
@@ -79,52 +82,56 @@ void read_convection_settings(struct All_variables *E)
 	char tmp_string[100], tmp1_string[100];
 
 	/* parameters */
+	int m;
 
-	input_float("rayleigh", &(E->control.Atemp), "essential");
+	m = E->parallel.me;
 
-	input_float("rayleigh_comp", &(E->control.Acomp), "essential");
+	input_float("rayleigh", &(E->control.Atemp), "essential", m);
 
-	input_boolean("halfspace", &(E->convection.half_space_cooling), "off");
-	input_float("halfspage", &(E->convection.half_space_age), "nodefault");
+	input_float("rayleigh_comp", &(E->control.Acomp), "essential", m);
+
+	input_boolean("halfspace", &(E->convection.half_space_cooling), "off", m);
+	input_float("halfspage", &(E->convection.half_space_age), "nodefault", m);
 
 	/*
-	input_int("temperature_blobs", &(E->convection.temp_blobs), "0");
-	input_float_vector("temperature_blobx", E->convection.temp_blobs, E->convection.temp_blob_x);
-	input_float_vector("temperature_bloby", E->convection.temp_blobs, E->convection.temp_blob_y);
-	input_float_vector("temperature_blobz", E->convection.temp_blobs, E->convection.temp_blob_z);
-	input_float_vector("temperature_blobsize", E->convection.temp_blobs, E->convection.temp_blob_radius);
-	input_float_vector("temperature_blobDT", E->convection.temp_blobs, E->convection.temp_blob_T);
-	input_float_vector("temperature_blobbg", E->convection.temp_blobs, E->convection.temp_blob_bg);
-	input_int_vector("temperature_blobsticky", E->convection.temp_blobs, E->convection.temp_blob_sticky);
+	input_int("temperature_blobs", &(E->convection.temp_blobs), "0", m);
+	input_float_vector("temperature_blobx", E->convection.temp_blobs, E->convection.temp_blob_x, m);
+	input_float_vector("temperature_bloby", E->convection.temp_blobs, E->convection.temp_blob_y, m);
+	input_float_vector("temperature_blobz", E->convection.temp_blobs, E->convection.temp_blob_z, m);
+	input_float_vector("temperature_blobsize", E->convection.temp_blobs, E->convection.temp_blob_radius, m);
+	input_float_vector("temperature_blobDT", E->convection.temp_blobs, E->convection.temp_blob_T, m);
+	input_float_vector("temperature_blobbg", E->convection.temp_blobs, E->convection.temp_blob_bg, m);
+	input_int_vector("temperature_blobsticky", E->convection.temp_blobs, E->convection.temp_blob_sticky, m);
 
-	input_int("temperature_zones", &(E->convection.temp_zones), "0");
-	input_float_vector("temperature_zonex1", E->convection.temp_zones, E->convection.temp_zonex1);
-	input_float_vector("temperature_zonex2", E->convection.temp_zones, E->convection.temp_zonex2);
-	input_float_vector("temperature_zonez1", E->convection.temp_zones, E->convection.temp_zonez1);
-	input_float_vector("temperature_zonez2", E->convection.temp_zones, E->convection.temp_zonez2);
-	input_float_vector("temperature_zoney1", E->convection.temp_zones, E->convection.temp_zoney1);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2);
-	input_float_vector("temperature_zonehw", E->convection.temp_zones, E->convection.temp_zonehw);
-	input_float_vector("temperature_zonemag", E->convection.temp_zones, E->convection.temp_zonemag);
-	input_int_vector("temperature_zonesticky", E->convection.temp_zones, E->convection.temp_zone_sticky);
+	input_int("temperature_zones", &(E->convection.temp_zones), "0", m);
+	input_float_vector("temperature_zonex1", E->convection.temp_zones, E->convection.temp_zonex1, m);
+	input_float_vector("temperature_zonex2", E->convection.temp_zones, E->convection.temp_zonex2, m);
+	input_float_vector("temperature_zonez1", E->convection.temp_zones, E->convection.temp_zonez1, m);
+	input_float_vector("temperature_zonez2", E->convection.temp_zones, E->convection.temp_zonez2, m);
+	input_float_vector("temperature_zoney1", E->convection.temp_zones, E->convection.temp_zoney1, m);
+	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
+	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
+	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
+	input_float_vector("temperature_zonehw", E->convection.temp_zones, E->convection.temp_zonehw, m);
+	input_float_vector("temperature_zonemag", E->convection.temp_zones, E->convection.temp_zonemag, m);
+	input_int_vector("temperature_zonesticky", E->convection.temp_zones, E->convection.temp_zone_sticky, m);
 	*/
 
-	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32");
-	input_float_vector("perturbmag", E->convection.number_of_perturbations, E->convection.perturb_mag);
-	input_float_vector("perturbk", E->convection.number_of_perturbations, E->convection.perturb_k);
-	input_float_vector("perturbm", E->convection.number_of_perturbations, E->convection.perturb_mm);
-	input_float_vector("perturbl", E->convection.number_of_perturbations, E->convection.perturb_ll);
+	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32", m);
+	input_boolean("random_t_init",&E->convection.random_t_init,"off", m);
+	input_float_vector("perturbmag", E->convection.number_of_perturbations, E->convection.perturb_mag, m);
+	input_float_vector("perturbk", E->convection.number_of_perturbations, E->convection.perturb_k, m);
+	input_float_vector("perturbm", E->convection.number_of_perturbations, E->convection.perturb_mm, m);
+	input_float_vector("perturbl", E->convection.number_of_perturbations, E->convection.perturb_ll, m);
 
-	input_string("prevT", E->convection.old_T_file, "initialize");
+	input_string("prevT", E->convection.old_T_file, "initialize", m);
 
 	if(E->control.restart)
 	{
-		input_int("restart_timesteps", &(E->monitor.solution_cycles), "0");
+		input_int("restart_timesteps", &(E->monitor.solution_cycles), "0", m);
 
-		input_string("oldfile", tmp1_string, "initialize");
-		input_string("use_scratch", tmp_string, "local");
+		input_string("oldfile", tmp1_string, "initialize", m);
+		input_string("use_scratch", tmp_string, "local", m);
 		if(strcmp(tmp_string, "local") == 0)
 			strcpy(E->convection.old_T_file, tmp1_string);
 		else
@@ -164,7 +171,7 @@ void convection_initial_fields(struct All_variables *E)
 		E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
 		E->advection.markers = E->advection.markers * E->lmesh.volume / E->mesh.volume;
 		E->advection.markers_uplimit = E->advection.markers * 2;
-		fprintf(stderr, "aaaa %d %g %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
+		//fprintf(stderr, "aaaa %d %g %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
 		for(i = 1; i <= E->mesh.nsd; i++)
 		{
 			E->VO[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
@@ -178,8 +185,11 @@ void convection_initial_fields(struct All_variables *E)
 	}
 
 	report(E, "convection, initial temperature");
+#ifdef USE_GGRD
+	convection_initial_temperature_ggrd(E);
+#else
 	convection_initial_temperature(E);
-
+#endif
 	return;
 }
 
@@ -197,6 +207,11 @@ void convection_boundary_conditions(struct All_variables *E)
 
 /* ===============================
    Initialization of fields .....
+
+   there's a different routine for GGRD handling in Ggrd_handling
+   which has differnet logic for marker init etc. 
+
+
    =============================== */
 
 void convection_initial_temperature(struct All_variables *E)
@@ -208,7 +223,7 @@ void convection_initial_temperature(struct All_variables *E)
 
 	//int noz2, nfz, in1, in2, in3, instance, nox, noy, noz;
 	int noz2, nox, noy, noz;
-	//char input_s[200], output_file[255];
+	//char input_s[200], output_file[255, m);
 	//float weight, para1, plate_velocity, delta_temp, age;
 
 	//const int dims = E->mesh.nsd;
@@ -288,7 +303,7 @@ void convection_initial_temperature(struct All_variables *E)
 
 
 		if(E->control.composition)
-			convection_initial_markers(E);
+		  convection_initial_markers(E,0);
 
 	}							// end for restart==0
 
@@ -403,7 +418,7 @@ void process_restart_tc(struct All_variables *E)
 
 	if(E->control.composition && (E->control.restart == 1 || E->control.restart == 2))
 	{
-		convection_initial_markers(E);
+		convection_initial_markers(E,0);
 	}
 
 	else if(E->control.composition && (E->control.restart == 3))
@@ -565,14 +580,18 @@ void convection_initial_markers1(struct All_variables *E)
 	return;
 }
 
-void convection_initial_markers(struct All_variables *E)
+void convection_initial_markers(struct All_variables *E,int use_element_nodes_for_init_c)
 {
 	//int el, i, j, k, p, node, ii, jj;
-	int el, node;
+	int el, node,j;
 	//double x, y, z, r, t, f, dX[4], dx, dr;
 	double x, y, z, r, t, f, dX[4];
 	//char input_s[100], output_file[255];
 	//FILE *fp;
+	float temp;
+
+	const int dims = E->mesh.nsd;
+	const int ends = enodes[dims];
 
 	if(E->control.CART3D)
 	{
@@ -592,10 +611,20 @@ void convection_initial_markers(struct All_variables *E)
 
 				el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
 				E->CElement[node] = el;
-				if(E->XMC[3][node] > E->viscosity.zcomp)
-					E->C12[node] = 0;
-				else
-					E->C12[node] = 1;
+				if(use_element_nodes_for_init_c){
+				  for(temp=0.0,j = 1; j <= ends; j++)
+				    temp += E->C[E->ien[el].node[j]];
+				  temp /= ends;
+				  if(temp >0.5)
+				    E->C12[node] = 1;
+				  else
+				    E->C12[node] = 0;
+				}else{ /* use depth */
+				  if(E->XMC[3][node] > E->viscosity.zcomp)
+				    E->C12[node] = 0;
+				  else
+				    E->C12[node] = 1;
+				}
 			}
 		} while(node < E->advection.markers);
 	}
@@ -619,10 +648,20 @@ void convection_initial_markers(struct All_variables *E)
 				E->XMC[3][node] = r;
 				el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
 				E->CElement[node] = el;
-				if(r > E->viscosity.zcomp)
-					E->C12[node] = 0;
-				else
-					E->C12[node] = 1;
+				if(use_element_nodes_for_init_c){
+				  for(temp=0.0,j = 1; j <= ends; j++)
+				    temp += E->C[E->ien[el].node[j]];
+				  temp /= ends;
+				  if(temp >0.5)
+				    E->C12[node] = 1;
+				  else
+				    E->C12[node] = 0;
+				}else{ /* use depth */
+				  if(r > E->viscosity.zcomp)
+				    E->C12[node] = 0;
+				  else
+				    E->C12[node] = 1;
+				}
 			}
 		} while(node < E->advection.markers);
 	}
@@ -640,24 +679,21 @@ void setup_plume_problem(struct All_variables *E)
 	//char output_file[255];
 
 	int l, noz;
-	double temp, temp1, time_scale, velo_scale;
+	double temp, temp1;
 
 	noz = E->lmesh.noz;
 
 
 	E->control.plate_vel = E->control.plate_vel * 0.01 / 3.1536e7;
-	/* now  with a unit of m/sec */
-	velo_scale = E->data.therm_diff / (E->monitor.length_scale);
 	/* in m/sec */
-	E->control.plate_vel = E->control.plate_vel / velo_scale;
+	E->control.plate_vel = E->control.plate_vel / E->monitor.velo_scale;
 	/* dimensionless */
 
-	time_scale = E->monitor.length_scale * E->monitor.length_scale / E->data.therm_diff;
 	/* in sec */
 
 	E->control.plate_age = E->control.plate_age * 1.0e6 * 3.1536e7;
 	/* in sec */
-	E->control.plate_age = E->control.plate_age / time_scale;
+	E->control.plate_age = E->control.plate_age / E->monitor.time_scale;
 	/* dimensionless */
 
 

@@ -80,6 +80,7 @@ struct VISC_OPT
 
 	int SDEPV;
 	float sdepv_misfit;
+	float sdepv_iter_damp;
 	int sdepv_normalize;
 	float sdepv_expt[40];
 	float sdepv_trns[40];
@@ -89,6 +90,46 @@ struct VISC_OPT
 	float N0[40];
 	float E[40], T0[40];
 	float T[40], Z[40];
+
+
+  /* byerlee :
+     abyerlee, bbyerlee, pbyerlee
+     Byerlees law, dimensional: 
+     Yield strength is exceeded if the
+     second invariant of the stress reaches:
+
+     (abyerlee * (h-z_dim) + bbyerlee) * lbyerlee
+	
+     abyerlee: gradient, in Pa/m
+     bbyerlee: strength at surface (Pa)
+     lbyerlee: factor due to pore pressure, reduching the strength by the
+               amount of Plam. 1: dry, 0.7: hydrostatic pressure, 0:
+	       lithostatic pressure. Caution: 0 might produce crap.
+  */
+  int BDEPV;
+  float abyerlee[40],bbyerlee[40],
+    lbyerlee[40];
+
+
+  float plasticity_viscosity_offset;
+
+  int plasticity_trans;		/* 1: effective viscosity approach
+				   0: min viscosity approach
+
+				*/
+  int plasticity_dimensional;	/* 1: use Byerlee type setting with
+				   dimensional values
+				   0: use non-dimensional values for yield stress
+
+				*/
+
+
+  int CDEPV;			/* composition dependent viscosity */
+  float pre_comp[40]; /* prefactors */
+
+
+
+
 
 	int weak_blobs;
 	float weak_blobx[40];

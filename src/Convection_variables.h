@@ -58,6 +58,8 @@ struct CONVECTION
 	int temp_zone_sticky[40];
 	int temp_zones;
 
+  int random_t_init;
+
 	float half_space_age;
 	int half_space_cooling;
 

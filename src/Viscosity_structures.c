@@ -46,17 +46,23 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
+void visc_from_B(struct All_variables *, float *, float *, int );
+void visc_from_C(struct All_variables *, float *, float *, int );
+void *safe_malloc (size_t );
+
 void viscosity_parameters(struct All_variables *E)
 {
 	int i, l;
 	float temp;
-
+  int m = E->parallel.me ;
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
-	E->viscosity.SDEPV = E->viscosity.TDEPV = 0;
+	E->viscosity.SDEPV = E->viscosity.TDEPV = E->viscosity.BDEPV = 
+	  E->viscosity.CDEPV = 0;
 	E->viscosity.EXPX = 0;
 	E->viscosity.SMOOTH = 0;
 
+	input_boolean("plasticity_dimensional",&(E->viscosity.plasticity_dimensional),"on",m);
 
 	for(i = 0; i < 40; i++)
 	{
@@ -65,40 +71,96 @@ void viscosity_parameters(struct All_variables *E)
 		E->viscosity.Z[i] = 0.0;
 		E->viscosity.E[i] = 0.0;
 		E->viscosity.T0[i] = 0.0;
-	}
+
+		
+		/* 
+		   byerlee or plasticity law 
+		*/
+		if(E->viscosity.plasticity_dimensional){
+		  /* for byerlee, dimensional values are used */
+		  E->viscosity.abyerlee[i]=2.1e4; /* t_y = (a * z[m] + b) *p 
+						     whereas a is rho * g * 0.6(from friction)
+						     and b is 60MPa cohesion
+						  */
+		  E->viscosity.bbyerlee[i]=6e7;
+		  
+		  E->viscosity.lbyerlee[i]=.1;
+		}else{
+		  /* for plasticity: t_y = min (a + (1-x) * b, l) */
+		  E->viscosity.abyerlee[i]=0.0;
+		  E->viscosity.bbyerlee[i]=1.0;
+		  
+		  E->viscosity.lbyerlee[i]=1e20;
+		}
+		
+		/* comp dep visc */
+		E->viscosity.pre_comp[i] = 1.0;
+		
+	} /* end layer loop */
 
 	/* read in information */
-	input_int("rheol", &(E->viscosity.RHEOL), "essential");
-	input_int("num_mat", &(E->viscosity.num_mat), "1");
+	input_int("rheol", &(E->viscosity.RHEOL), "essential",m);
+	input_int("num_mat", &(E->viscosity.num_mat), "1",m);
 
-	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T));	/* redundant */
-	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T));
-	input_float_vector("viscZ", E->viscosity.num_mat, (E->viscosity.Z));
-	input_float_vector("viscE", E->viscosity.num_mat, (E->viscosity.E));
-	input_float_vector("viscT0", E->viscosity.num_mat, (E->viscosity.T0));
-	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0));	/* redundant */
-	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0));
 
-	input_boolean("TDEPV", &(E->viscosity.TDEPV), "on");
-	input_boolean("SDEPV", &(E->viscosity.SDEPV), "off");
+	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T),m);	/* redundant */
+	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T),m);
+	input_float_vector("viscZ", E->viscosity.num_mat, (E->viscosity.Z),m);
+	input_float_vector("viscE", E->viscosity.num_mat, (E->viscosity.E),m);
+	input_float_vector("viscT0", E->viscosity.num_mat, (E->viscosity.T0),m);
+	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0),m);	/* redundant */
+	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0),m);
 
-	input_float("sdepv_misfit", &(E->viscosity.sdepv_misfit), "0.001");
-	input_float_vector("sdepv_expt", E->viscosity.num_mat, (E->viscosity.sdepv_expt));
-	input_float_vector("sdepv_trns", E->viscosity.num_mat, (E->viscosity.sdepv_trns));
+	input_boolean("TDEPV", &(E->viscosity.TDEPV), "on",m);
+	input_boolean("SDEPV", &(E->viscosity.SDEPV), "off",m);
+	input_boolean("BDEPV",&(E->viscosity.BDEPV),"off",m);
+	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
 
-	input_boolean("TDEPV_AVE", &(E->viscosity.TDEPV_AVE), "off");
-	input_boolean("VFREEZE", &(E->viscosity.FREEZE), "off");
-	input_boolean("VMAX", &(E->viscosity.MAX), "off");
-	input_boolean("VMIN", &(E->viscosity.MIN), "off");
-	input_boolean("VISC_UPDATE", &(E->viscosity.update_allowed), "on");
+	/* plasticity offset viscosity */
+	input_float("plasticity_viscosity_offset", &(E->viscosity.plasticity_viscosity_offset),"0.0",m);
 
-	input_float("freeze_thresh", &(E->viscosity.freeze_thresh), "0.0");
-	input_float("freeze_value", &(E->viscosity.freeze_value), "1.0");
-	input_float("visc_max", &(E->viscosity.max_value), "nodefault");
-	input_float("visc_min", &(E->viscosity.min_value), "nodefault");
+	/* 
+	   byerlee 
+	*/
+	input_float_vector("abyerlee",E->viscosity.num_mat,
+			   (E->viscosity.abyerlee),m);
+	input_float_vector("bbyerlee",E->viscosity.num_mat,
+			   (E->viscosity.bbyerlee),m);
+	input_float_vector("lbyerlee",E->viscosity.num_mat,
+			   (E->viscosity.lbyerlee),m);
+	
+	
+	/* 1: transition 0: min/max transition */
+	input_boolean("plasticity_trans",&(E->viscosity.plasticity_trans),"on",m);
+	/* 
+	   
+	*/
+	
+	/* composition factors */
+	input_float_vector("pre_comp",2,(E->viscosity.pre_comp),m);
 
-	input_boolean("VISC_GUESS", &(E->viscosity.guess), "off");
-	input_string("visc_old_file", E->viscosity.old_file, " ");
+
+
+	input_float("sdepv_misfit", &(E->viscosity.sdepv_misfit), "0.001",m);
+	input_float_vector("sdepv_expt", E->viscosity.num_mat, (E->viscosity.sdepv_expt),m);
+	input_float_vector("sdepv_trns", E->viscosity.num_mat, (E->viscosity.sdepv_trns),m);
+
+	/* iteration damping for alpha < 1 */
+	input_float("sdepv_iter_damp", &(E->viscosity.sdepv_iter_damp), "1.0",m);
+
+	input_boolean("TDEPV_AVE", &(E->viscosity.TDEPV_AVE), "off",m);
+	input_boolean("VFREEZE", &(E->viscosity.FREEZE), "off",m);
+	input_boolean("VMAX", &(E->viscosity.MAX), "off",m);
+	input_boolean("VMIN", &(E->viscosity.MIN), "off",m);
+	input_boolean("VISC_UPDATE", &(E->viscosity.update_allowed), "on",m);
+
+	input_float("freeze_thresh", &(E->viscosity.freeze_thresh), "0.0",m);
+	input_float("freeze_value", &(E->viscosity.freeze_value), "1.0",m);
+	input_float("visc_max", &(E->viscosity.max_value), "nodefault",m);
+	input_float("visc_min", &(E->viscosity.min_value), "nodefault",m);
+
+	input_boolean("VISC_GUESS", &(E->viscosity.guess), "off",m);
+	input_string("visc_old_file", E->viscosity.old_file, " ",m);
 
 	return;
 }
@@ -106,18 +168,19 @@ void viscosity_parameters(struct All_variables *E)
 void get_viscosity_option(struct All_variables *E)
 {
 	/* general, essential default */
+  int m = E->parallel.me ;
 
-	input_string("Viscosity", E->viscosity.STRUCTURE, NULL);	/* Which form of viscosity */
+	input_string("Viscosity", E->viscosity.STRUCTURE, NULL,m);	/* Which form of viscosity */
 
-	input_boolean("VISC_EQUIVDD", &(E->viscosity.EQUIVDD), "off");	/* Whether to average it */
-	input_int("equivdd_opt", &(E->viscosity.equivddopt), "1");
-	input_int("equivdd_x", &(E->viscosity.proflocx), "1");
-	input_int("equivdd_y", &(E->viscosity.proflocy), "1");
+	input_boolean("VISC_EQUIVDD", &(E->viscosity.EQUIVDD), "off",m);	/* Whether to average it */
+	input_int("equivdd_opt", &(E->viscosity.equivddopt), "1",m);
+	input_int("equivdd_x", &(E->viscosity.proflocx), "1",m);
+	input_int("equivdd_y", &(E->viscosity.proflocy), "1",m);
 
-	input_int("update_every_steps", &(E->control.KERNEL), "1");
+	input_int("update_every_steps", &(E->control.KERNEL), "1",m);
 
-	input_boolean("VISC_SMOOTH", &(E->viscosity.SMOOTH), "off");
-	input_int("visc_smooth_cycles", &(E->viscosity.smooth_cycles), "0");
+	input_boolean("VISC_SMOOTH", &(E->viscosity.SMOOTH), "off",m);
+	input_int("visc_smooth_cycles", &(E->viscosity.smooth_cycles), "0",m);
 
 	if(strcmp(E->viscosity.STRUCTURE, "system") == 0)	/* Interpret */
 	{
@@ -156,8 +219,15 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 	else
 		visc_from_mat(E, visc, evisc);
 
+	if(E->viscosity.CDEPV)
+	  visc_from_C(E, visc, evisc, propogate);
+
 	if(E->viscosity.SDEPV)
 		visc_from_S(E, visc, evisc, propogate);
+
+	if(E->viscosity.BDEPV)
+	  visc_from_B(E, visc, evisc, propogate);
+
 
 	if(E->viscosity.SMOOTH)
 		apply_viscosity_smoother(E, visc, evisc);
@@ -180,8 +250,12 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 					evisc[(i - 1) * vpts + j] = E->viscosity.min_value;
 	}
 
-	/*   v_to_nodes(E,evisc,visc,E->mesh.levmax);  */
+#ifdef USE_GZDIR
+	/* this is much preferred over v_to_nodes */
+	visc_from_gint_to_nodes(E,evisc,visc,E->mesh.levmax);
+#endif
 
+	/* v_to_nodes(E,evisc,visc,E->mesh.levmax);  */
 	return;
 }
 
@@ -208,14 +282,14 @@ void apply_viscosity_smoother(struct All_variables *E, float *visc, float *evisc
 void visc_from_mat(struct All_variables *E, float *Eta, float *EEta)
 {
 	//int i, j, k, l, z, jj, kk;
-	int i, jj;
-
-	for(i = 1; i <= E->lmesh.nel; i++)
-		for(jj = 1; jj <= vpoints[E->mesh.nsd]; jj++)
-		{
-			EEta[(i - 1) * vpoints[E->mesh.nsd] + jj] = E->viscosity.N0[E->mat[i] - 1];
-		}
-
+	int i, jj,l;
+	for(i = 1; i <= E->lmesh.nel; i++){
+	  l = E->mat[i] - 1;
+	  for(jj = 1; jj <= vpoints[E->mesh.nsd]; jj++){
+	    EEta[(i - 1) * vpoints[E->mesh.nsd] + jj] = E->viscosity.N0[l];
+	  }
+	}
+	  
 	return;
 }
 
@@ -271,79 +345,140 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	if(visits == 0 || E->monitor.solution_cycles % E->control.KERNEL == 0)
 	{
 
-		if(E->viscosity.RHEOL == 0)
-		{
-			for(i = 1; i <= nel; i++)
-			{
-				l = E->mat[i];
-				e = (i - 1) % E->lmesh.elz + 1;
+	  switch(E->viscosity.RHEOL){ 
+	  case 0:
+	    /* eta = eta0 exp(E * (1-T)) */
+	    for(i = 1; i <= nel; i++)
+	      {
+		l = E->mat[i] - 1; /* moved -1 up here */
+		e = (i - 1) % E->lmesh.elz + 1;
+		
+		tempa = E->viscosity.N0[l];
+		
+		for(kk = 1; kk <= ends; kk++)
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++)
+		  {
+		    temp = 1.0e-32;
+		    for(kk = 1; kk <= ends; kk++)
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+		      }
+		    EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l] * (one - temp ));
+		  }
+	      }
+	    break;
+	  case 1:
+	    /* 
+	       eta = eta0 * exp(E/(T+T0))
+	    */
+	    for(i = 1; i <= nel; i++)
+	      {
+		l = E->mat[i] - 1 ;
+		tempa = E->viscosity.N0[l];
+		
+		for(kk = 1; kk <= ends; kk++)
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++)
+		  {
+		    temp = 1.0e-32;
+		    for(kk = 1; kk <= ends; kk++)
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+		      }
+		    EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l]) / (temp + E->viscosity.T[l]));
+		  }
+	      }
+	  case 2:
+	    /* 
+	       eta = eta0 * exp(E + (1-z)*Z0/(T+T0))
+	    */
+	    for(i = 1; i <= nel; i++)
+	      {
+		l = E->mat[i] - 1 ;
 
-				tempa = E->viscosity.N0[l - 1];
+		tempa = E->viscosity.N0[l];
+		
+		for(kk = 1; kk <= ends; kk++)
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++)
+		  {
+		    temp = 1.0e-32;
+		    zz = 0;
+		    for(kk = 1; kk <= ends; kk++)
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+			zz += Xtmp[3][E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk, jj)];
+		      }
+		    EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l] + (1 - zz) * E->viscosity.Z[l]) /(temp + E->viscosity.T[l]) );
+		  }
+	      }
+	    break;
+	  case 3:
+	    /* 
+	       eta = eta0 exp(E * (T0 - T)) 
 
-				for(kk = 1; kk <= ends; kk++)
-					TT[kk] = E->T[E->ien[i].node[kk]];
+	       (this is like rheol=0 with T0=1, but I left rheol==0
+	       unchanged for backward compatibility
 
-				for(jj = 1; jj <= vpts; jj++)
-				{
-					temp = 1.0e-32;
-					for(kk = 1; kk <= ends; kk++)
-					{
-						temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
-					}
-					EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l - 1] * (one - temp ));
-				}
-			}
-		}
-		else if(E->viscosity.RHEOL == 1)
-		{
-			for(i = 1; i <= nel; i++)
-			{
-				l = E->mat[i];
-				tempa = E->viscosity.N0[l - 1];
+	    */
+	    for(i = 1; i <= nel; i++)
+	      {
+		l = E->mat[i] - 1;
+		e = (i - 1) % E->lmesh.elz + 1;
+		
+		tempa = E->viscosity.N0[l];
+		
+		for(kk = 1; kk <= ends; kk++)
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++)
+		  {
+		    temp = 1.0e-32;
+		    for(kk = 1; kk <= ends; kk++)
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+		      }
+		    EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l] * (E->viscosity.T[l]  - temp ));
+		  }
+	      }
+	    break;
+	  case 4:
+	    /* 
+	       eta = eta0 * exp(E(T_c - T) + (1-z) * Z ) 
+	    */
+	    for(i = 1; i <= nel; i++) /* loop over all elements */
+	      {
+		l = E->mat[i] - 1; /* material element, determines [,,,,]  */
+		tempa = E->viscosity.N0[l];	/* prefactor */
+		
+		for(kk = 1; kk <= ends; kk++) /* temperature at nodes of element */
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++) /* loop through integration points of element */
+		  {
+		    zz = 0;
+		    temp = 1.0e-32;
+		    for(kk = 1; kk <= ends; kk++) /* loop through points in element */
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+			zz += Xtmp[3][E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk, jj)]; /* depth */
+		      }
+		    /* now we have the temperature at this integration point */
+		    EEta[(i - 1) * vpts + jj] = 
+		      tempa * exp(E->viscosity.E[l] * (E->viscosity.T[l] - temp) + (1 - zz) * E->viscosity.Z[l] );
+		  }
+	      }
+	  default:
+	    myerror(E,"RHEOL option undefined");
+	    break;
+	  } /* end swith */
 
-				for(kk = 1; kk <= ends; kk++)
-					TT[kk] = E->T[E->ien[i].node[kk]];
-
-				for(jj = 1; jj <= vpts; jj++)
-				{
-					temp = 1.0e-32;
-					for(kk = 1; kk <= ends; kk++)
-					{
-						temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
-					}
-					EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l - 1]) / (temp + E->viscosity.T[l - 1]));
-				}
-			}
-		}
-		else if(E->viscosity.RHEOL == 2)
-		{
-			for(i = 1; i <= nel; i++)
-			{
-				l = E->mat[i];
-				tempa = E->viscosity.N0[l - 1];
-
-				for(kk = 1; kk <= ends; kk++)
-					TT[kk] = E->T[E->ien[i].node[kk]];
-
-				for(jj = 1; jj <= vpts; jj++)
-				{
-					temp = 1.0e-32;
-					zz = 0;
-					for(kk = 1; kk <= ends; kk++)
-					{
-						temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
-						zz += Xtmp[3][E->ien[i].node[kk]] * E->N.vpt[GNVINDEX(kk, jj)];
-					}
-					EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l - 1] + (1 - zz) * E->viscosity.Z[l - 1]) /(temp + E->viscosity.T[l - 1]) );
-				}
-			}
-		}
-		else if(E->viscosity.RHEOL == 3)
-		{
-		}
-
-		visits++;
-
+	  visits++;
+	  
 	}
 
 
@@ -522,13 +657,23 @@ int layers(struct All_variables *E, float x3)
 {
 	int llayers = 0;
 
-	if(x3 >= E->viscosity.zlith)
-		llayers = 1;
-	else if(x3 < E->viscosity.zlith && x3 >= E->viscosity.zlm)
-		llayers = 2;
-	else if(x3 < E->viscosity.zlm)
-		llayers = 3;
-
+	/* this is the old logic, llayer = 4 would never get assigned */
+	/* 	if(x3 >= E->viscosity.zlith) */
+	/* 		llayers = 1; */
+	/* 	else if((x3 < E->viscosity.zlith) && (x3 >= E->viscosity.zlm)) */
+	/* 		llayers = 2; */
+	/* 	else if(x3 < E->viscosity.zlm) */
+	/* 		llayers = 3; */
+	
+	if(x3 >= E->viscosity.zlith) /* above 410 */
+	  llayers = 1;
+	else if(x3 >= E->viscosity.z410) /* above 410 */
+	  llayers = 2;
+	else if(x3 >= E->viscosity.zlm) /* above 660 */
+	  llayers = 3;
+	else /* lower mantle */
+	  llayers = 4;
+  
 	return (llayers);
 }
 
@@ -571,4 +716,202 @@ float boundary_thickness(struct All_variables *E, float *H)
 	MPI_Bcast(&thickness, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
 	return (thickness);
+}
+
+/* 
+
+limit the viscosity by a plastic-type yielding with depth dependent
+yield stress (aka byerlee law)
+
+*/
+//#define DEBUG
+void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate)
+{
+  static int visited = 0;
+  float scale,stress_magnitude,depth,exponent1;
+  float *eedot;
+  float zzz,zz[9];
+  float tau,ettby,ettnew;
+  int m,l,z,jj,kk,i;
+  static float ndz_to_m;
+#ifdef DEBUG
+  FILE *out;
+#endif
+  const int vpts = vpoints[E->mesh.nsd];
+  const int nel = E->lmesh.nel;
+  const int ends = enodes[E->mesh.nsd];
+  
+  eedot = (float *) safe_malloc((2+nel)*sizeof(float));
+ 
+#ifdef DEBUG
+  out=fopen("tmp.visc","w");
+#endif
+  if (!visited)   {
+    /* 
+       scaling from nod-dim radius (0...1) to m 
+
+       (only used for dimensional version)
+
+    */
+    ndz_to_m = E->monitor.length_scale;
+
+    /*  */
+    if(E->parallel.me==0){	/* control output */
+      for(l=1;l <= E->viscosity.num_mat;l++) {
+	fprintf(stderr,"Plasticity: %d/%d: a=%g b=%g p=%g\n",
+		l,E->viscosity.num_mat,
+		E->viscosity.abyerlee[l-1],
+		E->viscosity.bbyerlee[l-1],
+		E->viscosity.lbyerlee[l-1]);
+      }
+      fprintf(stderr,"\tdim: %i trans: %i offset: %g\n",
+	      E->viscosity.plasticity_dimensional,
+	      E->viscosity.plasticity_trans,
+	      E->viscosity.plasticity_viscosity_offset);
+    }
+    /* 
+       get strain rates for all elements 
+    */
+    for(i=1;i<=nel;i++)
+      eedot[i] = 1.0; 
+
+  }else{
+    strain_rate_2_inv(E,eedot,1);
+  }
+
+  for(i=1;i <= nel;i++)   {	
+    /* 
+       loop through all elements 
+    */
+    l = E->mat[i] - 1;	/* material of element */
+    for(kk=1;kk <= ends;kk++){/* loop through integration points*/
+      /* depth in meters */
+      if(E->control.Rsphere)
+	zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
+      else
+	zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
+      if(E->viscosity.plasticity_dimensional)
+	zz[kk] *= ndz_to_m;	/* scale to meters */
+    }
+    for(jj=1;jj <= vpts;jj++) { 
+      /* loop over nodes in element */
+      zzz = 0.0;
+      for(kk=1;kk <= ends;kk++)   {
+	/* 
+	   depth  [m] 
+	*/
+	zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+      }
+      if(E->viscosity.plasticity_dimensional){
+	/* byerlee type */
+
+	/* 
+	   yield stress in [Pa] 
+	*/
+	tau=(E->viscosity.abyerlee[l] * zzz + 
+	     E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+	/* 
+	   scaled stress 
+	*/
+	tau /= E->monitor.tau_scale;
+      }else{
+	
+	tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
+	
+	tau = min(tau,  E->viscosity.lbyerlee[l]);
+      }
+      /* 
+
+      `byerlee viscosity' : tau = 2 eps eta, this is non-dim
+      plus some offset as in Stein et al. 
+
+      */
+      ettby = tau/(2.0 * (eedot[i]+1e-7)) + E->viscosity.plasticity_viscosity_offset;
+      /* 
+
+      decide on the plasticity transition
+
+
+      */
+      if(E->viscosity.plasticity_trans){
+	/* 
+	   eta = 1./(1./eta(k)+1./ettby)  
+	*/
+	
+	ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
+	//fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+      }else{
+	/* 
+	   min(\eta_p, \eta_visc )
+	*/
+	ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
+	//fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+      }
+#ifdef DEBUG
+      /* output format 
+	   
+      z[km] tau[MPa] eps[s^-1] eta_b[Pas] eta_T[Pas] eta_c[Pas]
+	
+      */
+      if(visited)
+	fprintf(out,"%10.2f %17.4e %17.4e %17.4e %17.4e %17.4e\n", 
+		zzz/1e3,tau*E->monitor.tau_scale/1e6, 
+		eedot[i]/E->monitor.time_scale, 
+		ettby*E->data.ref_viscosity, 
+		EEta[ (i-1)*vpts + jj ]*E->data.ref_viscosity, 
+		ettnew*E->data.ref_viscosity); 
+#endif
+      //      if(visited)
+      //	fprintf(stderr,"%11g %11g %11g %11g\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
+      EEta[ (i-1)*vpts + jj ] = ettnew;
+    }
+  }
+#ifdef DEBUG
+  fclose(out);
+#endif
+  visited = 1;
+  free ((void *)eedot);
+  return;  
+}
+/* 
+
+multiply with composition factor
+
+*/
+void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int propogate)
+{
+  float comp,comp_fac,CC[9],tcomp;
+  double vmean,cc_loc;
+  int m,l,z,jj,kk,i;
+  static int visited = 0;
+  static double logv[2];
+  const int vpts = vpoints[E->mesh.nsd];
+  const int nel = E->lmesh.nel;
+  const int ends = enodes[E->mesh.nsd];
+  if(!visited){
+    /* log of the material viscosities */
+    logv[0] = log(E->viscosity.pre_comp[0]);
+    logv[1] = log(E->viscosity.pre_comp[1]);
+  }
+  for(i = 1; i <= nel; i++)
+    {
+      /* determine composition of each of the nodes of the element */
+      for(kk = 1; kk <= ends; kk++){
+	CC[kk] = E->C[E->ien[i].node[kk]];
+	if(CC[kk] < 0)CC[kk]=0.0;
+	if(CC[kk] > 1)CC[kk]=1.0;
+      }
+      for(jj = 1; jj <= vpts; jj++)
+	{
+	  /* compute mean composition  */
+	  cc_loc = 0.0;
+	  for(kk = 1; kk <= ends; kk++){/* the vpt takes care of averaging */
+	    cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
+	  }
+	  /* geometric mean of viscosity */
+	  vmean = exp(cc_loc  * logv[1] + (1.0-cc_loc) * logv[0]);
+	  EEta[ (i-1)*vpts + jj ] *= vmean;
+	} /* end jj loop */
+    }
+  visited++;
 }

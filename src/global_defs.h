@@ -41,6 +41,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef USE_GGRD
+#include "hc.h"
+#endif
+
 #if defined(__osf__)
 void *Malloc1();
 #endif
@@ -434,6 +438,7 @@ struct SPHERE
 	struct SIEN *sien;
 
 	double dircos[4][4];
+  float *vtk_base;
 
 	int output_llmax;
 
@@ -643,9 +648,12 @@ struct MONITOR
 
 	int solution_cycles;
 
-	float time_scale;
+	float time_scale,time_scale_ma;
 	float length_scale;
-	float viscosity_scale;
+        float viscosity_scale;
+  float velo_scale;
+  float tau_scale;
+
 	float geoscale;
 	float tpgscale;
 	float grvscale;
@@ -738,8 +746,18 @@ struct CONTROL
 	int CONMAN;
 	int stokes;
 
+  int check_t_irange,check_c_irange;
+
 	float Ra_670, clapeyron670, transT670, width670;
 	float Ra_410, clapeyron410, transT410, width410;
+#ifdef USE_GGRD
+   struct ggrd_master ggrd;
+  int slab_slice;
+  float slab_theta_bound;
+
+
+#endif
+
 
 	int adi_heating, visc_heating;
 	int composition;
@@ -756,7 +774,7 @@ struct CONTROL
 	float plate_vel;
 	float plate_age;
 
-	float tole_comp;
+  //float tole_comp;
 
 	float sob_tolerance;
 
@@ -797,6 +815,7 @@ struct CONTROL
 	int total_iteration_cycles;
 	int total_v_solver_calls;
 
+  int gzdir;
 	int record_every;
 	int record_all_until;
 
@@ -944,6 +963,7 @@ struct All_variables
 	float *XX[MAX_LEVELS][4], *SXX[MAX_LEVELS][4], *MASS[MAX_LEVELS];
 
 	float *Fas670, *Fas410, *Fas670_b, *Fas410_b;
+
 
 	float *Vi, *EVi;
 	float *diffusivity, *expansivity;
