@@ -214,6 +214,7 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 	const int vpts = vpoints[E->mesh.nsd];
 
 
+	
 	if(E->viscosity.TDEPV)
 		visc_from_T(E, visc, evisc, propogate);
 	else
@@ -472,6 +473,7 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 		      tempa * exp(E->viscosity.E[l] * (E->viscosity.T[l] - temp) + (1 - zz) * E->viscosity.Z[l] );
 		  }
 	      }
+	    break;
 	  default:
 	    myerror(E,"RHEOL option undefined");
 	    break;
@@ -482,11 +484,11 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	}
 
 
-/*
-	fprintf(E->fp,"aaa\n");
-	for(i=1;i<=nel;i++)
-		fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]);
-*/
+
+	/* 	fprintf(E->fp,"aaa\n"); */
+	/* 	for(i=1;i<=nel;i++) */
+	/* 		fprintf(E->fp,"%d %d %g\n",i,E->mat[i],EEta[(i-1)*vpts+1]); */
+	
 
 	return;
 }

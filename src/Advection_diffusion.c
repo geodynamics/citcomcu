@@ -921,7 +921,13 @@ void process_heating(struct All_variables *E)
 
 	if(E->monitor.solution_cycles % 1000 == 0)
 	{
+#ifdef USE_GZDIR
+	  if(E->control.gzdir)
+		sprintf(filename, "%s/heating.%d", E->control.data_file2, E->parallel.me);
+	  else
+#endif
 		sprintf(filename, "%s.heating.%d", E->control.data_file2, E->parallel.me);
+	  
 		fp = fopen(filename, "w");
 		fprintf(fp, "QQ %g %g %g\n", E->control.Atemp, E->data.disptn_number, E->rad_heat.total);
 		for(e = 1; e <= E->lmesh.nel; e++)

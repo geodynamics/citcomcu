@@ -20,7 +20,7 @@
 COMPRESS=/bin/gzip
 LIB_PATH=
 #LIB_LIST= -lmpi
-LIB_LIST=
+LIB_LIST= 
 LIB= $(LIB_PATH) $(LIB_LIST) -lm
 
 
@@ -161,6 +161,8 @@ CFILES= Advection_diffusion.c\
 	Sphere_harmonics.c\
 	Topo_gravity.c\
 	Viscosity_structures.c
+
+
 
 HEADER = element_definitions.h\
 	 global_defs.h\
