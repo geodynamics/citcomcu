@@ -782,6 +782,7 @@ void read_initial_settings(struct All_variables *E)
 	input_boolean("see_convergence", &(E->control.print_convergence), "off", m);
 	input_boolean("COMPRESS", &(E->control.COMPRESS), "on", m);
 	input_float("sobtol", &(E->control.sob_tolerance), "0.0001", m);
+	input_float("T_interior_max", &(E->monitor.T_interior_max), "1.5", m);
 
 	input_int("obs_maxlongk", &(E->slice.maxlong), "100,1", m);
 	input_int("obs_minlongk", &(E->slice.minlong), "1,1", m);

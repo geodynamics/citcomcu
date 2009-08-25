@@ -653,7 +653,7 @@ struct MONITOR
         float viscosity_scale;
   float velo_scale;
   float tau_scale;
-
+  float T_interior_max;
 	float geoscale;
 	float tpgscale;
 	float grvscale;
@@ -745,6 +745,7 @@ struct CONTROL
 	int AVS;
 	int CONMAN;
 	int stokes;
+
 
   int check_t_irange,check_c_irange;
 

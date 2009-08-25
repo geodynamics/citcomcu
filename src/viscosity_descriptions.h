@@ -117,6 +117,7 @@ struct VISC_OPT
 				   0: min viscosity approach
 
 				*/
+  int psrw;
   int plasticity_dimensional;	/* 1: use Byerlee type setting with
 				   dimensional values
 				   0: use non-dimensional values for yield stress

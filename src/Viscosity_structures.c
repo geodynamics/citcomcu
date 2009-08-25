@@ -132,6 +132,8 @@ void viscosity_parameters(struct All_variables *E)
 	
 	/* 1: transition 0: min/max transition */
 	input_boolean("plasticity_trans",&(E->viscosity.plasticity_trans),"on",m);
+	/* SRW */
+	input_boolean("psrw",&(E->viscosity.psrw),"off",m);
 	/* 
 	   
 	*/
@@ -170,27 +172,27 @@ void get_viscosity_option(struct All_variables *E)
 	/* general, essential default */
   int m = E->parallel.me ;
 
-	input_string("Viscosity", E->viscosity.STRUCTURE, NULL,m);	/* Which form of viscosity */
-
-	input_boolean("VISC_EQUIVDD", &(E->viscosity.EQUIVDD), "off",m);	/* Whether to average it */
-	input_int("equivdd_opt", &(E->viscosity.equivddopt), "1",m);
-	input_int("equivdd_x", &(E->viscosity.proflocx), "1",m);
-	input_int("equivdd_y", &(E->viscosity.proflocy), "1",m);
-
-	input_int("update_every_steps", &(E->control.KERNEL), "1",m);
-
-	input_boolean("VISC_SMOOTH", &(E->viscosity.SMOOTH), "off",m);
-	input_int("visc_smooth_cycles", &(E->viscosity.smooth_cycles), "0",m);
-
-	if(strcmp(E->viscosity.STRUCTURE, "system") == 0)	/* Interpret */
-	{
-		if(E->parallel.me == 0)
-			fprintf(E->fp, "Viscosity derived from system state\n");
-		E->viscosity.FROM_SYSTEM = 1;
-		viscosity_for_system(E);
-	}
-
-	return;
+  input_string("Viscosity", E->viscosity.STRUCTURE, NULL,m);	/* Which form of viscosity */
+  
+  input_boolean("VISC_EQUIVDD", &(E->viscosity.EQUIVDD), "off",m);	/* Whether to average it */
+  input_int("equivdd_opt", &(E->viscosity.equivddopt), "1",m);
+  input_int("equivdd_x", &(E->viscosity.proflocx), "1",m);
+  input_int("equivdd_y", &(E->viscosity.proflocy), "1",m);
+  
+  input_int("update_every_steps", &(E->control.KERNEL), "1",m);
+  
+  input_boolean("VISC_SMOOTH", &(E->viscosity.SMOOTH), "off",m);
+  input_int("visc_smooth_cycles", &(E->viscosity.smooth_cycles), "0",m);
+  
+  if(strcmp(E->viscosity.STRUCTURE, "system") == 0)	/* Interpret */
+    {
+      if(E->parallel.me == 0)
+	fprintf(E->fp, "Viscosity derived from system state\n");
+      E->viscosity.FROM_SYSTEM = 1;
+      viscosity_for_system(E);
+    }
+  
+  return;
 
 }
 
@@ -474,6 +476,29 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 		  }
 	      }
 	    break;
+	  case 10:
+	    /* 
+	       eta = eta0 * exp(E/(T+T0) + Z) for testing purposes
+	    */
+	    for(i = 1; i <= nel; i++)
+	      {
+		l = E->mat[i] - 1 ;
+		tempa = E->viscosity.N0[l];
+		
+		for(kk = 1; kk <= ends; kk++)
+		  TT[kk] = E->T[E->ien[i].node[kk]];
+		
+		for(jj = 1; jj <= vpts; jj++)
+		  {
+		    temp = 1.0e-32;
+		    for(kk = 1; kk <= ends; kk++)
+		      {
+			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+		      }
+		    EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l]) / (temp + E->viscosity.T[l]) + E->viscosity.Z[l]) ;
+		  }
+	      }
+	    break;
 	  default:
 	    myerror(E,"RHEOL option undefined");
 	    break;
@@ -725,15 +750,31 @@ float boundary_thickness(struct All_variables *E, float *H)
 limit the viscosity by a plastic-type yielding with depth dependent
 yield stress (aka byerlee law)
 
+
+
+psrw = true
+
+		
+a strain-rate weakening rheology applies
+based on a steady state stress-strain
+relationship following, e.g., Tackley 1998
+
+\eta_ett = (\sigma_y^2 \eta_0)/(\sigma_y^2 + \eta_0^2 (2 \eps_II^2))
+
+where sigma_y is defined as above
+
+where the 2\eps_II arises because our \eps_II has the 1/2 factor in it
+
+
 */
 //#define DEBUG
 void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
   static int visited = 0;
-  float scale,stress_magnitude,depth,exponent1;
+  float scale,stress_magnitude,depth,exponent1,eta_old,eta_old2,eta_new;
   float *eedot;
   float zzz,zz[9];
-  float tau,ettby,ettnew;
+  float tau,tau2,ettby,ettnew;
   int m,l,z,jj,kk,i;
   static float ndz_to_m;
 #ifdef DEBUG
@@ -770,6 +811,7 @@ void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate
 	      E->viscosity.plasticity_dimensional,
 	      E->viscosity.plasticity_trans,
 	      E->viscosity.plasticity_viscosity_offset);
+      fprintf(stderr,"\tpsrw: %i\n",E->viscosity.psrw);
     }
     /* 
        get strain rates for all elements 
@@ -778,95 +820,137 @@ void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate
       eedot[i] = 1.0; 
 
   }else{
-    strain_rate_2_inv(E,eedot,1);
+    if(E->viscosity.psrw)
+      strain_rate_2_inv(E,eedot,0);
+    else
+      strain_rate_2_inv(E,eedot,1);
   }
+  if(E->viscosity.psrw){
+    /* strain-rate weakening */
+    for(i=1;i <= nel;i++)   {	
+      l = E->mat[i] - 1;	/* material of element */
+      for(kk=1;kk <= ends;kk++){/* loop through integration points*/
+	if(E->control.Rsphere)
+	  zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
+	else
+	  zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
+	if(E->viscosity.plasticity_dimensional)
+	  zz[kk] *= ndz_to_m;	/* scale to meters */
+      }
+      for(jj=1;jj <= vpts;jj++) { 
+	zzz = 0.0;
+	for(kk=1;kk <= ends;kk++)   {
+	  zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	}
+	if(E->viscosity.plasticity_dimensional){
+	  tau = (E->viscosity.abyerlee[l] * zzz + 
+		 E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+	  tau /= E->monitor.tau_scale;
+	}else{
+	  tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
+	  tau = min(tau,  E->viscosity.lbyerlee[l]);
+	}
+	tau2 = tau * tau;
 
-  for(i=1;i <= nel;i++)   {	
-    /* 
-       loop through all elements 
-    */
-    l = E->mat[i] - 1;	/* material of element */
-    for(kk=1;kk <= ends;kk++){/* loop through integration points*/
-      /* depth in meters */
-      if(E->control.Rsphere)
-	zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
-      else
-	zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
-      if(E->viscosity.plasticity_dimensional)
-	zz[kk] *= ndz_to_m;	/* scale to meters */
+	if(tau < 1e10){
+	  eta_old = EEta[ (i-1)*vpts + jj ] ;
+	  eta_old2 = eta_old * eta_old;
+	  eta_new = (tau2 * eta_old)/(tau2 + 2.0 * eta_old2 * eedot[i]);
+	  EEta[ (i-1)*vpts + jj ] = ettnew;
+	}
+      }
     }
-    for(jj=1;jj <= vpts;jj++) { 
-      /* loop over nodes in element */
-      zzz = 0.0;
-      for(kk=1;kk <= ends;kk++)   {
-	/* 
-	   depth  [m] 
-	*/
-	zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
-      }
-      if(E->viscosity.plasticity_dimensional){
-	/* byerlee type */
+  }else{
 
-	/* 
-	   yield stress in [Pa] 
-	*/
-	tau=(E->viscosity.abyerlee[l] * zzz + 
-	     E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
-	/* 
-	   scaled stress 
-	*/
-	tau /= E->monitor.tau_scale;
-      }else{
-	
-	tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
-	
-	tau = min(tau,  E->viscosity.lbyerlee[l]);
-      }
+    /* regular plasticity */
+
+    
+    for(i=1;i <= nel;i++)   {	
       /* 
-
-      `byerlee viscosity' : tau = 2 eps eta, this is non-dim
-      plus some offset as in Stein et al. 
-
+	 loop through all elements 
       */
-      ettby = tau/(2.0 * (eedot[i]+1e-7)) + E->viscosity.plasticity_viscosity_offset;
-      /* 
-
-      decide on the plasticity transition
-
-
-      */
-      if(E->viscosity.plasticity_trans){
-	/* 
-	   eta = 1./(1./eta(k)+1./ettby)  
-	*/
-	
-	ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
-	//fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
-      }else{
-	/* 
-	   min(\eta_p, \eta_visc )
-	*/
-	ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
-	//fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+      l = E->mat[i] - 1;	/* material of element */
+      for(kk=1;kk <= ends;kk++){/* loop through integration points*/
+	/* depth in meters */
+	if(E->control.Rsphere)
+	  zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
+	else
+	  zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
+	if(E->viscosity.plasticity_dimensional)
+	  zz[kk] *= ndz_to_m;	/* scale to meters */
       }
-#ifdef DEBUG
-      /* output format 
+      for(jj=1;jj <= vpts;jj++) { 
+	/* loop over nodes in element */
+	zzz = 0.0;
+	for(kk=1;kk <= ends;kk++)   {
+	  /* 
+	     depth  [m] 
+	  */
+	  zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	}
+	if(E->viscosity.plasticity_dimensional){
+	  /* byerlee type */
+	  
+	  /* 
+	     yield stress in [Pa] 
+	  */
+	  tau=(E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+	  /* 
+	     scaled stress 
+	  */
+	  tau /= E->monitor.tau_scale;
+	}else{
+	  
+	  tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
+	  
+	  tau = min(tau,  E->viscosity.lbyerlee[l]);
+	}
+	/* 
 	   
-      z[km] tau[MPa] eps[s^-1] eta_b[Pas] eta_T[Pas] eta_c[Pas]
+	`byerlee viscosity' : tau = 2 eps eta, this is non-dim
+	plus some offset as in Stein et al. 
 	
-      */
-      if(visited)
-	fprintf(out,"%10.2f %17.4e %17.4e %17.4e %17.4e %17.4e\n", 
-		zzz/1e3,tau*E->monitor.tau_scale/1e6, 
-		eedot[i]/E->monitor.time_scale, 
-		ettby*E->data.ref_viscosity, 
-		EEta[ (i-1)*vpts + jj ]*E->data.ref_viscosity, 
-		ettnew*E->data.ref_viscosity); 
+	*/
+	ettby = tau/(2.0 * (eedot[i]+1e-7)) + E->viscosity.plasticity_viscosity_offset;
+	/* 
+	   
+	decide on the plasticity transition
+	
+	
+	*/
+	if(E->viscosity.plasticity_trans){
+	  /* 
+	     eta = 1./(1./eta(k)+1./ettby)  
+	  */
+	  
+	  ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
+	  //fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+	}else{
+	  /* 
+	     min(\eta_p, \eta_visc )
+	  */
+	  ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
+	  //fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+	}
+#ifdef DEBUG
+	/* output format 
+	   
+	z[km] tau[MPa] eps[s^-1] eta_b[Pas] eta_T[Pas] eta_c[Pas]
+	
+	*/
+	if(visited)
+	  fprintf(out,"%10.2f %17.4e %17.4e %17.4e %17.4e %17.4e\n", 
+		  zzz/1e3,tau*E->monitor.tau_scale/1e6, 
+		  eedot[i]/E->monitor.time_scale, 
+		  ettby*E->data.ref_viscosity, 
+		  EEta[ (i-1)*vpts + jj ]*E->data.ref_viscosity, 
+		  ettnew*E->data.ref_viscosity); 
 #endif
-      //      if(visited)
-      //	fprintf(stderr,"%11g %11g %11g %11g\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
-      EEta[ (i-1)*vpts + jj ] = ettnew;
-    }
+	//      if(visited)
+	//	fprintf(stderr,"%11g %11g %11g %11g\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
+	EEta[ (i-1)*vpts + jj ] = ettnew;
+      }
+    } /* end regular plasticity */
   }
 #ifdef DEBUG
   fclose(out);

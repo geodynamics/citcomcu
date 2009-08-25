@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 		process_new_velocity(&E, E.monitor.solution_cycles);
 
 
-		if(E.monitor.T_interior > 1.5)
+		if(E.monitor.T_interior > E.monitor.T_interior_max)
 		{
 			fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, E.advection.last_sub_iterations);
 			parallel_process_termination();
