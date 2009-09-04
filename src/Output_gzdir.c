@@ -555,3 +555,81 @@ gzFile *safe_gzopen(char *name,char *mode)
   }
   return ((gzFile *)tmp);
 }	
+
+/* gzdir version, will not limit temperatures to [0;1] */
+void process_restart_tc_gzdir(struct All_variables *E)
+{
+
+  int node, i, j, k, p;
+  FILE *fp;
+  float temp1, temp2, *temp;
+  char input_s[200], input_file[255];
+  gzFile gzin;
+
+  temp = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
+  
+  if(E->control.restart == 1 || E->control.restart == 3)
+    {
+
+      sprintf(input_file,"%s/%d/t.%d.%d.gz",
+	      E->convection.old_T_file,  
+	      E->monitor.solution_cycles,E->parallel.me, E->monitor.solution_cycles);
+      gzin = safe_gzopen(input_file, "r");
+      if(gzgets (gzin,input_s, 200) == Z_NULL){
+	fprintf(stderr,"read error\n");
+	parallel_process_termination();
+      }
+      sscanf(input_s, "%i %i %g", &i, &j, &E->monitor.elapsed_time);
+
+      for(node = 1; node <= E->lmesh.nno; node++)
+	{
+	  gzgets (gzin,input_s, 200);
+	  sscanf(input_s, "%g", &E->T[node]);
+	  E->C[node] = 0;
+	  E->node[node] = E->node[node] | (INTX | INTZ | INTY);
+	}
+      gzclose(gzin);
+      if(E->parallel.me == 0)
+	fprintf(stderr,"restarting from %s timestep %i time %g\n",
+		E->convection.old_T_file,E->monitor.solution_cycles,
+		E->monitor.elapsed_time);
+       
+    }
+  else 
+    {
+      fprintf(stderr,"error: restart mode -1 or 2 not implemented for gzdir/vtkout\n");
+      parallel_process_termination();
+    }
+  
+  // for composition
+  
+  if(E->control.composition && (E->control.restart == 1 || E->control.restart == 2))
+    {
+      convection_initial_markers(E,0);
+    }
+  
+  else if(E->control.composition && (E->control.restart == 3))
+    { 
+      sprintf(input_file,"%s/%d/c.%d.%d.gz",
+	      E->convection.old_T_file, E->monitor.solution_cycles,
+	      E->parallel.me, E->monitor.solution_cycles);
+      gzin = safe_gzopen(input_file, "r");
+      gzgets (gzin,input_s, 200);
+      sscanf(input_s, "%d %d ", &i, &j);
+      
+      for(node = 1; node <= E->lmesh.nno; node++)
+	{  
+	  gzgets (gzin,input_s, 200);
+   	  sscanf(input_s, "%lf", &E->C[node]);
+	}
+      gzclose(gzin);
+      
+      convection_initial_markers1(E);
+    }
+  
+  E->advection.timesteps = E->monitor.solution_cycles;
+  
+  return;
+}
+
+

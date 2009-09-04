@@ -208,8 +208,11 @@ void convection_boundary_conditions(struct All_variables *E)
 /* ===============================
    Initialization of fields .....
 
+   NOTE: 
+
    there's a different routine for GGRD handling in Ggrd_handling
-   which has differnet logic for marker init etc. 
+   which has differnet logic for marker init etc. this gets called
+   when USE_GGRD is compiled in
 
 
    =============================== */
@@ -246,7 +249,8 @@ void convection_initial_temperature(struct All_variables *E)
 						x1 = E->X[1][node];
 						z1 = E->X[3][node];
 						y1 = E->X[2][node];
-						E->T[node] = 1 - z1 + E->convection.perturb_mag[p] * sin(M_PI * (1.0 - z1)) * cos(E->convection.perturb_k[p] * M_PI * x1) * ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * y1));
+						E->T[node] = 1 - z1 + 
+						  E->convection.perturb_mag[p] * sin(M_PI * (1.0 - z1)) * cos(E->convection.perturb_k[p] * M_PI * x1) * ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * y1));
 
 //             E->T[node] = 1-z1 + E->convection.perturb_mag[p] *
 //                           sin(M_PI*(1.0-z1))*
@@ -289,7 +293,7 @@ void convection_initial_temperature(struct All_variables *E)
               0.01*modified_plgndr_a(ll,mm,x1);
  */
 
-						E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * modified_plgndr_a(ll, mm, x1) * cos(mm * y1) * sin(M_PI * (z1 - E->sphere.ri) / (E->sphere.ro - E->sphere.ri));
+						//E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * modified_plgndr_a(ll, mm, x1) * cos(mm * y1) * sin(M_PI * (z1 - E->sphere.ri) / (E->sphere.ro - E->sphere.ri));
 
 						E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * sin(M_PI * (E->sphere.ro - z1) / (E->sphere.ro - E->sphere.ri)) * cos(E->convection.perturb_k[p] * M_PI * (x1 - E->XG1[1]) / (E->XG2[1] - E->XG1[1])) * ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * (y1 - E->XG1[2]) / (E->XG2[2] - E->XG1[2])));
 
@@ -309,8 +313,12 @@ void convection_initial_temperature(struct All_variables *E)
 
 	else if(E->control.restart)
 	{
-
-		process_restart_tc(E);
+#ifdef USE_GZDIR
+	  if(E->control.gzdir)
+	    process_restart_tc_gzdir(E);
+	  else
+#endif
+	    process_restart_tc(E);
 
 	}
 

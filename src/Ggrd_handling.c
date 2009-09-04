@@ -297,8 +297,12 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		  z1 = E->X[3][node];
 		  y1 = E->X[2][node];
 		  /* linear gradient */
-		  tz = z1* (E->control.TBCtopval-E->control.TBCbotval) + 
-		    E->control.TBCbotval;
+		  if(E->mesh.bottbc){
+		    tz = z1* (E->control.TBCtopval - E->control.TBCbotval) + 
+		      E->control.TBCbotval;
+		  }else{
+		    tz = z1* (E->control.TBCtopval - 1) + 1;
+		  }
 		  E->T[node] += tz;
 
 		  if(E->convection.random_t_init){
@@ -306,7 +310,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		    E->T[node] += (-0.5 + drand48()) * E->convection.perturb_mag[0];
 		  }else{
 		    
-		    for(p=0;p<E->convection.number_of_perturbations;p++){ /* perturbations */
+		    for(p=0;p < E->convection.number_of_perturbations;p++){ /* perturbations */
 		      
 		      E->T[node] += E->convection.perturb_mag[p] * 
 			sin(M_PI * (1.0 - z1)) * cos(E->convection.perturb_k[p] * M_PI * x1) * 
@@ -466,8 +470,13 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   else if(E->control.restart)
     {
+#ifdef USE_GZDIR
       /* restart part */
-      process_restart_tc(E);
+      if(E->control.gzdir)
+	process_restart_tc_gzdir(E);
+      else
+#endif
+	process_restart_tc(E);
 
     }
 
@@ -482,3 +491,4 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   return;
 } 
+
