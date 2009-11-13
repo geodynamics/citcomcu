@@ -1,0 +1,355 @@
+#! /bin/bash
+#---------------------------------------------------------------------------
+# Copyright (C) 2008-2009 California Institute of Technology
+# Copyright (C) 2008 The University of Texas, Austin
+#
+# Authors: Lucas C. Wilcox, Georg Stadler, Carsten Burstedde, Eh Tan
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#---------------------------------------------------------------------------
+
+
+#
+# Write vtk files for the specified CitcomCU data.
+#
+# Note the name of the vtk files depends on the prefix passed in.
+#   <prefix>.<rank>.<step>.vtr
+#   <prefix>.<step>.pvtr
+#   <prefix>.pvd
+#
+# Usage: citcomcu_write_vtk [-f] <prefix> <processors> <step1> [<step2> ...]
+#
+# Arguments:
+#   -f           -- force to rebuild the extent files
+#   prefix       -- the prefix given to all of CitcomCU datafiles
+#   processors   -- the total number of processors
+#   step1, step2 -- the timesteps
+#
+
+
+function get_piece_coord {
+##  sort individual coordinate for one processor
+##
+##  Arguments <prefix> <rank>
+##  reads coord file of a given processor
+##  produces files x.<rank>.txt, y.<rank>.txt, z.<rank>.txt
+
+    PREFIX="$1"
+    PROC="$2"
+
+    ## skip header line
+    tail -n +2 $PREFIX.coord.$PROC > coord.txt
+
+    ## get sorted x coordinate of this processor
+    cut -d' ' -f1 coord.txt    \
+        | sort -s -g           \
+        | uniq                 \
+        > x.$PROC.txt
+
+    ## get sorted y coordinate of this processor
+    cut -d' ' -f2 coord.txt    \
+        | sort -s -g           \
+        | uniq                 \
+        > y.$PROC.txt
+
+    ## get sorted z coordinate of this processor
+    cut -d' ' -f3 coord.txt    \
+        | sort -s -g           \
+        | uniq                 \
+        > z.$PROC.txt
+
+    rm -f coord.txt
+}
+
+
+function get_whole_extent {
+##  Computes the global extent string
+##
+##  Arguments <prefix>
+##  requires x.<rank>.txt from all processors, also y/z files
+##  produces files globalx.txt, globaly.txt, globalz.txt
+##  prints the whole_extent string to stdout
+
+    PREFIX="$1"
+
+    ## get sorted x coordinate of all processors
+    sort -s -g x.*.txt | uniq > globalx.txt
+    XCOUNT=`cat globalx.txt | wc -l`
+    let "XMAX = XCOUNT - 1"
+
+    sort -s -g y.*.txt | uniq > globaly.txt
+    YCOUNT=`cat globaly.txt | wc -l`
+    let "YMAX = YCOUNT - 1"
+
+    sort -s -g z.*.txt | uniq > globalz.txt
+    ZCOUNT=`cat globalz.txt | wc -l`
+    let "ZMAX = ZCOUNT - 1"
+
+    EXTENT="0 $ZMAX 0 $XMAX 0 $YMAX"
+
+    echo "$EXTENT"
+}
+
+
+function find_first_match {
+## takes two sorted files as arguments where the second is a subset of
+## the first
+
+    TOMATCH=`head -n 1 "$2"`
+    COUNTER=0
+    for BIGLIST in `cat "$1"` ; do
+        if [ $BIGLIST = $TOMATCH ] ; then
+            #echo 1>&2 "Found first match at $COUNTER"
+            return $COUNTER
+        fi
+        let "COUNTER = COUNTER + 1"
+    done
+    echo 1>&2 "No match found between files $1 $2"
+    exit 1
+}
+
+
+function get_piece_extent {
+##  Computes the extent string for one processor
+##
+##  Arguments <prefix> <rank>
+##  reads files globalx.txt, globaly.txt, globalz.txt,
+##              x.<rank>.txt, y.<rank>.txt, z.<rank>.txt
+##  prints the piece_extent string to stdout
+
+    PREFIX="$1"
+    PROC="$2"
+
+    find_first_match globalx.txt x.$PROC.txt
+    FIRSTX=$?
+    XCOUNT=`cat x.$PROC.txt | wc -l`
+    let "XMAX = FIRSTX + XCOUNT - 1"
+
+    find_first_match globaly.txt y.$PROC.txt
+    FIRSTY=$?
+    YCOUNT=`cat y.$PROC.txt | wc -l`
+    let "YMAX = FIRSTY + YCOUNT - 1"
+
+    find_first_match globalz.txt z.$PROC.txt
+    FIRSTZ=$?
+    ZCOUNT=`cat z.$PROC.txt | wc -l`
+    let "ZMAX = FIRSTZ + ZCOUNT - 1"
+
+    EXTENT="$FIRSTZ $ZMAX $FIRSTX $XMAX $FIRSTY $YMAX"
+
+    echo "$EXTENT"
+}
+
+
+function write_extent {
+##  Compute and write the extent string for every processor and for the
+##  whole domain.
+##
+##  Arguments <prefix> <nprocessors>
+##  reads files <prefix>.coord.*
+##  write files extent.whole.txt, extent.*.txt, [xyz].*.txt, global[xyz].txt
+
+    PREFIX="$1"
+    PROCS="$2"
+    let "PROCSM = PROCS - 1"
+
+    ## clean up files from previous run
+    rm -f [xyz].*.txt
+
+    ## figure out the rectilinear coordinate of each processor
+    for p in `seq 0 "$PROCSM"`;
+    do
+	get_piece_coord $PREFIX $p
+    done
+
+    ## figure out the global extent
+    get_whole_extent $PREFIX > extent.whole.txt
+    #(echo -n "Whole extent "; cat extent.whole.txt) 1>&2
+
+    ## figure out the extent of each processor
+    for p in `seq 0 "$PROCSM"`;
+    do
+	get_piece_extent $PREFIX $p > extent.$p.txt
+        #(echo -n "Piece $p extent "; cat extent.$p.txt) 1>&2
+    done
+}
+
+
+function write_vtr {
+## Write to STDOUT a vtk vtr file for the specified citcomcu data.
+## This is for one processor and one timestep.
+##
+## Arguments: <prefix> <rank> <step>
+
+    PREFIX="$1"
+    PROC="$2"
+    STEP="$3"
+
+    TEMP=$PREFIX.temp.$PROC.$STEP
+    VELO=$PREFIX.velo.$PROC.$STEP
+
+    PIECE_EXTENT=`cat extent.$PROC.txt`
+
+    ## New Style of vtk output
+
+    echo "<?xml version=\"1.0\"?>"
+    echo "<VTKFile type=\"RectilinearGrid\" version=\"0.1\">"
+    echo "  <RectilinearGrid WholeExtent=\"$PIECE_EXTENT\">"
+    echo "    <Piece Extent=\"$PIECE_EXTENT\">"
+    echo "      <PointData Scalars=\"temperature\" Vectors=\"velocity\">"
+    echo "        <DataArray type=\"Float32\" Name=\"temperature\" format=\"ascii\">"
+    ## skip header, extract temperature
+    awk '{if (NR != 1) print $1}' $TEMP
+    echo "        </DataArray>"
+    echo "        <DataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"3\" format=\"ascii\">"
+    ## skip header, reorder velocity components to z-x-y
+    awk '{if (NR != 1) print $3, $1, $2}' $VELO
+    echo "        </DataArray>"
+    echo "      </PointData>"
+    echo "      <CellData>"
+    echo "      </CellData>"
+    echo "      <Coordinates>"
+    echo "        <DataArray type=\"Float32\">"
+    cat z.$PROC.txt
+    echo "        </DataArray>"
+    echo "        <DataArray type=\"Float32\">"
+    cat x.$PROC.txt
+    echo "        </DataArray>"
+    echo "        <DataArray type=\"Float32\">"
+    cat y.$PROC.txt
+    echo "        </DataArray>"
+    echo "      </Coordinates>"
+    echo "    </Piece>"
+    echo "  </RectilinearGrid>"
+    echo "</VTKFile>"
+}
+
+
+function write_pvtr {
+## Write to STDOUT a vtk pvtr file that is referencing parallel
+## rectilinear pieces
+## Arguments: <vtrfiles>...
+
+    WHOLE_EXTENT=`cat extent.whole.txt`
+
+    echo "<?xml version=\"1.0\"?>"
+    echo "<VTKFile type=\"PRectilinearGrid\" version=\"0.1\">"
+    echo "  <PRectilinearGrid WholeExtent=\"$WHOLE_EXTENT\" GhostLevel=\"0\">"
+    echo "    <PPointData Scalars=\"temperature\" Vectors=\"velocity\">"
+    echo "      <PDataArray type=\"Float32\" Name=\"temperature\"/>"
+    echo "      <PDataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"3\"/>"
+    echo "    </PPointData>"
+    echo "    <PCoordinates>"
+    echo "      <PDataArray type=\"Float32\"/>"
+    echo "      <PDataArray type=\"Float32\"/>"
+    echo "      <PDataArray type=\"Float32\"/>"
+    echo "    </PCoordinates>"
+
+    ## loop over all arguments
+    for NAME in "$@" ; do
+	if [ ! -r "$NAME" ] ; then
+	    echo 1>&2 "File $NAME is not readable"
+	    exit 1
+	fi
+	BASENAME=`basename $NAME`
+	
+	## extract Extent from vtr file
+	PIECE_EXTENT=`cat "$NAME" | perl -e '
+            while (<>) {
+		if ($_ =~ /\s+Extent[\D]*(\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+)/) { print "$1\n"; }
+	    }'`
+	echo "    <Piece Extent=\"$PIECE_EXTENT\" Source=\"$BASENAME\"/>"
+    done
+
+    echo "  </PRectilinearGrid>"
+    echo "</VTKFile>"
+}
+
+
+function write_pvd {
+## Write to STDOUT a VTK pvd file that is referencing the individual
+## timestep files
+## Arguments: <vtkfile>...
+
+    echo "<?xml version=\"1.0\"?>"
+    echo "<VTKFile type=\"Collection\" version=\"0.1\">"
+    echo "  <Collection>"
+
+    TIMESTEP="1"
+    for FILE in "$@" ; do
+	BASENAME=`basename $FILE`
+	echo "    <DataSet timestep=\"$TIMESTEP\" file=\"$BASENAME\"/>"
+	let "TIMESTEP = TIMESTEP + 1"
+    done
+
+    echo "  </Collection>"
+    echo "</VTKFile>"
+}
+
+##
+##
+##
+
+
+if [ -z "$3" ] ; then
+    echo 1>&2 "Usage: citcomcu_write_vtk [-f] <prefix> <processors> <step1> [<step2> ...]"
+    echo 1>&2 "Write vtk files for the specified CitcomCU data."
+    echo 1>&2 ""
+    echo 1>&2 "Arguments:"
+    echo 1>&2 "  -f           -- force to rebuild the extent files"
+    echo 1>&2 "  prefix       -- the prefix given to all of CitcomCU datafiles"
+    echo 1>&2 "  processors   -- the total number of processors"
+    echo 1>&2 "  step1, step2 -- the timesteps"
+    exit 1
+fi
+
+unset FORCE
+if [ "-f" == "$1" ] ; then
+    FORCE=1
+    shift
+fi
+
+PREFIX="$1"
+PROCS="$2"
+let "PROCSM = PROCS - 1"
+
+if [[ -z "$FORCE" && -e "extent.$PROCSM.txt" ]] ; then
+    # skip building extent
+    FORCE=1
+else
+    # figure out the extent of each processor
+    write_extent $PREFIX $PROCS
+fi
+
+# process individual time steps
+shift
+shift
+STEPS="$*"
+TIMESTEPS=
+for i in $STEPS;
+do
+    echo 1>&2 "Processing time step $i"
+
+    # loop over individual processors
+    SERIALS=
+    for p in `seq 0 "$PROCSM"`;
+    do
+	echo 1>&2 "Processing data for proc $p"
+	write_vtr $PREFIX $p $i > $PREFIX.$p.$i.vtr
+	SERIALS="$SERIALS $PREFIX.$p.$i.vtr"
+    done
+
+    write_pvtr $SERIALS > $PREFIX.$i.pvtr
+    TIMESTEPS="$TIMESTEPS $PREFIX.$i.pvtr"
+done
+
+# aggregate all time steps into the meta file
+write_pvd $TIMESTEPS > $PREFIX.pvd
