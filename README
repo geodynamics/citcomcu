@@ -32,7 +32,7 @@ also computes isochemical thermal convection for regional spherical geometry
 
 2.1. Compiling the code
 
-In the src/ directory of this distribution, you will find 29 C source
+In the src/ directory of this distribution, you will find 31 C source
 files (*.c), 7 header files (*.h), a makefile (Makefile), and a sample
 input file (input1). 
 
@@ -267,7 +267,20 @@ be aware of are "accuracy" and "tole_compressibility", and they determine the
 accuracy of the solutions.
 
 
-                  4. Acknowledgement and citation issues
+                      4. Utilities
+
+In the util/ direction of this distribution, there is a shell script to 
+convert the output file to paralllel VTK files, which can be visualized
+by several visualization packages, such as Paraview and LLNL VisIt. To
+invoke the script, type
+
+	$ citcomcu_write_vtk
+
+to see the usage and arguments. The script can only convert files stored
+on local file system.
+
+
+                      5. Acknowledgement and citation issues
 
 The developers of this code have spent considerable amount of time in developing
 and testing the code. We would appreciate if you can reference the following 
@@ -281,7 +294,7 @@ Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
      from 3-D dynamic flow models, Earth Planet. Sci. Lett., 138, 15-28, 1996.
 
 
-                 5. References
+                      6. References
 
 Billen, M.I., Gurnis, M., and Simons, M., Multiscale dynamic models of the
      Tonga-Kermadec subduction zone, Geophys. J. Int., 153, 359-388, 2003.
