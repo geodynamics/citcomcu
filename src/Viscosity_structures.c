@@ -499,6 +499,29 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 		  }
 	      }
 	    break;
+	  case 11:
+            /* 
+               eta = eta0 * exp(E/(T+T0) - E/(0.5+T0))
+            */
+            for(i = 1; i <= nel; i++)
+              {
+                l = E->mat[i] - 1 ;
+                tempa = E->viscosity.N0[l];
+
+                for(kk = 1; kk <= ends; kk++)
+                  TT[kk] = E->T[E->ien[i].node[kk]];
+
+                for(jj = 1; jj <= vpts; jj++)
+                  {
+                    temp = 1.0e-32;
+                    for(kk = 1; kk <= ends; kk++)
+                      {
+                        temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
+                      }
+                    EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l]) / (temp + E->viscosity.T[l]) - (E->viscosity.E[l]) / (0.5 + E->viscosity.T[l]));
+                  }
+              }
+            break;
 	  default:
 	    myerror(E,"RHEOL option undefined");
 	    break;
