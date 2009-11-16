@@ -368,6 +368,7 @@ void process_restart_tc(struct All_variables *E)
 			sscanf(input_s, "%g", &E->T[node]);
 //             E->T[node] = min(1.0,E->T[node]);
 			E->T[node] = max(0.0, E->T[node]);
+		
 			E->node[node] = E->node[node] | (INTX | INTZ | INTY);
 		}
 		fclose(fp);
@@ -385,6 +386,7 @@ void process_restart_tc(struct All_variables *E)
 			sscanf(input_s, "%g %g %g %g", &E->T[node], &temp1, &temp2, &E->C[node]);
 //             E->T[node] = min(1.0,E->T[node]);
 			E->T[node] = max(0.0, E->T[node]);
+		
 			E->node[node] = E->node[node] | (INTX | INTZ | INTY);
 		}
 		fclose(fp);
@@ -418,6 +420,8 @@ void process_restart_tc(struct All_variables *E)
 				{
 					node = k + (j - 1) * E->lmesh.noz + (i - 1) * E->lmesh.noz * E->lmesh.nox;
 					E->T[node] = E->Have.T[k] + E->convection.perturb_mag[p] * drand48();
+				
+					
 					E->node[node] = E->node[node] | (INTX | INTZ | INTY);
 				}
 	}

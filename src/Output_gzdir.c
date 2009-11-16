@@ -111,10 +111,13 @@ void output_velo_related_gzdir(E, file_number)
   if(E->parallel.me == 0){
     fprintf(stderr,"Output_gzdir: processing output\n");
 
-    sprintf(output_file,"mkdir %s/%d 2> /dev/null",
-	    E->control.data_file2,file_number);
+
+    
+    sprintf(output_file,"if [ ! -s %s/%d ];then mkdir -p %s/%d;fi 2> /dev/null",
+	    E->control.data_file2,file_number,E->control.data_file2,file_number);
     system(output_file);
     fprintf(stderr,"making directory: %s\n",output_file);
+
   }
   /* and wait for the other jobs */
   parallel_process_sync();
@@ -585,8 +588,8 @@ void process_restart_tc_gzdir(struct All_variables *E)
 	{
 	  gzgets (gzin,input_s, 200);
 	  sscanf(input_s, "%g", &E->T[node]);
+	  //if(E->SX[3][node] == 0)fprintf(stderr,"%g %g\n",E->SX[3][node],E->T[node]);
 	  E->C[node] = 0;
-	  E->node[node] = E->node[node] | (INTX | INTZ | INTY);
 	}
       gzclose(gzin);
       if(E->parallel.me == 0)
@@ -620,7 +623,7 @@ void process_restart_tc_gzdir(struct All_variables *E)
       for(node = 1; node <= E->lmesh.nno; node++)
 	{  
 	  gzgets (gzin,input_s, 200);
-   	  sscanf(input_s, "%lf", &E->C[node]);
+   	  sscanf(input_s, "%g", &E->C[node]);
 	}
       gzclose(gzin);
       
@@ -629,6 +632,7 @@ void process_restart_tc_gzdir(struct All_variables *E)
   
   E->advection.timesteps = E->monitor.solution_cycles;
   
+
   return;
 }
 

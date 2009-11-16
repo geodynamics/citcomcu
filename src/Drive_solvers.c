@@ -146,7 +146,6 @@ void general_stokes_solver(struct All_variables *E)
 			}
 			count++;
 		}						/* end for SDEPV / BDEPV  */
-		
 	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && powerlaw);
 
 	free((void *)delta_U);

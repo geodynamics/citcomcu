@@ -52,6 +52,7 @@ void *Malloc1();
 #define Malloc0(a) Malloc1((a),__FILE__,__LINE__)
 
 
+
 /* #define Malloc0 malloc */
 
 #define LIDN 0x1

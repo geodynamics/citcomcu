@@ -873,13 +873,13 @@ void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate
 	  tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
 	  tau = min(tau,  E->viscosity.lbyerlee[l]);
 	}
-	tau2 = tau * tau;
-
-	if(tau < 1e10){
+	if((visited > 1) && (tau < 1e15)){
+	  tau2 = tau * tau;
 	  eta_old = EEta[ (i-1)*vpts + jj ] ;
 	  eta_old2 = eta_old * eta_old;
 	  eta_new = (tau2 * eta_old)/(tau2 + 2.0 * eta_old2 * eedot[i]);
 	  EEta[ (i-1)*vpts + jj ] = ettnew;
+	  //if(E->parallel.me==0)fprintf(stderr,"tau: %11g eII: %11g eta_old: %11g eta_new: %11g\n",tau, eedot[i],eta_old,eta_new);
 	}
       }
     }
