@@ -1,9 +1,43 @@
 Please send CitcomCU bug reports to cig-mc@geodynamics.org.
 
+Version 1.0.3
+
+* Disable a system call, which was used to copy the input file, since
+  some mpi implementation (e.g. on TACC Lonestar) does not support
+  system call.
+
+* Added velocity output as *.velo.* files.
+
+* Allowing run on more than 100 processors and fixed a potentail race
+  problem in the parallel routines.
+
+* Fixed a bug in conjugate gradient solver, which was not functioning.
+
+* Fixed some memory problems in the Stokes solver. Some arrays were not
+  allcated with enough elements (off by 1). Writing to the end of those
+  arrays can potentially overwrite other parts of the memory. In
+  practice, it seems that this bug didn't affect the solver at all, but
+  this is a subtle bug to detect.
+
+* Fixed an index-overrun bug in advection-diffusion solver with heatflux
+  boundary conditions.
+
+* Replaced Parsing.c with the CIG CitcomS version to ensure that defaults
+  settings are actually used.  Before, the respective function always
+  returned NULL to avoid problems with strtok on Linux.
+
+* Modified layers() such that the full range of 1...4 layers gets assigned
+  to E->mat[], otherwise not all four layers would be used in
+  Viscosity_structures.c
+
+* Added two new rheology options.
+
+* Added a shell script to convert the output to parallel VTK files.
+
 
 Version 1.0.2
 
-* Fix a bug in kinematic velocity boundary conditions in spherical geometry.
+* Fixed a bug in kinematic velocity boundary conditions in spherical geometry.
   If kinematic boundary condition is used in spherical geometry, CitcomCU
   may impose incorrect velocity as the boundary conditions and gives 
   incorrect results. The error is only significant near the poles though.
