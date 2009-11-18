@@ -33,8 +33,7 @@ also computes isochemical thermal convection for regional spherical geometry
 2.1. Compiling the code
 
 In the src/ directory of this distribution, you will find 31 C source
-files (*.c), 7 header files (*.h), a makefile (Makefile), and a sample
-input file (input1). 
+files (*.c), 7 header files (*.h), and a makefile (Makefile). 
 
 Before compiling the code, please make sure that your system is installed 
 with MPI. You may need to edit the Makefile to specify the location of mpicc
@@ -44,6 +43,11 @@ the code and produce an executable citcom.mpi, type
 	$ make citcom.mpi
 
 2.2. Running the code
+
+In the examples/ directory of this distribution, you will find several
+input files. One of them (input1) is a sample input file. There are also
+some input files (in the examples/Busse1993 directory) for benchmarks
+against Busse et al. [1993].
 
 You may first create directories for storing your output files, before 
 running a calculation. Suppose that you use the sample input file input1,
@@ -276,8 +280,14 @@ invoke the script, type
 
 	$ citcomcu_write_vtk
 
-to see the usage and arguments. The script can only convert files stored
-on local file system.
+to see the usage and arguments. 
+
+The script has the following constraints:
+  * The script can only convert files stored on local file system.
+  * The script does not convert spherical coordinates to Cartesian
+    coordinates.
+  * The converted VTK files have their (x,y,z) coordinate axes mapped to the
+    (z,x,y) axes, respectively, in CitcomCU data.
 
 
                       5. Acknowledgement and citation issues
@@ -288,7 +298,7 @@ two papers for publications that result from using this code.
 
 Zhong, S., Constraints on thermochemical convection of the mantle from plume
      heat flux, plume excess temperature and upper mantle temperature,
-     J. Geophys. Res., 2005, in review (this reference to be updated).
+     J. Geophys. Res., 111, B04409, doi:10.1029/2005JB003972, 2006.
 
 Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
      from 3-D dynamic flow models, Earth Planet. Sci. Lett., 138, 15-28, 1996.
@@ -298,6 +308,9 @@ Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
 
 Billen, M.I., Gurnis, M., and Simons, M., Multiscale dynamic models of the
      Tonga-Kermadec subduction zone, Geophys. J. Int., 153, 359-388, 2003.
+Busse, F.H. et al., 3D convection at infinite Prandtl number in Cartesian
+     Geometry -- a benchmark comparison, Geophys. Astrophys. Fluid Dynamics,
+     75, 39-59, 1993.
 Christensen, U.R., and Yuen, D.A., Layered convection induced by phase changes,
      J. Geophys. Res., 90, 10,291-10,300, 1985.
 Moresi L.N. and M. Gurnis, Constraints on lateral strength of slabs
