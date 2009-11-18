@@ -10,7 +10,7 @@
 	use_scratch="local"	# output files under current directory.
 #	use_scratch="szhong"	# output files onto local disk to each compute node. 
 
-	oldfile="tic"		# directory and file head for restart files.
+	oldfile="case2-tic"	# directory and file head for restart files.
 	restart=1		# check Convection.c for different options
 	restart_timesteps=0	# timestep to restart
 
