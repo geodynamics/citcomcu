@@ -1,0 +1,193 @@
+# This input file is for Case 1a in Busse et al. [1993].
+# Pure thermal, iso-viscous convection in a rectangular box.
+# The top and bottom have no-slip BCs. Ra = 30000.
+
+
+# 1. Input and Output Files Information
+
+	datafile="1a/case1a"	# directory and file head for output files.
+	use_scratch="local"	# output files under current directory.
+#	use_scratch="szhong"	# output files onto local disk to each compute node. 
+
+	oldfile="1a/case1a"	# directory and file head for restart files.
+	restart=0		# check Convection.c for different options
+	restart_timesteps=0	# timestep to restart
+
+	stokes_flow_only=0	# 1: only solve velocity once; 0: time-dependent problem.
+	maxstep=20000		# max time steps
+
+# 2. Geometry, Ra numbers, Internal heating, Thermochemical/Purely thermal convection
+
+#	Solver=cgrad node_assemble=1	 # conjugate gradient: unsure if it still works
+	Solver=multigrid node_assemble=1 # multigrid iterative method
+
+	rayleigh=30000
+	rayleigh_comp=0		# Compositional Rayleigh number. relevant for composition=1
+	composition=0		# 0: purely thermal convection; 1: thermochem
+	Q0=0			# Dimensionless internal heating rate
+	Q0_enriched=0		# Q0 for C=1 layer, when relevant
+
+	markers_per_ele=0	# number of particles per element
+	comp_depth=0.605	# initial depth of compositional interface
+
+	visc_heating=0		# 1: visc heating on; or 0: visc heating off.
+	adi_heating=0		# 1: adiabatic heating on; or 0: adiabatic heating off.
+	
+# 3. Grid And Multiprocessor Information
+
+	nprocx=1		# number of processors in x or theta dir	
+	nprocz=1		# number of processors in z or r dir
+	nprocy=1		# number of processors in y or fi dir
+
+	nodex=33 nodez=33 nodey=33	# only relevant with conj-grad
+
+	mgunitx=2		# multigrid base level in x or t 
+	mgunitz=2		# multigrid base level in z or r
+	mgunity=1		# multigrid base level in y or f
+	levels=5		# and how many times it gets doubled
+
+# 4. Coordinate Information
+
+	Geometry=cart3d 	# cart3d or Rsphere 
+
+	dimenx=1.0079		# box size in x direction
+	dimenz=1.0		# box size in z direction
+	dimeny=0.6283		# box size in y direction
+
+	z_grid_layers=2		# minus 1 is number of layers with uniform grid in z.
+	zz=0.0,1.0		# starting and ending z coodinates
+	nz=1,33
+
+	x_grid_layers=2
+	xx=0,1.0079
+	nx=1,33
+
+	y_grid_layers=2
+	yy=0,0.6283
+	ny=1,17
+
+	z_lmantle=0.76655052		# 2870 km-670 km
+	z_410=0.857143			# 2870 km-410 km
+	z_lith=0.9651568		# 2870-100 km
+
+
+# 5. Rheology
+
+	rheol=0	# 0,1,2,... diff. option for diff. rheology. Check Visco....c
+	TDEPV=off		# on/off for temperature-dependent viscosity
+	VISC_UPDATE=off		# on/off for updating viscosity or not.
+	update_every_steps=1 	# update viscosity every n timesteps
+
+	num_mat=4 # number of material group with possibly different rheology
+	visc0=1,1,1,1
+	viscE=0,0,0,0
+
+	viscT=273,273,273,273		#surface temperature: 
+	viscZ=5e-6,5e-6,5e-6,5e-6	#activation volume
+
+	SDEPV=off			# on/off for non-Newtonian
+	sdepv_misfit=0.010		# accuracy for non-Newtonian iteration
+	sdepv_expt=1,1,1,1		# for each mat group, stress exponent
+	sdepv_trns=1.e0,1.e0,1.e0,1.e0	# transition stress 
+
+	VMIN=off visc_min=5.0e-2		# viscosity lower cutoff
+	VMAX=off visc_max=2.0e04		# viscosity upper cutoff
+
+	visc_smooth_cycles=1		# how viscosity is smoothed in multigrid
+	Viscosity=system		# always  
+
+# 6. DIMENSIONAL INFORMATION and Depth-dependence
+
+	layerd=2870000.0 #meter
+	radius=6370000.0
+	ReferenceT=3800.0 
+	refvisc=1.0e20
+	density=3300.0
+	thermdiff=1.0e-6
+	gravacc=9.8
+	thermexp=5e-5
+	cp=1250
+	wdensity=0.0
+
+	visc_factor=1.0
+	thermexp_factor=1.0
+	thermdiff_factor=1.00
+
+	dissipation_number=0.0
+	surf_temp=0.078947
+
+# 7. phase changes: to turn off any of the phase changes, let Ra_XXX=0
+
+	Ra_410=0.0 #kg/m^3
+	Ra_670=0.0
+	clapeyron410=3.0e6 #Pa K-1
+	clapeyron670=-3.0e6
+
+	width410=3.5e4 #meter
+	width670=3.5e4
+
+
+# 8. BOUNDARY CONDITIONS and Initial perturbations
+	
+	topvbc=1		# velocity boundary conditions top and bottom
+		topvbxval=0.0
+		topvbyval=0.0
+	botvbc=1
+		botvbxval=0.0
+		botvbyval=0.0
+					#
+	toptbc=1 bottbc=1		# temperature bc's top and bottom
+	toptbcval=0.0 bottbcval=1.0	#
+
+	periodicx=off 		#
+	periodicy=off		#
+	flowthroughx=off	#
+	flowthroughy=off	#
+
+	num_perturbations=1	#  N, Number of perturbations
+	perturbmag=0.001	#  A list of N magnitudes
+	perturbk=1.0		#  A list of N wavenumbers (/PI)
+	perturbl=6.0		#  A list of N wavenumbers (/PI)
+	perturbm=0.0		#  A list of N wavenumbers (/PI)
+
+
+# 9. SOLVER RELATED MATTERS
+
+	Problem=convection	# always, almost
+	aug_lagr=on
+	aug_number=1.0e3
+	precond=on
+	orthogonal=off
+
+	maxsub=1
+
+	viterations=2		# Uzawa iteration loops.
+	mg_cycle=1		# 1 = V cycle, 2 = W cycle, and so on.
+	down_heavy=3		# Increase downward smoothing by this factor.
+	up_heavy=3		# Increase upward smoothing by this factor.
+	vlowstep=20		# Enough to get very  accurate soln at low level.
+	vhighstep=3		# Smoothing passes at highest level (finest grid).
+
+	piterations=375		# Uzawa iteration loops.
+	accuracy=1.0e-3		# Desired accuracy of Uzawa algorithm. 
+	tole_compressibility=1e-7
+
+# Tuning of energy equation
+
+	adv_sub_iterations=2
+	finetunedt=0.75
+
+	ll_max=20
+	nlong=180
+	nlati=90
+
+# Data input and program debugging
+
+	DESCRIBE=off		# 
+	BEGINNER=off		#
+	VERBOSE=off		#
+	verbose=off		#
+	COMPRESS=off		#
+	see_convergence=1
+
+# vim:ts=8:sw=8
