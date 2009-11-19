@@ -30,11 +30,7 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#ifndef __sunos__
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 #include "global_defs.h"
 
 void setup_parser(struct All_variables *E, char *filename);
