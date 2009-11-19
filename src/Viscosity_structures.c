@@ -47,8 +47,8 @@
 #include "global_defs.h"
 #include "function_defs.h"
 
-void visc_from_B(struct All_variables *, float *, float *, int );
-void visc_from_C(struct All_variables *, float *, float *, int );
+static void visc_from_B(struct All_variables *, float *, float *, int );
+static void visc_from_C(struct All_variables *, float *, float *, int );
 void *safe_malloc (size_t );
 
 void viscosity_parameters(struct All_variables *E)
@@ -792,7 +792,7 @@ where the 2\eps_II arises because our \eps_II has the 1/2 factor in it
 
 */
 //#define DEBUG
-void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate)
+static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
   static int visited = 0;
   float scale,stress_magnitude,depth,exponent1,eta_old,eta_old2,eta_new;
@@ -988,7 +988,7 @@ void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate
 multiply with composition factor
 
 */
-void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int propogate)
+static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
   float comp,comp_fac,CC[9],tcomp;
   double vmean,cc_loc;

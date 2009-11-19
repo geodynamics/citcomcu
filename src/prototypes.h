@@ -66,14 +66,14 @@ void convection_boundary_conditions(struct All_variables *E);
 void convection_initial_temperature(struct All_variables *E);
 void process_restart_tc(struct All_variables *E);
 void convection_initial_markers1(struct All_variables *E);
-void convection_initial_markers(struct All_variables *,int );
+void convection_initial_markers(struct All_variables *E, int use_element_nodes_for_init_c);
 void setup_plume_problem(struct All_variables *E);
 void PG_process(struct All_variables *E, int ii);
 /* Drive_solvers.c */
 void general_stokes_solver(struct All_variables *E);
 /* Element_calculations.c */
 void assemble_forces(struct All_variables *E, int penalty);
-void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int penalty);
+void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int iconv);
 void assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs);
 void e_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs);
 void n_assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs);
@@ -132,6 +132,8 @@ void set_2dc_defaults(struct All_variables *E);
 void set_2pt5dc_defaults(struct All_variables *E);
 void set_3ds_defaults(struct All_variables *E);
 void set_3dc_defaults(struct All_variables *E);
+/* Ggrd_handling.c */
+void convection_initial_temperature_ggrd(struct All_variables *E);
 /* Global_operations.c */
 void remove_horiz_ave(struct All_variables *E, float *X, float *H, int store_or_not);
 void return_horiz_sum(struct All_variables *E, float *X, float *H, int nn);
@@ -184,6 +186,10 @@ void output_velo_related_binary(struct All_variables *E, int file_number);
 void output_temp(struct All_variables *E, int file_number);
 void process_restart(struct All_variables *E);
 void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen);
+/* Output_gzdir.c */
+void output_velo_related_gzdir(struct All_variables *E, int file_number);
+gzFile *safe_gzopen(char *name, char *mode);
+void process_restart_tc_gzdir(struct All_variables *E);
 /* Pan_problem_misc_functions.c */
 int get_process_identifier(void);
 void unique_copy_file(struct All_variables *E, char *name, char *comment);
@@ -201,6 +207,12 @@ void field_arbitrary_circle(struct All_variables *E, struct Circ *CIRC, float *f
 void field_arbitrary_harmonic_file(struct All_variables *E, int parse_and_apply, struct Harm *HARM, char *name, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off);
 void field_arbitrary_harmonic(struct All_variables *E, struct Harm *HARM, float *field, int BC, unsigned int *bcbitf, unsigned int bcmask_on, unsigned int bcmask_off);
 double myatan(double y, double x);
+FILE *safe_fopen(char *name, char *mode);
+void *safe_malloc(size_t size);
+void calc_cbase_at_tp(float theta, float phi, float *base);
+void convert_pvec_to_cvec(float vr, float vt, float vp, float *base, float *cvec);
+void rtp2xyz(float r, float theta, float phi, float *xout);
+void myerror(char *message, struct All_variables *E);
 /* Parallel_related.c */
 void parallel_process_initilization(struct All_variables *E, int argc, char **argv);
 void parallel_process_termination(void);
@@ -220,20 +232,20 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
-void setup_parser(struct All_variables *, char *);
-void shutdown_parser(struct All_variables *);
-void add_to_parameter_list(char *, char *);
-int compute_parameter_hash_table(char *);
-int input_int(char *, int *, char *, int);
-int input_string(char *, char *, char *, int);
-int input_boolean(char *, int *, char *, int);
-int input_float(char *, float *, char *, int);
-int input_double(char *, double *, char *, int);
-int input_int_vector(char *, int, int *, int);
-int input_char_vector(char *, int, char *, int);
-int input_float_vector(char *, int, float *, int);
-int input_double_vector(char *, int, double *, int);
-int interpret_control_string(char *, int *, double *, double *, double *);
+void setup_parser(struct All_variables *E, char *filename);
+void shutdown_parser(struct All_variables *E);
+void add_to_parameter_list(char *name, char *value);
+int compute_parameter_hash_table(char *s);
+int input_int(char *name, int *value, char *interpret, int m);
+int input_string(char *name, char *value, char *Default, int m);
+int input_boolean(char *name, int *value, char *interpret, int m);
+int input_float(char *name, float *value, char *interpret, int m);
+int input_double(char *name, double *value, char *interpret, int m);
+int input_int_vector(char *name, int number, int *value, int m);
+int input_char_vector(char *name, int number, char *value, int m);
+int input_float_vector(char *name, int number, float *value, int m);
+int input_double_vector(char *name, int number, double *value, int m);
+int interpret_control_string(char *interpret, int *essential, double *Default, double *minvalue, double *maxvalue);
 /* Phase_change.c */
 void phase_change(struct All_variables *E, float *B6, float *B_b6, float *B4, float *B_b4);
 /* Process_buoyancy.c */
