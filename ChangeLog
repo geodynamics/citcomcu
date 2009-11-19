@@ -1,3 +1,184 @@
+2009-11-19 19:15  tan2
+
+	* NEWS: Better description for the E->parallel.mst1[] bug in
+	  exchanger_markers()
+
+2009-11-18 19:08  tan2
+
+	* examples/Busse1993/case2-tic.temp.0.0,
+	  examples/Busse1993/case2.input: Inititial temperature for case2
+
+2009-11-18 19:00  becker
+
+	* src/Ggrd_handling.c, src/Viscosity_structures.c: Minor fix of
+	  Eh's (?) addition.
+
+2009-11-18 18:52  tan2
+
+	* NEWS: short description of new features and bug fixes.
+
+2009-11-18 18:50  tan2
+
+	* README: Update for examples/ directory. Described the constraints
+	  of citcomcu_write_vtk script.
+
+2009-11-18 18:48  tan2
+
+	* examples, examples/Busse1993, examples/Busse1993/case1a.input,
+	  examples/Busse1993/case2.input, examples/input1, src/input1:
+	  Moved input1 to examples/ directory. Created two input files for
+	  Busse et al. 1993 benchmarks.
+
+2009-11-16 22:44  becker
+
+	* src/Convection.c, src/Drive_solvers.c, src/Output_gzdir.c,
+	  src/Viscosity_structures.c, src/global_defs.h, src/prototypes.h:
+	  Minor changes, just to merge with recent SVN.
+
+2009-11-16 18:06  tan2
+
+	* src/Viscosity_structures.c: Added rheol=11, eta = eta0 *
+	  exp(E/(T+T0) - E/(0.5+T0))
+
+2009-11-14 00:00  tan2
+
+	* README: added a brief introduction of citcomcu_write_vtk
+
+2009-11-13 21:37  tan2
+
+	* utils, utils/citcomcu_write_vtk: Added a script to combine
+	  citcomcu data to (parallel) vtk files
+
+2009-11-13 18:09  tan2
+
+	* README: Updated the viscosity law description
+
+2009-11-13 18:09  tan2
+
+	* AUTHORS: update the author list
+
+2009-09-04 23:32  becker
+
+	* src/Convection.c, src/Ggrd_handling.c, src/Output_gzdir.c:
+	  Implemented rudimentary restart facility for gzdir output,
+	  several local mods still not in CIG version of CitcomCU.
+
+2009-08-25 17:22  becker
+
+	* src/Citcom.c, src/Instructions.c, src/Viscosity_structures.c,
+	  src/global_defs.h, src/viscosity_descriptions.h: Added
+	  T_interior_max control Tentaive implementation of steady-state
+	  strain-rate weakening
+
+2009-03-27 01:11  becker
+
+	* src/Advection_diffusion.c, src/Makefile,
+	  src/Viscosity_structures.c: Fixed typo in Viscosity_structures.c
+	  (omission of break for option 4)
+
+2008-11-07 03:29  becker
+
+	* src/Advection_diffusion.c, src/Construct_arrays.c,
+	  src/Convection.c, src/Convection_variables.h,
+	  src/Drive_solvers.c, src/Ggrd_handling.c, src/Instructions.c,
+	  src/Makefile, src/Makefile.gzdir, src/Nodal_mesh.c,
+	  src/Output_gzdir.c, src/Pan_problem_misc_functions.c,
+	  src/Parsing.c, src/Process_velocity.c, src/Stokes_flow_Incomp.c,
+	  src/Viscosity_structures.c, src/global_defs.h, src/prototypes.h,
+	  src/viscosity_descriptions.h: Replaced Parsing.c with the CIG
+	  CitcomS version to ensure that defaults settings are actually
+	  used. Before, the respective function always returned NULL to
+	  avoid problems with strtok on Linux.
+	  
+	  Modified layers() such that the full range of 1...4 layers gets
+	  assigned to E->mat[], otherwise not all four layers would be used
+	  in Viscosity_structures.c
+	  
+	  Added two new temp dep rheology options, rheol==3 is very similar
+	  to 0, and case has a non-dim depth dependence in it
+	  
+	  Added ggrd netcdf support for temperature and composition using
+	  the HC package.
+	  
+	  Added gzdir output, in which case (-DUSE_GZDIR),
+	  get_system_viscosity will compute the visocosities at the nodes.
+
+2008-05-02 23:57  tan2
+
+	* src/Drive_solvers.c: Changed the type of a variable from float to
+	  double. This will avoid type-conversion later in the loop.
+
+2008-05-02 23:56  tan2
+
+	* src/Advection_diffusion.c, src/Citcom.c,
+	  src/Viscosity_structures.c: nit'd variables at beginning
+
+2008-05-02 23:56  tan2
+
+	* src/Construct_arrays.c, src/Element_calculations.c,
+	  src/General_matrix_functions.c, src/Instructions.c,
+	  src/Stokes_flow_Incomp.c: Fixed some memory problems in the
+	  Stokes solver.
+	  
+	  Some arrays were not allcated with enough elements (off by 1).
+	  Writing to the end of those arrays can potentially overwrite
+	  other parts of the memory. In practice, it seems that this bug
+	  didn't affect the solver at all, but this is a subtle bug to
+	  detect.
+	  
+	  This bug was in CitcomS pre-1.0 version and is likely in other
+	  versions of citcom family as well.
+
+2008-05-02 23:43  tan2
+
+	* src/Convection.c: Disable unused input parameters
+
+2008-05-02 23:42  tan2
+
+	* src/Advection_diffusion.c: Fixed an index-overrun bug in
+	  advection-diffusion solver with heatflux boundary conditions.
+	  This fixes issue138.
+
+2008-05-02 23:41  tan2
+
+	* src/General_matrix_functions.c: Fix for conjugate gradient
+	  solver, contributed by Magali Billen.
+
+2008-05-02 23:39  tan2
+
+	* src/Parallel_related.c, src/global_defs.h: Removed parallel.mst*
+	  arrays. This lifted the restriction on # of processors the code
+	  can use.
+
+2008-05-02 23:36  tan2
+
+	* src/Topo_gravity.c, src/Zeros_of_J0_and_J1.h: Removed unused
+	  tables of Bessel function
+
+2007-11-29 01:40  tan2
+
+	* src/Output.c: Write 3 components of velocity in velo files
+
+2007-11-08 23:35  tan2
+
+	* src/Viscosity_structures.c, src/input1: Rollback accidental
+	  checkin
+
+2007-11-08 23:33  tan2
+
+	* src/Pan_problem_misc_functions.c, src/Viscosity_structures.c,
+	  src/input1: Disable system call since some mpi implementation
+	  doesn't support it.
+
+2007-05-16 00:14  tan2
+
+	* README: Added the description of viscosity laws
+
+2007-05-16 00:11  tan2
+
+	* src/Viscosity_structures.c: Cleaned up Viscosity_structures.c by
+	  Shijie Zhong
+
 2006-11-30 07:51  tan2
 
 	* src/Makefile: Using "-O2" optimization flag by default, as it has
