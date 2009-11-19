@@ -49,19 +49,14 @@
 #include <math.h>
 #include <malloc.h>
 #include <stdlib.h>				/* for "system" command */
-#ifndef __sunos__				/* string manipulations */
-#include <strings.h>
-#else
-#include <string.h>
-#endif
-
-
 #include <zlib.h>
+
+
 
 #include "element_definitions.h"
 #include "global_defs.h"
 
-gzFile *safe_gzopen(char *,char *);
+static gzFile *safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);
 void *safe_malloc (size_t );
 void calc_cbase_at_tp(float , float , float *);
@@ -547,7 +542,7 @@ if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
 }
 
 /* safe gzopen function */
-gzFile *safe_gzopen(char *name,char *mode)
+static gzFile *safe_gzopen(char *name,char *mode)
 {
   gzFile *tmp;
   char m2[300];

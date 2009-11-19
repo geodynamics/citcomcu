@@ -188,7 +188,6 @@ void process_restart(struct All_variables *E);
 void print_field_spectral_regular(struct All_variables *E, float *TG, float *sphc, float *sphs, int proc_loc, char *filen);
 /* Output_gzdir.c */
 void output_velo_related_gzdir(struct All_variables *E, int file_number);
-gzFile *safe_gzopen(char *name, char *mode);
 void process_restart_tc_gzdir(struct All_variables *E);
 /* Pan_problem_misc_functions.c */
 int get_process_identifier(void);
@@ -318,12 +317,3 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT, int SQRT);
 int layers(struct All_variables *E, float x3);
 int weak_zones(struct All_variables *E, int node, float t_b);
 float boundary_thickness(struct All_variables *E, float *H);
-#ifdef USE_GGRD
-void convection_initial_temperature_ggrd(struct All_variables *E);
-#endif
-#ifdef USE_GZDIR
-#include "zlib.h"
-void output_velo_related_gzdir(struct All_variables *E, int file_number);
-gzFile *safe_gzopen(char *name, char *mode);
-void process_restart_tc_gzdir(struct All_variables *E);
-#endif
