@@ -8,8 +8,8 @@ Version 1.0.3
 
 * Added velocity output as *.velo.* files.
 
-* Allowing run on more than 100 processors and fixed a potentail race
-  problem in the parallel routines.
+* Allowing run on more than 100 processors and fixed a use of
+  uninitialized memory problem in the marker routine.
 
 * Fixed a bug in conjugate gradient solver, which was not functioning.
 
