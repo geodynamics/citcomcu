@@ -45,7 +45,6 @@
 #include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
-#include "function_defs.h"
 
 static void visc_from_B(struct All_variables *, float *, float *, int );
 static void visc_from_C(struct All_variables *, float *, float *, int );
