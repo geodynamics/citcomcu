@@ -77,15 +77,15 @@ void general_stokes_solver(struct All_variables *E)
 	      damp = 0;
 	    }
 	  } /* end powerlaw */
-		oldU = (double *)malloc((neq + 2) * sizeof(double));
-		for(i = 1; i <= neq; i++)
+		oldU = (double *)malloc(neq * sizeof(double));
+		for(i = 0; i < neq; i++)
 			oldU[i] = 0.0;
 		visits++;
 	}
 
 	dUdot_mag = 0.0;
 
-	delta_U = (double *)malloc((neq + 2) * sizeof(double));
+	delta_U = (double *)malloc(neq * sizeof(double));
 
 	/* FIRST store the old velocity field */
 
@@ -124,10 +124,10 @@ void general_stokes_solver(struct All_variables *E)
 
 		  if(damp){
 		    /* add some of the old solution */
-		    for(i = 1; i <= neq; i++)
+		    for(i = 0; i < neq; i++)
 		      E->U[i] = alpha * E->U[i] + alpha1 * oldU[i];
 		  }
-			for(i = 1; i <= neq; i++)
+			for(i = 0; i < neq; i++)
 			{
 				delta_U[i] = E->U[i] - oldU[i];
 				oldU[i] = E->U[i];
