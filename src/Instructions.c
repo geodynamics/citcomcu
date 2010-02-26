@@ -971,7 +971,7 @@ void read_initial_settings(struct All_variables *E)
 	input_float("dTsoldF", &(E->data.dTsol_dF), "440.0", m);
 	input_float("dTdz", &(E->data.dT_dz), "0.48e-3", m);
 	input_float("deltaS", &(E->data.delta_S), "250.0", m);
-	input_float("gasconst", &(E->data.gas_const), "8.3",m);	/* not much cause to change these !
+	input_float("gasconst", &(E->data.gas_const), "8.3",m);	/* not much cause to change these ! */
 	input_float("gravconst", &(E->data.grav_const), "6.673e-11", m);
 	input_float("permeability", &(E->data.permeability), "3.0e-10", m);
 
