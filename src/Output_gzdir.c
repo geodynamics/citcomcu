@@ -55,6 +55,7 @@
 
 #include "element_definitions.h"
 #include "global_defs.h"
+#include "prototypes.h"
 
 static gzFile *safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);

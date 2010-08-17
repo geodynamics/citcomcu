@@ -18,9 +18,9 @@
 
 #COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
-GMT_DIR = ../../../GMTdev/GMT4.2.1/x86_64/
+GMT_DIR = ../../../GMTdev/GMT4.4.0/x86_64/lib/
 NETCDF_DIR = ../../../netcdf-3.6.2/
-HC_DIR = ../../../hc/
+HC_DIR = ../../../hc-svn/
 LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR) -L$(NETCDF_DIR)/lib/
 #LIB_LIST= -lmpi
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf

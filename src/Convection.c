@@ -50,7 +50,7 @@ void convection_initial_markers(struct All_variables *,int );
 
 void set_convection_defaults(struct All_variables *E)
 {
-  
+
   input_int("composition", &(E->control.composition), "0", E->parallel.me);
 
 	if(E->control.composition)

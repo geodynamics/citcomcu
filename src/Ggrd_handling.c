@@ -43,7 +43,7 @@
 #include <string.h>
 #include <mpi.h>
 #include "hc.h"
-#include "function_defs.h"
+#include "prototypes.h"
 
 /* ===============================
    Initialization of fields .....

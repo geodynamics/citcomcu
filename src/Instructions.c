@@ -646,6 +646,8 @@ void read_initial_settings(struct All_variables *E)
 	int m;
 
 	m = E->parallel.me;
+	
+	if(E->parallel.me == 0)fprintf(stderr, "ok20\n");
 
 	input_string("Problem", E->control.PROBLEM_TYPE, NULL, m);
 	if(strcmp(E->control.PROBLEM_TYPE, "convection") == 0)
@@ -667,6 +669,7 @@ void read_initial_settings(struct All_variables *E)
 		E->control.CONVECTION = 1;
 		set_convection_defaults(E);
 	}
+	if(E->parallel.me == 0)fprintf(stderr, "ok21\n");
 
 	input_string("Geometry", E->control.GEOMETRY, NULL, m);
 	if(strcmp(E->control.GEOMETRY, "cart2d") == 0)
@@ -722,7 +725,6 @@ void read_initial_settings(struct All_variables *E)
 			fprintf(stderr, "Unable to determine how to solve, specify Solver=VALID_OPTION \n");
 		exit(0);
 	}
-
 
 	/* admin */
 
