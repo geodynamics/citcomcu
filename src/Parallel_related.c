@@ -1095,6 +1095,7 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 
 	for(i = 1; i <= E->mesh.nsd; i++)
 	{
+
 		idb = 0;
 		for(k = 1; k <= 2; k++)
 			if(E->parallel.NUM_PASS[levmax].bound[i][k])

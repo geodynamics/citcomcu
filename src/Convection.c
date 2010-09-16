@@ -119,6 +119,11 @@ void read_convection_settings(struct All_variables *E)
 
 	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32", m);
 	input_boolean("random_t_init",&E->convection.random_t_init,"off", m);
+#ifndef USE_GGRD
+	if(E->convection.random_t_init)
+	  myerror("random T init as per random_t_init only works for GGRD version\n",E);
+#endif	
+
 	input_float_vector("perturbmag", E->convection.number_of_perturbations, E->convection.perturb_mag, m);
 	input_float_vector("perturbk", E->convection.number_of_perturbations, E->convection.perturb_k, m);
 	input_float_vector("perturbm", E->convection.number_of_perturbations, E->convection.perturb_mm, m);
@@ -210,9 +215,9 @@ void convection_boundary_conditions(struct All_variables *E)
 
    NOTE: 
 
-   there's a different routine for GGRD handling in Ggrd_handling
-   which has differnet logic for marker init etc. this gets called
-   when USE_GGRD is compiled in
+   THERE'S A DIFFERENT ROUTINE FOR GGRD HANDLING IN GGRD_HANDLING
+   WHICH HAS DIFFERNET LOGIC FOR MARKER INIT ETC. THE OTHER ONE GETS
+   CALLED when USE_GGRD is compiled in
 
 
    =============================== */

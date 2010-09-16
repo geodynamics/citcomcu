@@ -40,6 +40,8 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
+int need_to_iterate(struct All_variables *);
+
 void general_stokes_solver(struct All_variables *E)
 {
 	//float vmag;
@@ -47,8 +49,7 @@ void general_stokes_solver(struct All_variables *E)
 	//double *force, Udot_mag, dUdot_mag;
 	double Udot_mag, dUdot_mag;
 	double time;
-	//int count, i, j, k;
-	int count, i;
+	int i;
 
 	static double alpha,alpha1;
 	static double *oldU;
@@ -59,13 +60,15 @@ void general_stokes_solver(struct All_variables *E)
 	//const int dims = E->mesh.nsd;
 	//const int vpts = vpoints[E->mesh.nsd];
 
-	static int powerlaw; 
-	
+	int iterate; 
+
+	iterate = need_to_iterate(E);
+
 	if(visits == 0)
 	{
 	  
-	  powerlaw = (E->viscosity.SDEPV || E->viscosity.BDEPV)?(1):(0);
-	  if(powerlaw){
+	  
+	  if(iterate){
 	    /* damping factors */
 	    alpha = E->viscosity.sdepv_iter_damp;
 	    alpha1 = 1 - alpha;
@@ -76,7 +79,7 @@ void general_stokes_solver(struct All_variables *E)
 	    } else{
 	      damp = 0;
 	    }
-	  } /* end powerlaw */
+	  } /* end iterate */
 		oldU = (double *)malloc(neq * sizeof(double));
 		for(i = 0; i < neq; i++)
 			oldU[i] = 0.0;
@@ -96,7 +99,6 @@ void general_stokes_solver(struct All_variables *E)
 		time = CPU_time0();
 
 	velocities_conform_bcs(E, E->U);
-
 	assemble_forces(E, 0);
 
 /*	
@@ -107,19 +109,18 @@ void general_stokes_solver(struct All_variables *E)
 	}
 */
 
-	count = 1;
+	E->monitor.visc_iter_count = 0;
 
 	do
 	{
-
 		if(E->viscosity.update_allowed)
 			get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
-
 		construct_stiffness_B_matrix(E);
-
 		solve_constrained_flow_iterative(E);
 
-		if(powerlaw)
+		E->monitor.visc_iter_count++;
+
+		if(iterate)
 		{
 
 		  if(damp){
@@ -140,15 +141,32 @@ void general_stokes_solver(struct All_variables *E)
 
 			if(E->control.sdepv_print_convergence  && (E->parallel.me == 0))
 			{
-				fprintf(stderr, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
-				fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, count);
+				fprintf(stderr, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, E->monitor.visc_iter_count);
+				fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, E->monitor.visc_iter_count);
 				fflush(E->fp);
 			}
-			count++;
+			E->monitor.visc_iter_count++;
 		}						/* end for SDEPV / BDEPV  */
-	} while((count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && powerlaw);
+	} while((E->monitor.visc_iter_count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && iterate);
 
 	free((void *)delta_U);
 
 	return;
+}
+int need_to_iterate(struct All_variables *E){
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  /* anisotropic viscosity */
+  if(E->viscosity.allow_anisotropic_viscosity){
+    if((E->monitor.solution_cycles == 0) && 
+       E->viscosity.anivisc_start_from_iso) /* first step will be
+					       solved isotropically at
+					       first  */
+      return TRUE;
+    else
+      return (E->viscosity.SDEPV || E->viscosity.BDEPV)?(TRUE):(FALSE);
+  }
+#else
+  /* regular operation */
+  return ((E->viscosity.SDEPV || E->viscosity.BDEPV)?(TRUE):(FALSE));
+#endif
 }

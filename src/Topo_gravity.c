@@ -41,6 +41,11 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+#include "anisotropic_viscosity.h"
+#endif
+
+
 #define c_re(a) a.real
 #define c_im(a) a.imag
 typedef struct compl
@@ -93,7 +98,12 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 	const int elz = E->lmesh.elz;
 	//const int ely = E->lmesh.ely;
 	const int lev = E->mesh.levmax;
-
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	if(E->viscosity.allow_anisotropic_viscosity){
+	  fprintf(stderr,"anisotropic viscosity not implemented for CBF topo\n");
+	  parallel_process_termination();
+	}
+#endif
 	lnsf = E->lmesh.nsf;
 
 	eltTU = (float *)malloc((1 + Tsize) * sizeof(float));
@@ -304,6 +314,10 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 	//float pre[9], el_volume, tww[9], Visc, a, b;
 	float pre[9];
 	double rtf[4][9];
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	double D[6][6],n[3],eps[6],str[6];
+	int l1,l2;
+#endif
 
 	const int dims = E->mesh.nsd;
 	//const int dofs = E->mesh.dof;
@@ -339,7 +353,8 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 		Sxy = 0.0;
 		Sxz = 0.0;
 		Szy = 0.0;
-		get_rtf(E, e, 0, rtf, lev);
+		if(E->control.Rsphere)
+		  get_rtf(E, e, 0, rtf, lev);
 
 		for(j = 1; j <= vpts; j++)
 		{
@@ -371,7 +386,7 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 					Vxy[i] += (VX[j] * E->gNX[e].vpt[GNVXINDEX(1, j, i)] + VY[j] * E->gNX[e].vpt[GNVXINDEX(0, j, i)]);
 					Vzy[i] += (VY[j] * E->gNX[e].vpt[GNVXINDEX(2, j, i)] + VZ[j] * E->gNX[e].vpt[GNVXINDEX(1, j, i)]);
 				}
-			else if(E->control.Rsphere)
+			else if(E->control.Rsphere) /* inaccrurate */
 				for(j = 1; j <= ends; j++)
 				{
 					Vzz[i] += VZ[j] * E->gNX[e].vpt[GNVXINDEX(2, j, i)];
@@ -382,14 +397,40 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 					Vzy[i] += VY[j] * E->gNX[e].vpt[GNVXINDEX(2, j, i)] + rtf[3][i] * (VZ[j] * E->gNX[e].vpt[GNVXINDEX(1, j, i)] / sin(rtf[1][i]) - VY[j] * E->N.vpt[GNVINDEX(j, i)]);
 
 				}
-
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+			if(E->viscosity.allow_anisotropic_viscosity){ /* general anisotropic */
+      
+			  l1 = (e-1)*vpts+i;
+			  get_constitutive(D,E->mesh.levmax,l1,rtf[1][i],rtf[2][i],(E->control.Rsphere),E);
+			  eps[0] = Vxx[i];
+			  eps[1] = Vyy[i];
+			  eps[2] = Vzz[i];
+			  eps[3] = Vxy[i];
+			  eps[4] = Vxz[i];
+			  eps[5] = Vzy[i];
+			  for(l1=0;l1 < 6;l1++){	
+			    str[l1]=0.0;
+			    for(l2=0;l2 < 6;l2++)
+			      str[l1] += D[l1][l2] * eps[l2];
+			  }
+			  Sxx += pre[i] * str[0];
+			  Syy += pre[i] * str[1];
+			  Szz += pre[i] * str[2];
+			  Sxy += pre[i] * str[3];
+			  Sxz += pre[i] * str[4];
+			  Szy += pre[i] * str[5];
+			}else{
+#endif
 			Sxx += 2.0 * pre[i] * Vxx[i];
 			Syy += 2.0 * pre[i] * Vyy[i];
 			Szz += 2.0 * pre[i] * Vzz[i];
 			Sxy += pre[i] * Vxy[i];
 			Sxz += pre[i] * Vxz[i];
 			Szy += pre[i] * Vzy[i];
-		}
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+			}
+#endif
+		} /* end i-vtps loop */
 
 
 		Sxx /= E->eco[e].area;

@@ -914,6 +914,18 @@ void rtp2xyz(float r, float theta, float phi, float *xout)
   xout[1] = rst * sin((double)phi); 	/* y */
   xout[2] = (double)r * cos((double)theta);
 }
+
+
+void xyz2rtp(float x,float y,float z,float *rout)
+{
+  float tmp1,tmp2;
+  tmp1 = x*x + y*y;
+  tmp2 = tmp1 + z*z;
+  rout[0] = sqrt(tmp2);		/* r */
+  rout[1] = atan2(sqrt(tmp1),z); /* theta */
+  rout[2] = atan2(y,x);		/* phi */
+}
+
 void myerror(char *message, struct All_variables *E)
 {
   E->control.verbose = 1;

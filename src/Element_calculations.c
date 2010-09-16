@@ -45,6 +45,11 @@
 #include <sys/resource.h>
 
 
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+#include "anisotropic_viscosity.h"
+#endif
+
+
 /* *INDENT-OFF* */
 static double Dl[5][5] = {  {0.0, 0.0, 0.0, 0.0, 0.0},
                             {0.0, 1.0, 1.0, 0.0, 1.0},
@@ -80,7 +85,6 @@ void assemble_forces(struct All_variables *E, int penalty)
 	//const int npno = E->lmesh.npno;
 	const int nel = E->lmesh.nel;
 	const int lev = E->mesh.levmax;
-
 	for(a = 0; a < neq; a++)
 		E->F[a] = 0.0;
 
@@ -127,159 +131,247 @@ void assemble_forces(struct All_variables *E, int penalty)
 
 void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, int iconv)
 {
-	double bdbmu[4][4];
-	//double bdbl[4][4];
+  double bdbmu[4][4];
 
-	double rtf[4][9], W[9], ra[9], si[9], ct[9];
-	//struct Shape_function GN;
-	//struct Shape_function_dA dOmega;
-	//struct Shape_function_dx GNx;
-	static struct CC Cc;
-	static struct CCX Ccx;
+  double rtf[4][9], W[9];
+
+  static struct CC Cc;
+  static struct CCX Ccx;
 
 
-	//int p1[9], pn, qn, ad, bd;
-	int pn, qn, ad, bd;
+  int pn, qn, ad, bd;
+  int a, b, i, j, k;
+  double temp;
 
-	//int nodea, nodeb, a, b, i, j, k, p, q, nint;
-	int a, b, i, j, k;
-	//double RM2[9], RMP[9], r;
-	//double Visc, visc[9], temp;
-	double temp;
-	float gnx0, gnx1, gnx2;
-	double shp, cc1, cc2, cc3;
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  double D[VPOINTS3D+1][6][6],btmp[6];
+  int l1,l2;
+#endif
+  int off;
+  double ba[9][4][9][7];	/* flipped around for improved speed (different from CitcomS)  */
+
+  const int n = loc_mat_size[E->mesh.nsd];
+  const int vpts = vpoints[E->mesh.nsd];
+  //const int ppts = ppoints[E->mesh.nsd];
+  const int ends = enodes[E->mesh.nsd];
+  const int dims = E->mesh.nsd;
+  //const int dofs = E->mesh.dof;
+  //const int sphere_key = 1;
+  //const double zero = 0.0;
+  const double one = 1.0;
+  const double two = 2.0;
 
 
-	double ba[7][4][9][9];
+  if(E->control.Rsphere)	/* need rtf for spherical */
+    get_rtf(E, el, 0, rtf, lev);
+  for(k = 1; k <= vpts; k++){
+    off = (el-1)*vpts+k;
+    W[k] = g_point[k].weight[dims - 1] * E->GDA[lev][el].vpt[k] * E->EVI[lev][off];
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+    if(E->viscosity.allow_anisotropic_viscosity){
+      /* allow for a possibly anisotropic viscosity, only used if switched on */
+      get_constitutive(D[k],lev,off,rtf[1][k],rtf[2][k],(E->control.Rsphere),E);
+    }
+#endif
+  }
 
-	const int n = loc_mat_size[E->mesh.nsd];
-	const int vpts = vpoints[E->mesh.nsd];
-	//const int ppts = ppoints[E->mesh.nsd];
-	const int ends = enodes[E->mesh.nsd];
-	const int dims = E->mesh.nsd;
-	//const int dofs = E->mesh.dof;
-	//const int sphere_key = 1;
-	//const double zero = 0.0;
-	const double one = 1.0;
-	const double two = 2.0;
+  if(E->control.Rsphere){
+    if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
+      construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 0);
+    get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd,TRUE,ba);
+  }else{						/* end for sphere */
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+    if(E->viscosity.allow_anisotropic_viscosity){ /* only anisotropic cartesian uses ba[] */
+      if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
+	get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd, FALSE,ba);
+    }
+#endif
+    ;				/* only anisotropic cartesian needs ba factors */
+  }
 
-	for(k = 1; k <= vpts; k++)
-	{
-		W[k] = g_point[k].weight[dims - 1] * E->GDA[lev][el].vpt[k] * E->EVI[lev][(el - 1) * vpts + k];
+  for(a = 1; a <= ends; a++)
+    for(b = a; b <= ends; b++){
+      bdbmu[1][1] = bdbmu[1][2] = bdbmu[1][3] = 
+	bdbmu[2][1] = bdbmu[2][2] = bdbmu[2][3] = 
+	bdbmu[3][1] = bdbmu[3][2] = bdbmu[3][3] = 0.0;
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+      if(E->viscosity.allow_anisotropic_viscosity){
+	for(i = 1; i <= dims; i++)
+	  for(j = 1; j <= dims; j++)
+	    for(k = 1; k <= VPOINTS3D; k++){
+	      /* note that D is in 0,...,N-1 convention */
+	      for(l1=0;l1 < 6;l1++){ /* compute D*B */
+		btmp[l1] =  ( D[k][l1][0] * ba[b][j][k][1] +  D[k][l1][1] * ba[b][j][k][2]  + D[k][l1][2] * ba[b][j][k][3] +
+			      D[k][l1][3] * ba[b][j][k][4] +  D[k][l1][4] * ba[b][j][k][5]  + D[k][l1][5] * ba[b][j][k][6] );
+	      }
+	      /* compute B^T (D*B) */
+	      bdbmu[i][j] += W[k] * ( ba[a][i][k][1]*btmp[0] + ba[a][i][k][2]*btmp[1] + ba[a][i][k][3]*btmp[2]+
+				      ba[a][i][k][4]*btmp[3] + ba[a][i][k][5]*btmp[4] + ba[a][i][k][6]*btmp[5]);
+	    }
+      }else{
+#endif
+	/* 
+
+	isotropic branch, unchanged from previous version where only
+	the spherical version uses B
+
+	*/
+      if(E->control.CART3D){
+	/* cartesian isotropic does not use ba[] */
+	for(k = 1; k <= VPOINTS3D; k++){
+	  bdbmu[1][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
+	  bdbmu[1][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
+	  bdbmu[1][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
+	  bdbmu[2][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
+	  bdbmu[2][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
+	  bdbmu[2][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
+	  bdbmu[3][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
+	  bdbmu[3][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
+	  bdbmu[3][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
 	}
-
-	if(E->control.Rsphere)
-	{
-		get_rtf(E, el, 0, rtf, lev);
-
-		if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
-			construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 0);
-
-		for(k = 1; k <= vpts; k++)
-		{
-			ra[k] = rtf[3][k];
-			si[k] = one / sin(rtf[1][k]);
-			ct[k] = cos(rtf[1][k]) * si[k];
-		}
-
-		for(a = 1; a <= ends; a++)
-			for(i = 1; i <= dims; i++)
-				for(k = 1; k <= VPOINTS3D; k++)
-				{
-					gnx0 = E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)];
-					gnx1 = E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)];
-					gnx2 = E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)];
-					shp = E->N.vpt[GNVINDEX(a, k)];
-					cc1 = Cc.vpt[BVINDEX(1, i, a, k)];
-					cc2 = Cc.vpt[BVINDEX(2, i, a, k)];
-					cc3 = Cc.vpt[BVINDEX(3, i, a, k)];
-
-					ba[1][i][a][k] = (gnx0 * cc1 + shp * Ccx.vpt[BVXINDEX(1, i, 1, a, k)] + shp * cc3) * ra[k];
-
-					ba[2][i][a][k] = (shp * cc1 * ct[k] + shp * cc3 + (gnx1 * cc2 + shp * Ccx.vpt[BVXINDEX(2, i, 2, a, k)]) * si[k]) * ra[k];
-
-					ba[3][i][a][k] = gnx2 * cc3;
-
-					ba[4][i][a][k] = (gnx0 * cc2 + shp * Ccx.vpt[BVXINDEX(2, i, 1, a, k)] - shp * cc2 * ct[k] + (gnx1 * cc1 + shp * Ccx.vpt[BVXINDEX(1, i, 2, a, k)]) * si[k]) * ra[k];
-
-					ba[5][i][a][k] = gnx2 * cc1 + (gnx0 * cc3 + shp * (Ccx.vpt[BVXINDEX(3, i, 1, a, k)] - cc1)) * ra[k];
-
-					ba[6][i][a][k] = gnx2 * cc2 - ra[k] * shp * cc2 + (gnx1 * cc3 + shp * Ccx.vpt[BVXINDEX(3, i, 2, a, k)]) * si[k] * ra[k];
-				}
-
-
-	}							/* end for sphere */
-
-
-	for(a = 1; a <= ends; a++)
-		for(b = a; b <= ends; b++)
-		{
-			bdbmu[1][1] = bdbmu[1][2] = bdbmu[1][3] = bdbmu[2][1] = bdbmu[2][2] = bdbmu[2][3] = bdbmu[3][1] = bdbmu[3][2] = bdbmu[3][3] = 0.0;
-
-			if(E->control.CART3D)
-			{
-				for(k = 1; k <= VPOINTS3D; k++)
-				{
-					bdbmu[1][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
-					bdbmu[1][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
-					bdbmu[1][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
-					bdbmu[2][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
-					bdbmu[2][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
-					bdbmu[2][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)];
-					bdbmu[3][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
-					bdbmu[3][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
-					bdbmu[3][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)];
-				}
-
-				temp = 0.0;
-				for(k = 1; k <= VPOINTS3D; k++)
-					temp += W[k] * (E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)] + E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)] + E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)]);
-
-				bdbmu[1][1] += temp;
-				bdbmu[2][2] += temp;
-				bdbmu[3][3] += temp;
-
-			}					/* end for Cart3D */
-
-			else if(E->control.Rsphere)
-			{
-				for(i = 1; i <= dims; i++)
-					for(j = 1; j <= dims; j++)
-						for(k = 1; k <= VPOINTS3D; k++)
-						{
-							bdbmu[i][j] += W[k] * (two * (ba[1][i][a][k] * ba[1][j][b][k] + ba[2][i][a][k] * ba[2][j][b][k] + ba[3][i][a][k] * ba[3][j][b][k]) + ba[4][i][a][k] * ba[4][j][b][k] + ba[5][i][a][k] * ba[5][j][b][k] + ba[6][i][a][k] * ba[6][j][b][k]);
-						}
-			}					/* end for Sphere */
-
-			ad = dims * (a - 1);
-			bd = dims * (b - 1);
-			pn = ad * n + bd;
-			qn = bd * n + ad;
-
-			elt_k[pn] = bdbmu[1][1];	/* above */
-			elt_k[pn + 1] = bdbmu[1][2];
-			elt_k[pn + 2] = bdbmu[1][3];
-			elt_k[pn + n] = bdbmu[2][1];
-			elt_k[pn + n + 1] = bdbmu[2][2];
-			elt_k[pn + n + 2] = bdbmu[2][3];
-			elt_k[pn + 2 * n] = bdbmu[3][1];
-			elt_k[pn + 2 * n + 1] = bdbmu[3][2];
-			elt_k[pn + 2 * n + 2] = bdbmu[3][3];
-
-			elt_k[qn] = bdbmu[1][1];	/* below diag */
-			elt_k[qn + 1] = bdbmu[2][1];
-			elt_k[qn + 2] = bdbmu[3][1];
-			elt_k[qn + n] = bdbmu[1][2];
-			elt_k[qn + n + 1] = bdbmu[2][2];
-			elt_k[qn + n + 2] = bdbmu[3][2];
-			elt_k[qn + 2 * n] = bdbmu[1][3];
-			elt_k[qn + 2 * n + 1] = bdbmu[2][3];
-			elt_k[qn + 2 * n + 2] = bdbmu[3][3];
-		 /**/}					/*  Sum over all the a,b's to obtain full  elt_k matrix */
-
-	return;
+	      
+	temp = 0.0;
+	for(k = 1; k <= VPOINTS3D; k++){
+	  temp += W[k] * (E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)] + 
+			  E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)] + 
+			  E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)]);
+	}
+	      
+	bdbmu[1][1] += temp;
+	bdbmu[2][2] += temp;
+	bdbmu[3][3] += temp;
+	      
+	/* end for Cart3D */
+      }else if(E->control.Rsphere){
+	for(i = 1; i <= dims; i++)
+	  for(j = 1; j <= dims; j++)
+	    for(k = 1; k <= VPOINTS3D; k++){
+	      bdbmu[i][j] += W[k] * (two * (ba[a][i][k][1] * ba[b][j][k][1] + 
+					    ba[a][i][k][2] * ba[b][j][k][2] + 
+					    ba[a][i][k][3] * ba[b][j][k][3]) + 
+				     ba[a][i][k][4] * ba[b][j][k][4] + 
+				     ba[a][i][k][5] * ba[b][j][k][5] + 
+				     ba[a][i][k][6] * ba[b][j][k][6]);
+	    }
+      }					/* end for Sphere */
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+      }	/* end isotropic */
+#endif
+	    
+      ad = dims * (a - 1);
+      bd = dims * (b - 1);
+      pn = ad * n + bd;
+      qn = bd * n + ad;
+	    
+      elt_k[pn] = bdbmu[1][1];	/* above */
+      elt_k[pn + 1] = bdbmu[1][2];
+      elt_k[pn + 2] = bdbmu[1][3];
+      elt_k[pn + n] = bdbmu[2][1];
+      elt_k[pn + n + 1] = bdbmu[2][2];
+      elt_k[pn + n + 2] = bdbmu[2][3];
+      elt_k[pn + 2 * n] = bdbmu[3][1];
+      elt_k[pn + 2 * n + 1] = bdbmu[3][2];
+      elt_k[pn + 2 * n + 2] = bdbmu[3][3];
+	    
+      elt_k[qn] = bdbmu[1][1];	/* below diag */
+      elt_k[qn + 1] = bdbmu[2][1];
+      elt_k[qn + 2] = bdbmu[3][1];
+      elt_k[qn + n] = bdbmu[1][2];
+      elt_k[qn + n + 1] = bdbmu[2][2];
+      elt_k[qn + n + 2] = bdbmu[3][2];
+      elt_k[qn + 2 * n] = bdbmu[1][3];
+      elt_k[qn + 2 * n + 1] = bdbmu[2][3];
+      elt_k[qn + 2 * n + 2] = bdbmu[3][3];
+      /**/
+    }					/*  Sum over all the a,b's to obtain full  elt_k matrix */
+	
+  return;
 }
+/* 
 
+compute the displacement gradient matrix B
+
+*/
+void get_ba(struct Shape_function *N,struct Shape_function_dx *GNx,
+	    struct CC *cc, struct CCX *ccx, double rtf[4][9],
+	    int dims,int spherical, double ba[9][4][9][7])
+{
+
+  int i,k,a,vpts,ends;
+  double ra[9], si[9], ct[9];
+  const double one = 1.0;
+  const double two = 2.0;
+  float gnx0, gnx1, gnx2;
+  double shp, cc1, cc2, cc3;
+  
+  vpts = vpoints[dims];
+  ends = enodes[dims];
+
+
+  if(spherical){
+    for(k = 1; k <= vpts; k++){
+      ra[k] = rtf[3][k];
+      si[k] = one / sin(rtf[1][k]);
+      ct[k] = cos(rtf[1][k]) * si[k];
+    }
+    for(a = 1; a <= ends; a++)
+      for(i = 1; i <= dims; i++)
+	for(k = 1; k <= VPOINTS3D; k++){
+	  gnx0 = GNx->vpt[GNVXINDEX(0, a, k)];
+	  gnx1 = GNx->vpt[GNVXINDEX(1, a, k)];
+	  gnx2 = GNx->vpt[GNVXINDEX(2, a, k)];
+	  shp = N->vpt[GNVINDEX(a, k)];
+	  cc1 = cc->vpt[BVINDEX(1, i, a, k)];
+	  cc2 = cc->vpt[BVINDEX(2, i, a, k)];
+	  cc3 = cc->vpt[BVINDEX(3, i, a, k)];
+	    
+	  ba[a][i][k][1] = (gnx0 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 1, a, k)] + shp * cc3) * ra[k];
+	  
+	  ba[a][i][k][2] = (shp * cc1 * ct[k] + shp * cc3 + (gnx1 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 2, a, k)]) * si[k]) * ra[k];
+	  
+	  ba[a][i][k][3] = gnx2 * cc3;
+	  
+	  ba[a][i][k][4] = (gnx0 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 1, a, k)] - shp * cc2 * ct[k] + (gnx1 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 2, a, k)]) * si[k]) * ra[k];
+	  
+	  ba[a][i][k][5] = gnx2 * cc1 + (gnx0 * cc3 + shp * (ccx->vpt[BVXINDEX(3, i, 1, a, k)] - cc1)) * ra[k];
+	  
+	  ba[a][i][k][6] = gnx2 * cc2 - ra[k] * shp * cc2 + (gnx1 * cc3 + shp * ccx->vpt[BVXINDEX(3, i, 2, a, k)]) * si[k] * ra[k];
+	}
+  }else{			/* cartesian */
+    for(a = 1; a <= ends; a++)
+      for(k = 1; k <= VPOINTS3D; k++){
+	gnx0 = GNx->vpt[GNVXINDEX(0, a, k)];
+	gnx1 = GNx->vpt[GNVXINDEX(1, a, k)];
+	gnx2 = GNx->vpt[GNVXINDEX(2, a, k)];
+
+	ba[a][1][k][1]  = gnx0;
+	ba[a][2][k][1]  = 0.;
+	ba[a][3][k][1]  = 0.;
+
+	ba[a][1][k][2]  = 0.;
+	ba[a][2][k][2]  = gnx1;
+	ba[a][3][k][2]  = 0.;
+
+	ba[a][1][k][3]  = 0.;
+	ba[a][2][k][3]  = 0.;
+	ba[a][3][k][3]  = gnx2;
+
+	ba[a][1][k][4]  = gnx1;
+	ba[a][2][k][4]  = gnx0;
+	ba[a][3][k][4]  = 0.;
+
+	ba[a][1][k][5]  = gnx2;
+	ba[a][2][k][5]  = 0.;
+	ba[a][3][k][5]  = gnx0;
+
+	ba[a][1][k][6]  = 0.;
+	ba[a][2][k][6]  = gnx2;
+	ba[a][3][k][6]  = gnx1;
+
+      }
+  } /* end Caretsian */
+
+}
 
 	/* =============================================
 	 * General calling function for del_squared: 

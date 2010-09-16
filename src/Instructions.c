@@ -172,7 +172,7 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 void allocate_common_vars(struct All_variables *E)
 {
 	//int nox, noy, noz, i, j, l, nno_l, npno_l, nozl, nnov_l, nxyz;
-	int nox, noy, noz, i, j, l, nxyz;
+  int nox, noy, noz, i, j, l, nxyz,nel,nno;
 
 	E->mesh.fnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(float);
 	E->mesh.dnodal_malloc_size = (E->lmesh.nno + 2) * sizeof(double);
@@ -282,6 +282,37 @@ void allocate_common_vars(struct All_variables *E)
 		E->BPI[i] = (double *)malloc((E->lmesh.NPNO[i] + 1) * sizeof(double));
 		E->control.B_is_good[i] = 0;
 	}
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	if(E->viscosity.allow_anisotropic_viscosity){ /* any anisotropic
+							 viscosity */
+	  for(i=E->mesh.levmin;i<=E->mesh.levmax;i++){
+	    nel  = E->lmesh.NEL[i];
+	    nno  = E->lmesh.NNO[i];
+	    E->EVI2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVIn1[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVIn2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVIn3[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    
+	    E->VI2[i]  = (float *)        malloc((nno+1)*sizeof(float));
+	    E->VIn1[i]  = (float *)        malloc((nno+1)*sizeof(float));
+	    E->VIn2[i]  = (float *)        malloc((nno+1)*sizeof(float));
+	    E->VIn3[i]  = (float *)        malloc((nno+1)*sizeof(float));
+	    if((!(E->EVI2[i]))||(!(E->VI2[i]))||
+	       (!(E->EVIn1[i]))||(!(E->EVIn2[i]))||(!(E->EVIn3[i]))||
+	       (!(E->VIn1[i]))||(!(E->VIn2[i]))||(!(E->VIn3[i]))){
+	      fprintf(stderr, "Error: Cannot allocate anisotropic visc memory, rank=%d\n",
+		      E->parallel.me);
+	      parallel_process_termination();
+	    }
+	  }
+	  E->viscosity.anisotropic_viscosity_init = FALSE;
+	  if(E->parallel.me == 0)
+	    fprintf(stderr,"allocated for anisotropic viscosity (%s) levmax %i\n",
+		    (E->viscosity.allow_anisotropic_viscosity == 1)?("orthotropic"):("transversely isotropic"),
+		    E->mesh.levmax);
+	}
+
+#endif
 
 	E->temp = (double *)malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(double));
 	E->Element = (unsigned int *)malloc((E->lmesh.nel + 2) * sizeof(unsigned int));
@@ -703,6 +734,8 @@ void read_initial_settings(struct All_variables *E)
 		set_2dc_defaults(E);
 	}
 
+
+
 	input_string("Solver", E->control.SOLVER_TYPE, NULL, m);
 	if(strcmp(E->control.SOLVER_TYPE, "cgrad") == 0)
 	{
@@ -789,23 +822,6 @@ void read_initial_settings(struct All_variables *E)
 	input_int("obs_maxlongk", &(E->slice.maxlong), "100,1", m);
 	input_int("obs_minlongk", &(E->slice.minlong), "1,1", m);
 
-	/* for layers    */
-	E->viscosity.zlm = 1.0;
-	E->viscosity.z410 = 1.0;
-	E->viscosity.zlith = 0.0;
-
-	if(E->control.CART3D)
-	{
-		input_float("z_lmantle", &(E->viscosity.zlm), "1.0", m);
-		input_float("z_410", &(E->viscosity.z410), "1.0", m);
-		input_float("z_lith", &(E->viscosity.zlith), "0.0", m);
-	}
-	else if(E->control.Rsphere)
-	{
-		input_float("r_lmantle", &(E->viscosity.zlm), "1.0", m);
-		input_float("r_410", &(E->viscosity.z410), "1.0", m);
-		input_float("r_lith", &(E->viscosity.zlith), "0.0", m);
-	}
 
 
 #ifdef USE_GGRD
@@ -986,8 +1002,10 @@ void read_initial_settings(struct All_variables *E)
 	E->monitor.tau_scale = (E->data.ref_viscosity/E->monitor.time_scale); /* scaling stress */
 
 
-	(E->problem_settings) (E);
 
+	if(E->parallel.me == 0)fprintf(stderr, "ok22\n");
+	(E->problem_settings) (E);
+	if(E->parallel.me == 0)fprintf(stderr, "ok23\n");
 	viscosity_parameters(E);
 
 	return;

@@ -51,6 +51,14 @@ struct VISC_OPT
 	int SMOOTH;
 	int smooth_cycles;
 
+  int allow_anisotropic_viscosity,anisotropic_viscosity_init;
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  int anivisc_start_from_iso; /* start from isotropic solution? */
+  int anisotropic_init;	/* 0: isotropic, 1: random, 2: from file */
+  char anisotropic_init_dir[1000];
+  int anivisc_layer;		/* layer to assign anisotropic viscosity to for mode 2 */
+#endif
+
 
 	char STRUCTURE[20];			/* which option to determine viscosity field, one of .... */
 	int FROM_SYSTEM;
@@ -68,6 +76,8 @@ struct VISC_OPT
 	float z410;
 	float zlith;
 	float zcomp;
+  
+  float zbase_layer[40]; /* new */
 
 	int FREEZE;
 	float freeze_thresh;

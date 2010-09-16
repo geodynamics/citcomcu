@@ -45,6 +45,9 @@
 #include <string.h>
 #include "element_definitions.h"
 #include "global_defs.h"
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+#include "anisotropic_viscosity.h"
+#endif
 
 static void visc_from_B(struct All_variables *, float *, float *, int );
 static void visc_from_C(struct All_variables *, float *, float *, int );
@@ -103,6 +106,49 @@ void viscosity_parameters(struct All_variables *E)
 	input_int("num_mat", &(E->viscosity.num_mat), "1",m);
 
 
+	/* four layers    */
+	E->viscosity.zlm = 1.0;
+	E->viscosity.z410 = 1.0;
+	E->viscosity.zlith = 0.0;
+
+	E->viscosity.zbase_layer[0] = E->viscosity.zbase_layer[1] = -999;
+	if(E->control.CART3D)	/* defaults could be betters */
+	{
+		input_float("z_lmantle", &(E->viscosity.zlm), "1.0", m);
+		input_float("z_410", &(E->viscosity.z410), "1.0", m);
+		input_float("z_lith", &(E->viscosity.zlith), "0.0", m);
+		input_float_vector("z_layer",E->viscosity.num_mat,(E->viscosity.zbase_layer),m);
+	}
+	else if(E->control.Rsphere)
+	{
+		input_float("r_lmantle", &(E->viscosity.zlm), "1.0", m);
+		input_float("r_410", &(E->viscosity.z410), "1.0", m);
+		input_float("r_lith", &(E->viscosity.zlith), "0.0", m);
+		input_float_vector("r_layer",E->viscosity.num_mat,(E->viscosity.zbase_layer),m);
+	}
+
+	/* no z_layer input found */
+	if((fabs(E->viscosity.zbase_layer[0]+999) < 1e-5) &&
+	   (fabs(E->viscosity.zbase_layer[1]+999) < 1e-5)) {
+	  
+	  if(E->viscosity.num_mat != 4)
+            myerror("error: either use z_layer for non dim layer depths, or set num_mat to four",E);
+	  
+	  E->viscosity.zbase_layer[0] = E->viscosity.zlith;
+	  E->viscosity.zbase_layer[1] = E->viscosity.z410;
+	  E->viscosity.zbase_layer[2] = E->viscosity.zlm;
+	  E->viscosity.zbase_layer[3] = 0.55;
+	}
+
+
+
+
+
+
+
+
+
+
 	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T),m);	/* redundant */
 	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T),m);
 	input_float_vector("viscZ", E->viscosity.num_mat, (E->viscosity.Z),m);
@@ -137,7 +183,38 @@ void viscosity_parameters(struct All_variables *E)
 	/* 
 	   
 	*/
-	
+	input_int("allow_anisotropic_viscosity",&(E->viscosity.allow_anisotropic_viscosity),"0",m);
+#ifndef CITCOM_ALLOW_ANISOTROPIC_VISC 
+	if(E->viscosity.allow_anisotropic_viscosity){ /* error */
+	  fprintf(stderr,"error: allow_anisotropic_viscosity is not zero, but code not compiled with CITCOM_ALLOW_ANISOTROPIC_VISC\n");
+	  parallel_process_termination();
+	}
+#else
+	if(E->viscosity.allow_anisotropic_viscosity){ /* read additional
+							 parameters for
+							 anisotropic
+							 viscosity */
+	  input_int("anisotropic_init",&(E->viscosity.anisotropic_init),"0",m); /* 0: isotropic 1: random 2: read in director and log10(eta_s/eta) */
+	  input_string("anisotropic_init_dir",(E->viscosity.anisotropic_init_dir),"",m); /* directory
+											    for
+											    ggrd
+											    type
+											    init */
+	  input_int("anivisc_layer",&(E->viscosity.anivisc_layer),"1",m); /* >0: assign to layers on top of anivisc_layer
+									     <0: assign to layer = anivisc_layer
+									  */
+	  
+	  input_boolean("anivisc_start_from_iso",
+			&(E->viscosity.anivisc_start_from_iso),"on",m); /* start
+									   from
+									   isotropic
+									   solution? */
+	}
+#endif
+
+
+
+
 	/* composition factors */
 	input_float_vector("pre_comp",2,(E->viscosity.pre_comp),m);
 
@@ -215,7 +292,15 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 
 	const int vpts = vpoints[E->mesh.nsd];
 
-
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	if(E->viscosity.allow_anisotropic_viscosity){
+	  if(!E->viscosity.anisotropic_viscosity_init)
+	    set_anisotropic_viscosity_at_element_level(E,1);
+	  else
+	    set_anisotropic_viscosity_at_element_level(E,0);
+	}
+#endif
+	
 	
 	if(E->viscosity.TDEPV)
 		visc_from_T(E, visc, evisc, propogate);
@@ -233,7 +318,8 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 
 
 	if(E->viscosity.SMOOTH)
-		apply_viscosity_smoother(E, visc, evisc);
+	  apply_viscosity_smoother(E, visc, evisc);
+
 
 	if(E->viscosity.MAX)
 	{
@@ -256,6 +342,15 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 #ifdef USE_GZDIR
 	/* this is much preferred over v_to_nodes */
 	visc_from_gint_to_nodes(E,evisc,visc,E->mesh.levmax);
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC /* allow for anisotropy */
+	if(E->viscosity.allow_anisotropic_viscosity){
+	  visc_from_gint_to_nodes(E,E->EVI2[E->mesh.levmax], E->VI2[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn1[E->mesh.levmax], E->VIn1[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn2[E->mesh.levmax], E->VIn2[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn3[E->mesh.levmax], E->VIn3[E->mesh.levmax],E->mesh.levmax);
+	  normalize_director_at_nodes(E,E->VIn1[E->mesh.levmax],E->VIn2[E->mesh.levmax],E->VIn3[E->mesh.levmax],E->mesh.levmax);
+	}
+#endif
 #endif
 
 	/* v_to_nodes(E,evisc,visc,E->mesh.levmax);  */
@@ -275,6 +370,18 @@ void apply_viscosity_smoother(struct All_variables *E, float *visc, float *evisc
 	{
 		p_to_centres(E, visc, ViscCentre, E->mesh.levmax);
 		p_to_nodes(E, ViscCentre, visc, E->mesh.levmax);
+
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC /* allow for anisotropy */
+		if(E->viscosity.allow_anisotropic_viscosity){
+		  p_to_centres(E, E->EVI2[E->mesh.levmax], ViscCentre, E->mesh.levmax);p_to_nodes(E, ViscCentre, E->EVI2[E->mesh.levmax], E->mesh.levmax);
+		  p_to_centres(E, E->EVIn1[E->mesh.levmax], ViscCentre, E->mesh.levmax);p_to_nodes(E, ViscCentre, E->EVIn1[E->mesh.levmax], E->mesh.levmax);
+		  p_to_centres(E, E->EVIn2[E->mesh.levmax], ViscCentre, E->mesh.levmax);p_to_nodes(E, ViscCentre, E->EVIn2[E->mesh.levmax], E->mesh.levmax);
+		  p_to_centres(E, E->EVIn3[E->mesh.levmax], ViscCentre, E->mesh.levmax);p_to_nodes(E, ViscCentre, E->EVIn3[E->mesh.levmax], E->mesh.levmax);
+		  normalize_director_at_gint(E,E->EVIn1[E->mesh.levmax],E->EVIn2[E->mesh.levmax],E->EVIn3[E->mesh.levmax],E->mesh.levmax);
+		}
+#endif
+
+		
 	}
 
 	free((void *)ViscCentre);
@@ -706,23 +813,16 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT, int SQRT)
 int layers(struct All_variables *E, float x3)
 {
 	int llayers = 0;
-
-	/* this is the old logic, llayer = 4 would never get assigned */
-	/* 	if(x3 >= E->viscosity.zlith) */
-	/* 		llayers = 1; */
-	/* 	else if((x3 < E->viscosity.zlith) && (x3 >= E->viscosity.zlm)) */
-	/* 		llayers = 2; */
-	/* 	else if(x3 < E->viscosity.zlm) */
-	/* 		llayers = 3; */
-	
-	if(x3 >= E->viscosity.zlith) /* above 410 */
-	  llayers = 1;
-	else if(x3 >= E->viscosity.z410) /* above 410 */
-	  llayers = 2;
-	else if(x3 >= E->viscosity.zlm) /* above 660 */
-	  llayers = 3;
-	else /* lower mantle */
-	  llayers = 4;
+	int i,ncheck;
+	ncheck = E->viscosity.num_mat-1;
+	for(i=0;i < ncheck;i++)
+	  if(x3 >= E->viscosity.zbase_layer[i]){
+	    llayers = i+1;
+	    break;
+	  }
+	if(!llayers)
+	  llayers = E->viscosity.num_mat;
+	    
   
 	return (llayers);
 }

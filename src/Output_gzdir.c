@@ -56,6 +56,9 @@
 #include "element_definitions.h"
 #include "global_defs.h"
 #include "prototypes.h"
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+#include "anisotropic_viscosity.h"
+#endif
 
 static gzFile *safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);
@@ -112,7 +115,7 @@ void output_velo_related_gzdir(E, file_number)
     sprintf(output_file,"if [ ! -s %s/%d ];then mkdir -p %s/%d;fi 2> /dev/null",
 	    E->control.data_file2,file_number,E->control.data_file2,file_number);
     system(output_file);
-    fprintf(stderr,"making directory: %s\n",output_file);
+    //fprintf(stderr,"making directory: %s\n",output_file);
 
   }
   /* and wait for the other jobs */
@@ -207,8 +210,7 @@ void output_velo_related_gzdir(E, file_number)
       sprintf(output_file,"%s/vtk_ecor.%d.gz",E->control.data_file2,E->parallel.me);
       gzout = safe_gzopen(output_file,"w");
       if(E->control.Rsphere){	/* spherical */
-	if(E->parallel.me == 0)
-	  fprintf(stderr, "converting spherical to cartesian  vtk coords to %s \n",output_file);
+	//if(E->parallel.me == 0)fprintf(stderr, "converting spherical to cartesian  vtk coords to %s \n",output_file);
 	for(i=1;i <= E->lmesh.nno;i++) {
 	  rtp2xyz((float)E->SX[3][i],(float)E->SX[1][i],(float)E->SX[2][i],locx);
 	  gzprintf(gzout,"%9.6f %9.6f %9.6f\n",locx[0],locx[1],locx[2]);
@@ -242,8 +244,7 @@ void output_velo_related_gzdir(E, file_number)
 		 E->ien[i].node[7]+offset,E->ien[i].node[8]+offset);
       }
       gzclose(gzout);
-      if(E->parallel.me == 0)
-	fprintf(stderr, "writing element connectivity %s \n",output_file);
+      //if(E->parallel.me == 0)fprintf(stderr, "writing element connectivity %s \n",output_file);
       /* end vtk branch */
     }
     /* end init loop */
@@ -361,6 +362,24 @@ void output_velo_related_gzdir(E, file_number)
 	    gzprintf(gzout,"%.4e\n",E->VI[E->mesh.levmax][i]);
 	  }
 	  gzclose(gzout);
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	  if(E->viscosity.allow_anisotropic_viscosity){
+	    sprintf(output_file,"%s/%d/avisc.%d.%d.gz",
+		    E->control.data_file2,file_number, E->parallel.me,file_number);
+	    gzout=safe_gzopen(output_file,"w");
+	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	    for(i=1;i<=E->lmesh.nno;i++){
+	      gzprintf(gzout,"%10.4e %10.4e %10.4e %10.4e\n",
+		       E->VI2[E->mesh.levmax][i],
+		       E->VIn1[E->mesh.levmax][i],
+		       E->VIn2[E->mesh.levmax][i],
+		       E->VIn3[E->mesh.levmax][i]);
+	    }
+	    gzclose(gzout);
+
+
+	  }
+#endif
 	}
 	if(vtk_comp_out){
 	  /* 
@@ -538,7 +557,7 @@ void output_velo_related_gzdir(E, file_number)
       }
     }
 
-if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
+  if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
   return;
 }
 

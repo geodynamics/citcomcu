@@ -648,6 +648,7 @@ struct MONITOR
 	int sobs_output_cols;
 
 	int solution_cycles;
+  int visc_iter_count;
 
 	float time_scale,time_scale_ma;
 	float length_scale;
@@ -659,13 +660,14 @@ struct MONITOR
 	float tpgscale;
 	float grvscale;
 
+
 	float delta_v_last_soln;
 	float elapsed_time;
 	float elapsed_time_vsoln;
 	float elapsed_time_vsoln1;
 	float reference_stress;
 	float incompressibility;
-	float vdotv;
+  float vdotv,pdotp;
 	float nond_av_heat_fl;
 	float nond_av_adv_hfl;
 	float cpu_time_elapsed;
@@ -746,6 +748,7 @@ struct CONTROL
 	int AVS;
 	int CONMAN;
 	int stokes;
+
 
 
   int check_t_irange,check_c_irange;
@@ -975,6 +978,15 @@ struct All_variables
 	float *EVI[MAX_LEVELS];		/* element viscosity has to soak down to all levels */
 	float *VB[4], *TB[4];		/* boundary conditions for V,T defined everywhere */
 	float *TW[MAX_LEVELS];		/* nodal weightings */
+
+
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  float *VI2[MAX_LEVELS],*EVI2[MAX_LEVELS];
+  float *VIn1[MAX_LEVELS],*EVIn1[MAX_LEVELS];
+  float *VIn2[MAX_LEVELS],*EVIn2[MAX_LEVELS];
+  float *VIn3[MAX_LEVELS],*EVIn3[MAX_LEVELS];
+#endif
+
 
 	int *surf_node, *surf_element;
 	int *mat;					/* properties of mat */

@@ -26,7 +26,8 @@ LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
 LIB= $(LIB_PATH) $(LIB_LIST) -lm
 
-DEFINES = -DUSE_GZDIR -DUSE_GGRD -I$(HC_DIR)/ -Werror \
+DEFINES = -DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
+	-I$(HC_DIR)/ -Werror \
 	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
 	-DPREM_MODEL_FILE=\"$(PWD)/prem/prem.dat\"
 
@@ -139,6 +140,7 @@ OPTIM= $(LinuxOPTIM)
 ####################################################################
 
 CFILES= Advection_diffusion.c\
+	Anisotropic_viscosity.c\
 	Boundary_conditions.c\
 	Citcom.c\
 	Composition_adv.c\
@@ -175,6 +177,7 @@ CFILES= Advection_diffusion.c\
 HEADER = element_definitions.h\
 	 global_defs.h\
 	 viscosity_descriptions.h\
+	 anisotropic_viscosity.h\
 	 advection.h
 
 
@@ -190,7 +193,8 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 default: citcom.mpi
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
+	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
+	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
 	rm -f *.o
@@ -215,6 +219,9 @@ global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
 
 Advection_diffusion.o: $(HEADER) Advection_diffusion.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Advection_diffusion.c
+
+Anisotropic_viscosity.o: $(HEADER) Anisotropic_viscosity.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Anisotropic_viscosity.c
 #
 Boundary_conditions.o: $(HEADER) Boundary_conditions.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Boundary_conditions.c

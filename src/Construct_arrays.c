@@ -786,7 +786,9 @@ void construct_mat_group(struct All_variables *E)
 
 		llayer = layers(E, x3);
 		if(llayer){
-		  /* for layers:1-lith,2-upper and 3-lower mantle */
+		  /* for layers:1-lith,2-upper and 3-lower mantle 
+		     or whatever is read in with num_mat and zlayer
+		  */
 		  E->mat[el] = llayer;
 		}
 

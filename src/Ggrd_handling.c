@@ -56,7 +56,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
   unsigned int type;
 
   FILE *fp;
-  double  x1, y1, z1, con;
+  double  x1, y1, z1, con, top_t, bot_t;
 
   int noz2, nfz, in1, in2, in3, instance, nox, noy, noz,nxs,setflag;
   char input_s[200], output_file[255];
@@ -67,7 +67,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
   /* twb additions */
   double rho_prem;
   char pfile[1000];
-  double t1,f1,r1,tgrad,tbot,tadd,tz,tmean;
+  double t1,f1,r1,tgrad,tadd,tz,tmean;
 
   /* for dealing with several processors */
   MPI_Status mpi_stat;
@@ -84,6 +84,10 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   setflag = 0;
 
+  /* top and bottom temperatures for initial assign (only use if
+     temperatures are set, else defaults */
+  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 1.0;
+  top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 1.0;
 
   for(i=1;i<=E->lmesh.nno;i++) {
     /* init as zeros */
@@ -161,26 +165,22 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	interpolate densities to temperature given PREM variations
 	    
 	*/
-	if(E->mesh.bottbc != 0){
-	  /* bottom has specified temperature */
-	  tbot =  E->control.TBCbotval;
-	}else{
-	  /* 
-	     bottom has specified heat flux
-	     start with unity bottom temperature
-	  */
-	  tbot = 1.0;
-	}
-      	tmean = (tbot + E->control.TBCtopval)/2.0 +  E->control.ggrd.temp.offset;
+
+      	tmean = (top_t + bot_t)/2.0 +  E->control.ggrd.temp.offset;
 	if(E->parallel.me == 0)
 	  fprintf(stderr,"tinit: top: %g bot: %g mean: %g scale: %g PREM %i\n",
-		  E->control.TBCtopval,tbot,tmean,E->control.ggrd.temp.scale,
+		  top_t,bot_t,tmean,E->control.ggrd.temp.scale,
 		  E->control.ggrd.temp.scale_with_prem);
 	for(i=1;i<=noy;i++)  
 	  for(j=1;j<=nox;j++) 
 	    for(k=1;k<=noz;k++)  {
 	      node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
 	      if(E->control.slab_slice){
+		/* 
+
+		slab slice input 
+
+		*/
 		if(E->control.Rsphere) {
 		  if(E->SX[1][node] <= E->control.slab_theta_bound)
 		    /* spherical interpolation */
@@ -210,7 +210,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	      }else{
 		/* 
 		   
-		3-D
+		3-D grid model input
 
 		*/
 		if(E->control.Rsphere) /* spherical interpolation */
@@ -284,7 +284,9 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	   
 	add a linear profile and potentially perturbations to the temperature
 	
+	
 	*/
+
 	if(E->control.CART3D)
 	  {
 	    
@@ -296,15 +298,9 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		  x1 = E->X[1][node];
 		  z1 = E->X[3][node];
 		  y1 = E->X[2][node];
-		  /* linear gradient */
-		  if(E->mesh.bottbc){
-		    tz = z1* (E->control.TBCtopval - E->control.TBCbotval) + 
-		      E->control.TBCbotval;
-		  }else{
-		    tz = z1* (E->control.TBCtopval - 1) + 1;
-		  }
+		  /* linear gradient assuming unity box height */
+		  tz = z1 * (top_t - bot_t) + bot_t;
 		  E->T[node] += tz;
-
 		  if(E->convection.random_t_init){
 		    /* random init */
 		    E->T[node] += (-0.5 + drand48()) * E->convection.perturb_mag[0];
@@ -338,8 +334,8 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		  z1 = E->SX[3][node];
 		  y1 = E->SX[2][node];
 		  /* linear */
-		  tz = (z1 -  E->sphere.ri)/(E->sphere.ro - E->sphere.ri) * 
-		    (E->control.TBCtopval-E->control.TBCbotval) + E->control.TBCbotval;
+		  tz = (z1 -  E->sphere.ri)/(E->sphere.ro - E->sphere.ri) * (top_t-bot_t) + bot_t;
+		    
 		  E->T[node] += tz;
 		  if(E->convection.random_t_init){
 		    /* random init */
@@ -491,4 +487,254 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   return;
 } 
+
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+/*
+
+
+read in anisotropic viscosity from a directory which holds
+
+
+vis2.grd for the viscosity factors, read in log10(eta_S/eta)
+
+nr.grd, nt.grd, np.grd for the directors
+
+*/
+void ggrd_read_anivisc_from_file(struct All_variables *E)
+{
+  MPI_Status mpi_stat;
+  int mpi_rc;
+  int mpi_inmsg, mpi_success_message = 1;
+  int el,i,j,k,l,inode,i1,i2,elxlz,elxlylz,ind,nel;
+  int llayer,nox,noy,noz,level,lselect,idim,elx,ely,elz;
+  char gmt_string[10],char_dummy;
+  double vis2,log_vis,ntheta,nphi,nr;
+  float rout[3],xloc[3];
+  double cvec[3];
+  float base[9];
+  char tfilename[1000];
+  static ggrd_boolean shift_to_pos_lon = FALSE;
+  const int dims=E->mesh.nsd;
+  const int ends = enodes[dims];
+  FILE *in;
+  struct ggrd_gt *vis2_grd,*ntheta_grd,*nphi_grd,*nr_grd;
+  const int vpts = vpoints[E->mesh.nsd];
+
+  
+  nox=E->mesh.nox;noy=E->mesh.noy;noz=E->mesh.noz;
+  elx=E->lmesh.elx;elz=E->lmesh.elz;ely=E->lmesh.ely;
+  elxlz = elx * elz;
+  elxlylz = elxlz * ely;
+
+
+  if(E->viscosity.allow_anisotropic_viscosity == 0)
+    myerror("ggrd_read_anivisc_from_file: called, but allow_anisotropic_viscosity is FALSE?!",E);
+  
+  /* isotropic default */
+  for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
+    nel  = E->lmesh.NEL[i];
+    for(k=1;k <= nel;k++){
+      for(l=1;l <= vpts;l++){ /* assign to all integration points */
+	ind = (k-1)*vpts + l;
+	E->EVI2[i][ind] = 0.0;
+	E->EVIn1[i][ind] = 1.0; E->EVIn2[i][ind] = E->EVIn3[i][ind] = 0.0;
+      }
+    }
+  }
+  sprintf(gmt_string,"");	/* regional */
+
+  /*
+    
+  initialization steps
+  
+  */
+  if(E->parallel.me > 0)	/* wait for previous processor */
+    mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1),
+		      0, MPI_COMM_WORLD, &mpi_stat);
+  /*
+    read in the material file(s)
+  */
+  vis2_grd =   (struct  ggrd_gt *)calloc(1,sizeof(struct ggrd_gt));
+  nphi_grd =   (struct  ggrd_gt *)calloc(1,sizeof(struct ggrd_gt));
+  nr_grd =     (struct  ggrd_gt *)calloc(1,sizeof(struct ggrd_gt));
+  ntheta_grd = (struct  ggrd_gt *)calloc(1,sizeof(struct ggrd_gt));
+
+
+  if(E->parallel.me==0)
+    if(E->viscosity.anivisc_layer > 0)
+      fprintf(stderr,"ggrd_read_anivisc_from_file: initializing, assigning to all elements above %g km, input is %s\n",
+	      E->monitor.length_scale*E->viscosity.zbase_layer[E->viscosity.anivisc_layer - 1],
+	      ("regional"));
+    else
+      fprintf(stderr,"ggrd_read_anivisc_from_file: initializing, assigning to all elements between  %g and %g km, input is %s\n",
+	      E->monitor.length_scale*((E->viscosity.anivisc_layer<-1)?(E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 2]):(0)),
+	      E->monitor.length_scale*E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 1],
+	      ("regional"));
+
+  /* 
+     read viscosity ratio, and east/north direction of normal azimuth 
+  */
+  /* viscosity factor */
+  sprintf(tfilename,"%s/vis2.grd",E->viscosity.anisotropic_init_dir);
+  if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
+				vis2_grd,(E->parallel.me == 0),FALSE))
+    myerror("ggrd init error",E);
+  /* n_r */
+  if(E->control.CART3D)
+    sprintf(tfilename,"%s/nz.grd",E->viscosity.anisotropic_init_dir);
+  else
+    sprintf(tfilename,"%s/nr.grd",E->viscosity.anisotropic_init_dir);
+
+  if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
+				nr_grd,(E->parallel.me == 0),FALSE))
+    myerror("ggrd init error",E);
+  if(E->control.CART3D)
+    /* n_theta */
+    sprintf(tfilename,"%s/ny.grd",E->viscosity.anisotropic_init_dir);
+  else
+    sprintf(tfilename,"%s/nt.grd",E->viscosity.anisotropic_init_dir);
+
+  if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
+				ntheta_grd,(E->parallel.me == 0),FALSE))
+    myerror("ggrd init error",E);
+  if(E->control.CART3D)
+  /* n_phi */
+    sprintf(tfilename,"%s/nx.grd",E->viscosity.anisotropic_init_dir);
+  else
+    sprintf(tfilename,"%s/np.grd",E->viscosity.anisotropic_init_dir);
+
+  if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
+				nphi_grd,(E->parallel.me == 0),FALSE))
+    myerror("ggrd init error",E);
+
+  /* done */
+  if(E->parallel.me <  E->parallel.nproc-1){ /* tell the next proc to go ahead */
+    mpi_rc = MPI_Send(&mpi_success_message, 1,
+		      MPI_INT, (E->parallel.me+1), 0, MPI_COMM_WORLD);
+  }else{
+    fprintf(stderr,"ggrd_read_anivisc_from_file: last processor done with ggrd init\n");
+    fprintf(stderr,"ggrd_read_anivisc_from_file: WARNING: assuming a regular grid geometry\n");
+  }
+  /*
+
+  loop through all elements and assign
+
+  */
+  for (j=1;j <= elz;j++)  {	/* this assumes a regular grid sorted as in (1)!!! */
+    if(((E->viscosity.anivisc_layer > 0)&&(E->mat[j] <=   E->viscosity.anivisc_layer))||
+       ((E->viscosity.anivisc_layer < 0)&&(E->mat[j] ==  -E->viscosity.anivisc_layer))){
+      /* within top layers */
+      for (k=1;k <= ely;k++){
+	for (i=1;i <= elx;i++)   {
+	  /* eq.(1) */
+	  el = j + (i-1) * elz + (k-1)*elxlz;
+	  /*
+	    find average coordinates
+	  */
+	  if(E->control.CART3D){
+	    rout[0]=rout[1]=rout[2]=0.0;
+	    for(inode=1;inode <= 4;inode++){
+	      ind = E->ien[el].node[inode];
+	      rout[0] += E->X[1][ind];
+	      rout[1] += E->X[2][ind];
+	      rout[2] += E->X[3][ind];
+	    }
+	    rout[0]/=4.;rout[1]/=4.;rout[2]/=4.;
+	    if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],vis2_grd,&log_vis,FALSE)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at x: %g y: %g\n",
+		      rout[0],rout[1]);
+	      parallel_process_termination();
+	    }
+	    /* read in cartesian vector */
+	    if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],nphi_grd,cvec,FALSE)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at x: %g y: %g\n",
+		      rout[0],rout[1]);
+	      parallel_process_termination();
+	    }
+	    if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],ntheta_grd,(cvec+1),FALSE)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at x: %g y: %g\n",
+		      rout[0],rout[1]);
+	      parallel_process_termination();
+	    }
+	    if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],nr_grd,(cvec+2),FALSE)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at x: %g y: %g\n",
+		      rout[0],rout[1]);
+	      parallel_process_termination();
+	    }
+	    normalize_vec3d(cvec,(cvec+1),(cvec+2));
+	  }else{
+	    /* spherical */
+	    xloc[0] = xloc[1] = xloc[2] = 0.0;
+	    for(inode=1;inode <= 4;inode++){
+	      ind = E->ien[el].node[inode];
+	      rtp2xyz((float)E->SX[3][ind],(float)E->SX[1][ind],
+		      (float)E->SX[2][ind],rout);
+	      xloc[0] += rout[0];
+	      xloc[1] += rout[1];
+	      xloc[2] += rout[2];
+	    }
+	    xloc[0]/=4.;xloc[1]/=4.;xloc[2]/=4.;
+	    xyz2rtp(xloc[0],xloc[1],xloc[2],rout); /* convert to spherical */
+	    
+	    /* vis2 */
+	    if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],
+					     vis2_grd,&log_vis,FALSE,shift_to_pos_lon)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at lon: %g lat: %g\n",
+		      rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+	      parallel_process_termination();
+	    }
+	    /* nr */
+	    if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],
+					     nr_grd,&nr,FALSE,shift_to_pos_lon)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at lon: %g lat: %g\n",
+		      rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+	      parallel_process_termination();
+	    }
+	    /* ntheta */
+	    if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],
+					     ntheta_grd,&ntheta,FALSE,shift_to_pos_lon)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at lon: %g lat: %g\n",
+		      rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+	      parallel_process_termination();
+	    }
+	    /* nphi */
+	    if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],
+					     nphi_grd,&nphi,FALSE,shift_to_pos_lon)){
+	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at lon: %g lat: %g\n",
+		      rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+	      parallel_process_termination();
+	    }
+	    normalize_vec3d(&nr,&ntheta,&nphi);
+	    calc_cbase_at_tp(rout[1],rout[2],base); /* convert from
+						       spherical
+						       coordinates to
+						       Cartesian */
+	    convert_pvec_to_cvec(nr,ntheta,nphi,base,xloc);
+	    cvec[0]=xloc[0];cvec[1]=xloc[1];cvec[2]=xloc[2];
+	  }
+	  /* transform */
+	  vis2 = 1.0 - pow(10.0,log_vis);
+	  for(l=1;l <= vpts;l++){ /* assign to all integration points */
+	    ind = (el-1)*vpts + l;
+	    E->EVI2[E->mesh.levmax][ind]  =   vis2;
+	    E->EVIn1[E->mesh.levmax][ind]  = cvec[0];
+	    E->EVIn2[E->mesh.levmax][ind]  = cvec[1];
+	    E->EVIn3[E->mesh.levmax][ind]  = cvec[2];
+	  }
+	}
+      }
+    }	/* end insize lith */
+  }	/* end elz loop */
+
+
+  ggrd_grdtrack_free_gstruc(vis2_grd);
+  ggrd_grdtrack_free_gstruc(nr_grd);
+  ggrd_grdtrack_free_gstruc(ntheta_grd);
+  ggrd_grdtrack_free_gstruc(nphi_grd);
+  
+  
+}
+
+
+#endif	/* for ANISOTROPIC */
 

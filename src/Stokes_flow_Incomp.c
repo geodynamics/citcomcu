@@ -105,10 +105,9 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 	double alpha, delta, s2dotAhat, r0dotr0, r1dotz1;
 	//double residual, initial_residual, last_residual, res_magnitude, v_res;
 	double residual, initial_residual, res_magnitude, v_res;
-
+	char message[500];
 	double time0, time;
 	static double timea;
-	//float dpressure, dvelocity, tole_comp;
 	float dpressure, dvelocity;
 
 	//const int dims = E->mesh.nsd;
@@ -165,7 +164,8 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
 	assemble_div_u(E, V, r1, lev);
 
-	residual = initial_residual = sqrt(global_pdot(E, r1, r1, lev) / gnpno);
+	E->monitor.pdotp = sqrt(global_pdot(E, r1, r1, lev) / gnpno);
+	residual = initial_residual = 	E->monitor.pdotp;
 
 	E->monitor.vdotv = sqrt(global_vdot(E, V, V, lev) / gneq);
 
@@ -182,14 +182,8 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
 	res_magnitude = residual;
 
-	if(E->control.print_convergence && E->parallel.me == 0)
-	{
-		fprintf(E->fp, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", 
-			count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
-		/**/ fprintf(stderr, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", 
-			     count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
-		/**/
-	}
+	generate_log_message(count,time0,timea,dvelocity, dpressure,E);
+
 
 /*   while( (count < *steps_max) && (E->monitor.incompressibility >= E->control.tole_comp || dvelocity >= imp) )  {     
 */ 
@@ -237,18 +231,21 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 			V[j] -= alpha * u1[j];
 
 		assemble_div_u(E, V, Ah, lev);
-		E->monitor.vdotv = global_vdot(E, V, V, E->mesh.levmax);
+		/* this is how it was computed before */
+		E->monitor.vdotv = global_vdot(E, V, V, lev);
+		E->monitor.pdotp = global_pdot(E, P, P, lev);
+		
 		E->monitor.incompressibility = sqrt((gneq / gnpno) * (1.0e-32 + global_pdot(E, Ah, Ah, lev) / (1.0e-32 + E->monitor.vdotv)));
-		dpressure = alpha * sqrt(global_pdot(E, s2, s2, lev) / (1.0e-32 + global_pdot(E, P, P, lev)));
+		dpressure = alpha * sqrt(global_pdot(E, s2, s2, lev) / (1.0e-32 + E->monitor.pdotp));
 		dvelocity = alpha * sqrt(global_vdot(E, u1, u1, lev) / (1.0e-32 + E->monitor.vdotv));
+		/* keep the normalized versions for the message */
+		E->monitor.vdotv = sqrt(E->monitor.vdotv/gneq);
+		E->monitor.pdotp = sqrt(E->monitor.pdotp/gnpno);
 
 		count++;
-		if(E->control.print_convergence && E->parallel.me == 0)
-		{
-			fprintf(E->fp, "AhatP (%03d) after %g sec with div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n", count, CPU_time0() - time0, E->monitor.incompressibility, dvelocity, dpressure, E->monitor.solution_cycles);
-			/**/ fprintf(stderr, "AhatP (%03d) after %g sec with div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n", count, CPU_time0() - time0, E->monitor.incompressibility, dvelocity, dpressure, E->monitor.solution_cycles);
-			/**/ fflush(E->fp);
-		}
+
+		generate_log_message(count,time0,timea,dvelocity, dpressure,E);
+
 
 		shuffle = s1;
 		s1 = s2;
@@ -296,6 +293,32 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 	return (residual);
 }
 
+void generate_log_message(int count,double time0,double timea,double dvelocity,double dpressure, struct All_variables *E){
+
+  const int old_version=0;
+  char message[500];
+  if(E->control.print_convergence && E->parallel.me == 0){
+    if(old_version){		/* old version for backward compat */
+      if(count == 0)
+	/* first message was like this */
+	sprintf(message, "AhatP (%03d) after %g sec %g sec with div/v=%.3e for step %d\n", 
+		count, CPU_time0() - time0, CPU_time0() - timea, E->monitor.incompressibility, E->monitor.solution_cycles);
+      else
+	/* other messages like that */
+      	sprintf(message,  "AhatP (%03d) after %g sec with div/v=%.3e, dv/v=%.3e & dp/p=%.3e for step %d\n", 
+		count, CPU_time0() - time0, E->monitor.incompressibility, dvelocity, dpressure, E->monitor.solution_cycles);
+    }else{
+      sprintf(message,  "AhatP (%03d) after %8.2f sec with v %12.6e dv/v %9.3e div/v %9.3e  p %12.6e dp/p %9.3e for step %d\n", 
+	      count, CPU_time0() - time0, 
+	      E->monitor.vdotv,E->monitor.incompressibility, dvelocity, 
+	      E->monitor.pdotp,dpressure, E->monitor.solution_cycles);
+      
+
+    }
+    fprintf(E->fp,"%s",message);//fflush(E->fp);
+    fprintf(stderr,"%s",message);
+  }
+}
 
 /*  ==========================================================================  */
 
