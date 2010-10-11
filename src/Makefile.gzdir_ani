@@ -25,6 +25,7 @@ LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
 
 
+
 # use the expokit stuff?
 EXPO_DEFINE = -DCITCOM_USE_EXPOKIT
 EXPO_FILES = expokit/dgpadm.f
