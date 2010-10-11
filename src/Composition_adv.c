@@ -109,10 +109,8 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 {
 	int i;
 	double temp1, temp2, temp3;
-
 	/*   velocity VO at t and x=XMC  */
 	velocity_markers(E, V, on_off);
-
 	/*   predicted marker positions at t+dt  */
 	if(E->control.CART3D)
 	{
@@ -135,13 +133,10 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 			E->XMCpred[3][i] = temp3;
 		}
 	}
-
 	transfer_markers_processors(E, on_off);
-
 	/*   predicted compositional field at t+dt  */
 	element_markers(E, on_off);
 	get_C_from_markers(E, C);
-
 	return;
 }
 
@@ -151,7 +146,7 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 {
 	//FILE *fp;
 	//char output_file[255];
-	int i, proc, neighbor, no_transferred, no_received;
+  int i, proc, neighbor, no_transferred, no_received,asize;
 
 	static int been = 0;
 	static int markers;
@@ -162,23 +157,23 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	if(been == 0)
 	{
 		markers = E->advection.markers / 10;
+		asize = (markers + 1) * E->mesh.nsd * 2;
 		for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 		{
 			E->parallel.traces_transfer_index[neighbor] = (int *)malloc((markers + 1) * sizeof(int));
-			E->RVV[neighbor] = (float *)malloc((markers + 1) * E->mesh.nsd * 2 * sizeof(int));
-			E->RXX[neighbor] = (double *)malloc((markers + 1) * E->mesh.nsd * 2 * sizeof(double));
+			E->RVV[neighbor] = (float *)malloc(asize * sizeof(int));
+			E->RXX[neighbor] = (double *)malloc(asize * sizeof(double));
 			E->RINS[neighbor] = (int *)malloc((markers + 1) * 2 * sizeof(int));
-			E->PVV[neighbor] = (float *)malloc((markers + 1) * E->mesh.nsd * 2 * sizeof(int));
-			E->PXX[neighbor] = (double *)malloc((markers + 1) * E->mesh.nsd * 2 * sizeof(double));
+			E->PVV[neighbor] = (float *)malloc(asize  * sizeof(int));
+			E->PXX[neighbor] = (double *)malloc(asize * sizeof(double));
 			E->PINS[neighbor] = (int *)malloc((markers + 1) * 2 * sizeof(int));
 		}
 		E->traces_leave_index = (int *)malloc((markers + 1) * sizeof(int));
 		been++;
 	}
 
-	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
+	for(neighbor = 0; neighbor <= E->parallel.no_neighbors; neighbor++)
 		E->parallel.traces_transfer_number[neighbor] = 0;
-
 	if(on_off == 1)
 	{							// use XMC
 		for(i = 1; i <= E->advection.markers; i++)
@@ -238,15 +233,13 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	}
 
 	// prepare for transfer 
-
+	
 	no_transferred = 0;
 	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	{
 		no_transferred += E->parallel.traces_transfer_number[neighbor];
 	}
-
 	prepare_transfer_arrays(E);
-
 	exchange_number_rec_markers(E);
 
 	no_received = 0;
@@ -401,31 +394,38 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 
 void prepare_transfer_arrays(struct All_variables *E)
 {
-	int j, i, neighbor, k1, k2, k3;
-
+	int j, part, neighbor, k1, k2, k3;
+	//if(E->parallel.me==0)fprintf(stderr,"ta 1 ok\n");
 	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	{
 		k1 = k2 = k3 = 0;
+		if((E->parallel.me==0) && (E->monitor.solution_cycles>199))
+		  //fprintf(stderr,"ta %i %i %i - %i %i - %i %i %i \n",neighbor, E->parallel.no_neighbors,E->parallel.traces_transfer_number[neighbor],E->parallel.traces_transfer_number[neighbor]*6,E->parallel.traces_transfer_number[neighbor]*2,E->advection.markers / 10 ,(E->advection.markers / 10 + 1) * E->mesh.nsd * 2  ,(E->advection.markers / 10 + 1) *2);
 		for(j = 0; j < E->parallel.traces_transfer_number[neighbor]; j++)
 		{
-			i = E->parallel.traces_transfer_index[neighbor][j];
-			E->PVV[neighbor][k1++] = E->VO[1][i];
-			E->PVV[neighbor][k1++] = E->VO[2][i];
-			E->PVV[neighbor][k1++] = E->VO[3][i];
-			E->PVV[neighbor][k1++] = E->Vpred[1][i];
-			E->PVV[neighbor][k1++] = E->Vpred[2][i];
-			E->PVV[neighbor][k1++] = E->Vpred[3][i];
-			E->PXX[neighbor][k2++] = E->XMC[1][i];
-			E->PXX[neighbor][k2++] = E->XMC[2][i];
-			E->PXX[neighbor][k2++] = E->XMC[3][i];
-			E->PXX[neighbor][k2++] = E->XMCpred[1][i];
-			E->PXX[neighbor][k2++] = E->XMCpred[2][i];
-			E->PXX[neighbor][k2++] = E->XMCpred[3][i];
-			E->PINS[neighbor][k3++] = E->C12[i];
-			E->PINS[neighbor][k3++] = E->CElement[i];
-		}
-	}
+			part = E->parallel.traces_transfer_index[neighbor][j];
+			if((part > E->advection.markers)||(part<1)){fprintf(stderr,"pta: out of bounds %i %i\n",part,E->advection.markers);}
+			if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"%i %i %i\n",neighbor,j,part);
+			E->PVV[neighbor][k1++] = E->VO[1][part];
+			E->PVV[neighbor][k1++] = E->VO[2][part];
+			E->PVV[neighbor][k1++] = E->VO[3][part];
+			E->PVV[neighbor][k1++] = E->Vpred[1][part];
+			E->PVV[neighbor][k1++] = E->Vpred[2][part];
+			E->PVV[neighbor][k1++] = E->Vpred[3][part];
 
+			E->PXX[neighbor][k2++] = E->XMC[1][part];
+			E->PXX[neighbor][k2++] = E->XMC[2][part];
+			E->PXX[neighbor][k2++] = E->XMC[3][part];
+			E->PXX[neighbor][k2++] = E->XMCpred[1][part];
+			E->PXX[neighbor][k2++] = E->XMCpred[2][part];
+			E->PXX[neighbor][k2++] = E->XMCpred[3][part];
+
+			E->PINS[neighbor][k3++] = E->C12[part];
+			E->PINS[neighbor][k3++] = E->CElement[part];
+		}
+		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"ta inner loop ok\n");
+	}
+	//if(E->parallel.me==0)fprintf(stderr,"ta 2 ok\n");
 	return;
 }
 

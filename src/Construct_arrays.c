@@ -380,6 +380,7 @@ void construct_node_ks(struct All_variables *E)
 
 	const double zero = 0.0;
 
+
 	for(level = E->mesh.levmax; level >= E->mesh.levmin; level--)
 	{
 		neq = E->lmesh.NEQ[level];
@@ -528,7 +529,7 @@ void construct_node_ks(struct All_variables *E)
 			}
 		}
 
-	}
+	} /* level loop */
 
 	return;
 }
@@ -666,72 +667,66 @@ void construct_sub_element(struct All_variables *E)
 
 void construct_elt_ks(struct All_variables *E)
 {
-	//int e, el, lev, j, k, ii;
-	int el, lev, j, k, ii;
-
-	const int dims = E->mesh.nsd;
-	const int n = loc_mat_size[E->mesh.nsd];
-
-	if(E->control.verbose && E->parallel.me == 0)
-		fprintf(stderr, "storing elt k matrices\n");
-	if(E->parallel.me == 0)
-		fprintf(stderr, "storing elt k matrices\n");
-
-	for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
+  //int e, el, lev, j, k, ii;
+  int el, lev, j, k, ii;
+  const int dims = E->mesh.nsd;
+  const int n = loc_mat_size[E->mesh.nsd];
+  
+  if(E->control.verbose && E->parallel.me == 0) 
+    fprintf(stderr, "storing elt k matrices\n"); 
+  
+  for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
+    {
+      
+      E->parallel.idb = 1;
+      
+      for(el = 1; el <= E->lmesh.NEL[lev]; el++)
 	{
-
-		E->parallel.idb = 1;
-
-		for(el = 1; el <= E->lmesh.NEL[lev]; el++)
-		{
-
-			get_elt_k(E, el, E->elt_k[lev][el].k, lev, 0);	/* not for penalty */
-
-			if(E->control.augmented_Lagr)
-				get_aug_k(E, el, E->elt_k[lev][el].k, lev);
-
-			build_diagonal_of_K(E, el, E->elt_k[lev][el].k, lev);
-
-
-		}
-
-		exchange_id_d20(E, E->BI[lev], lev);	/*correct BI   */
-
-		for(j = 0; j < E->lmesh.NEQ[lev]; j++)
-		{
-			if(E->BI[lev][j] == 0.0)
-				fprintf(stderr, "me= %d level %d, equation %d/%d has zero diagonal term\n", E->parallel.me, lev, j, E->mesh.NEQ[lev]);
-			assert(E->BI[lev][j] != 0 /* diagonal of matrix = 0, not acceptable */ );
-			E->BI[lev][j] = (float)1.0 / E->BI[lev][j];
-		}
+	  
+	  get_elt_k(E, el, E->elt_k[lev][el].k, lev, 0);	/* not for penalty */
+	  
+	  if(E->control.augmented_Lagr)
+	    get_aug_k(E, el, E->elt_k[lev][el].k, lev);
+	  
+	  build_diagonal_of_K(E, el, E->elt_k[lev][el].k, lev);
+	  
+	  
 	}
-
-	if(E->control.verbose)
-		for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
-			for(el = 1; el <= E->lmesh.NEL[lev]; el++)
-				for(j = 1; j <= enodes[E->mesh.nsd]; j++)
-					for(k = 1; k <= enodes[E->mesh.nsd]; k++)
-					{
-						ii = (j * n + k) * dims - (dims * n + dims);
-						/*  fprintf(E->fp,"stiff_for_e %d %d %d %g %g %g %g \n",el,j,k,E->elt_k[lev][el].k[ii],E->elt_k[lev][el].k[ii+1],E->elt_k[lev][el].k[ii+n],E->elt_k[lev][el].k[ii+n+1]);      */
-					}
-
-	return;
+      
+      exchange_id_d20(E, E->BI[lev], lev);	/*correct BI   */
+      
+      for(j = 0; j < E->lmesh.NEQ[lev]; j++)
+	{
+	  if(E->BI[lev][j] == 0.0)
+	    fprintf(stderr, "me= %d level %d, equation %d/%d has zero diagonal term\n", E->parallel.me, lev, j, E->mesh.NEQ[lev]);
+	  assert(E->BI[lev][j] != 0 /* diagonal of matrix = 0, not acceptable */ );
+	  E->BI[lev][j] = (float)1.0 / E->BI[lev][j];
+	}
+    }
+  
+  
+  if(E->control.verbose)	
+    for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++){
+      for(el = 1; el <= E->lmesh.NEL[lev]; el++)
+	for(j = 1; j <= enodes[E->mesh.nsd]; j++)
+	  for(k = 1; k <= enodes[E->mesh.nsd]; k++)
+	    {
+	      ii = (j * n + k) * dims - (dims * n + dims);
+	      /*  fprintf(E->fp,"stiff_for_e %d %d %d %g %g %g %g \n",el,j,k,E->elt_k[lev][el].k[ii],E->elt_k[lev][el].k[ii+1],E->elt_k[lev][el].k[ii+n],E->elt_k[lev][el].k[ii+n+1]);      */
+	    }
+    }
+  
+  return;
 }
 
 
 
 void construct_elt_gs(struct All_variables *E)
 {
-	//int el, lev, a;
 	int el, lev;
 
-	//const int dims = E->mesh.nsd;
-	//const int dofs = E->mesh.dof;
-	//const int ends = enodes[dims];
-
 	if(E->control.verbose && E->parallel.me == 0)
-		fprintf(stderr, "storing elt g matrices\n");
+	  fprintf(stderr, "storing elt g matrices\n");
 
 	for(lev = E->mesh.levmin; lev <= E->mesh.levmax; lev++)
 		for(el = 1; el <= E->lmesh.NEL[lev]; el++)
@@ -851,7 +846,6 @@ void construct_stiffness_B_matrix(struct All_variables *E)
 				E->elt_k[i] = (struct EK *)malloc((E->lmesh.NEL[i] + 1) * sizeof(struct EK));
 			}
 	}
-
 	if(been_here0 == 0 || (E->viscosity.update_allowed && E->monitor.solution_cycles % E->control.KERNEL == 0))
 	{
 		/* do the following for the 1st time or update_allowed is true */

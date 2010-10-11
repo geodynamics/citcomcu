@@ -39,6 +39,8 @@
    viscosity fields, those determined from prior input, those
    related to temperature/pressure/stress/anything else. */
 
+#define CITCOM_CU_VISC_MAXLAYER 40 
+
 struct VISC_OPT
 {
 	void (*update_viscosity) ();
@@ -54,9 +56,10 @@ struct VISC_OPT
   int allow_anisotropic_viscosity,anisotropic_viscosity_init;
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
   int anivisc_start_from_iso; /* start from isotropic solution? */
-  int anisotropic_init;	/* 0: isotropic, 1: random, 2: from file */
+  int anisotropic_init;	/* 0: isotropic, 1: random, 2: from file 3: align with ISA */
   char anisotropic_init_dir[1000];
   int anivisc_layer;		/* layer to assign anisotropic viscosity to for mode 2 */
+  double ani_vis2_factor;	/* for  mode 3, anisotropy scale factor*/
 #endif
 
 
@@ -77,7 +80,7 @@ struct VISC_OPT
 	float zlith;
 	float zcomp;
   
-  float zbase_layer[40]; /* new */
+  float zbase_layer[CITCOM_CU_VISC_MAXLAYER]; /* new */
 
 	int FREEZE;
 	float freeze_thresh;
@@ -92,14 +95,14 @@ struct VISC_OPT
 	float sdepv_misfit;
 	float sdepv_iter_damp;
 	int sdepv_normalize;
-	float sdepv_expt[40];
-	float sdepv_trns[40];
+	float sdepv_expt[CITCOM_CU_VISC_MAXLAYER];
+	float sdepv_trns[CITCOM_CU_VISC_MAXLAYER];
 
 	int TDEPV;
 	int TDEPV_AVE;
-	float N0[40];
-	float E[40], T0[40];
-	float T[40], Z[40];
+	float N0[CITCOM_CU_VISC_MAXLAYER];
+	float E[CITCOM_CU_VISC_MAXLAYER], T0[CITCOM_CU_VISC_MAXLAYER];
+	float T[CITCOM_CU_VISC_MAXLAYER], Z[CITCOM_CU_VISC_MAXLAYER];
 
 
   /* byerlee :
@@ -117,8 +120,8 @@ struct VISC_OPT
 	       lithostatic pressure. Caution: 0 might produce crap.
   */
   int BDEPV;
-  float abyerlee[40],bbyerlee[40],
-    lbyerlee[40];
+  float abyerlee[CITCOM_CU_VISC_MAXLAYER],bbyerlee[CITCOM_CU_VISC_MAXLAYER],
+    lbyerlee[CITCOM_CU_VISC_MAXLAYER];
 
 
   float plasticity_viscosity_offset;
@@ -136,29 +139,29 @@ struct VISC_OPT
 
 
   int CDEPV;			/* composition dependent viscosity */
-  float pre_comp[40]; /* prefactors */
+  float pre_comp[CITCOM_CU_VISC_MAXLAYER]; /* prefactors */
 
 
 
 
 
 	int weak_blobs;
-	float weak_blobx[40];
-	float weak_bloby[40];
-	float weak_blobz[40];
-	float weak_blobwidth[40];
-	float weak_blobmag[40];
+	float weak_blobx[CITCOM_CU_VISC_MAXLAYER];
+	float weak_bloby[CITCOM_CU_VISC_MAXLAYER];
+	float weak_blobz[CITCOM_CU_VISC_MAXLAYER];
+	float weak_blobwidth[CITCOM_CU_VISC_MAXLAYER];
+	float weak_blobmag[CITCOM_CU_VISC_MAXLAYER];
 
 	int weak_zones;
-	float weak_zonex1[40];
-	float weak_zoney1[40];
-	float weak_zonez1[40];
-	float weak_zonex2[40];
-	float weak_zoney2[40];
-	float weak_zonez2[40];
+	float weak_zonex1[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zoney1[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zonez1[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zonex2[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zoney2[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zonez2[CITCOM_CU_VISC_MAXLAYER];
 
-	float weak_zonewidth[40];
-	float weak_zonemag[40];
+	float weak_zonewidth[CITCOM_CU_VISC_MAXLAYER];
+	float weak_zonemag[CITCOM_CU_VISC_MAXLAYER];
 
 	int guess;
 	char old_file[100];
@@ -168,8 +171,7 @@ struct VISC_OPT
 	char VISC_OPT[20];
 
 	int layers;					/* number of layers with properties .... */
-	float layer_depth[40];
-	float layer_visc[40];
+	float layer_depth[CITCOM_CU_VISC_MAXLAYER];
 
 	int SLABLVZ;				/* slab structure imposed on top of 3 layer structure */
 	int slvzd1, slvzd2, slvzd3;	/* layer thicknesses (nodes) */
@@ -187,10 +189,10 @@ struct VISC_OPT
 	/* MODULE BASED VISCOSITY VARIATIONS */
 
 	int RESDEPV;
-	float RESeta0[40];
+	float RESeta0[CITCOM_CU_VISC_MAXLAYER];
 
 	int CHEMDEPV;
-	float CH0[40];
-	float CHEMeta0[40];
+	float CH0[CITCOM_CU_VISC_MAXLAYER];
+	float CHEMeta0[CITCOM_CU_VISC_MAXLAYER];
 
 } viscosity;

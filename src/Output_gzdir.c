@@ -76,30 +76,29 @@ void output_velo_related_gzdir(E, file_number)
   int el, els, i, j, k, ii, m, node, fd,snode;
   int nox, noz, noy, nfx, nfz, nfy1, nfy2, size1, size2,offset;
   static int vtkout = 1;
-
   char output_file[1000];
   float cvec[3],locx[3];
+  double rtf[4][9];
+  double VV[4][9],lgrad[3][3],isa[3],evel[3];
+  static struct CC Cc;
+  static struct CCX Ccx;
+
   static float *SV, *EV;
   static int been_here = 0;
   float vs;
   static int vtk_base_init = 0;	/* for spherical */
-  static int vtk_pressure_out = 1,
+  const int vtk_pressure_out = 1,
+    vtk_vgm_out = 1,
     vtk_viscosity_out = 1;
   int vtk_comp_out;
 
-
-
   const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
-
   const int nno = E->mesh.nno;
+  const int lev = E->mesh.levmax;
+  const int ppts = ppoints[dims];
 
   gzFile gzout;
-
-
-
-
-
 
   if(E->control.composition)
     vtk_comp_out = 1;
@@ -108,15 +107,12 @@ void output_velo_related_gzdir(E, file_number)
 
   /* make a directory */
   if(E->parallel.me == 0){
-    fprintf(stderr,"Output_gzdir: processing output\n");
-
-
-    
+    fprintf(stderr,"Output_gzdir: output directory");
     sprintf(output_file,"if [ ! -s %s/%d ];then mkdir -p %s/%d;fi 2> /dev/null",
 	    E->control.data_file2,file_number,E->control.data_file2,file_number);
+    fprintf(stderr," %s...",output_file);
     system(output_file);
-    //fprintf(stderr,"making directory: %s\n",output_file);
-
+    fprintf(stderr,"mkdir done\n");
   }
   /* and wait for the other jobs */
   parallel_process_sync();
@@ -144,11 +140,11 @@ void output_velo_related_gzdir(E, file_number)
       gzprintf(gzout, "%6d\n", E->lmesh.nno);
       if(!E->control.Rsphere)
 	for(i = 1; i <= E->lmesh.nno; i++){
-	  gzprintf(gzout, "%.5e %.5e %.5e\n", E->X[1][i], E->X[2][i], E->X[3][i]);
+	  gzprintf(gzout, "%13.6e %13.6e %13.6e\n", E->X[1][i], E->X[2][i], E->X[3][i]);
 	}
       else
 	for(i = 1; i <= E->lmesh.nno; i++)
-	  gzprintf(gzout, "%.5e %.5e %.5e\n", E->SX[1][i], E->SX[2][i], E->SX[3][i]);
+	  gzprintf(gzout, "%13.6e %13.6e %13.6e\n", E->SX[1][i], E->SX[2][i], E->SX[3][i]);
       gzclose(gzout);
       /* 
 	 surface nodes 
@@ -159,9 +155,9 @@ void output_velo_related_gzdir(E, file_number)
       for(i = 1; i <= E->lmesh.nsf; i++){
 	node = E->surf_node[i];
 	if(!E->control.Rsphere)	/* leave in redundancy for now */
-	  gzprintf(gzout, "%.5e %.5e %.5e\n", E->X[1][node], E->X[2][node], E->X[3][node]);
+	  gzprintf(gzout, "%13.6e %13.6e %13.6e\n", E->X[1][node], E->X[2][node], E->X[3][node]);
 	else
-	  gzprintf(gzout, "%.5e %.5e %.5e\n", E->SX[1][node], E->SX[2][node], E->SX[3][node]);
+	  gzprintf(gzout, "%13.6e %13.6e %13.6e\n", E->SX[1][node], E->SX[2][node], E->SX[3][node]);
       }
       gzclose(gzout);
     }else{			/* regular I/O */
@@ -175,10 +171,10 @@ void output_velo_related_gzdir(E, file_number)
       fprintf(E->filed[13], "%6d\n", E->lmesh.nno);
       if(!E->control.Rsphere)
 	for(i = 1; i <= E->lmesh.nno; i++)
-	  fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->X[1][i], E->X[2][i], E->X[3][i]);
+	  fprintf(E->filed[13], "%13.6e %13.6e %13.6e\n", E->X[1][i], E->X[2][i], E->X[3][i]);
       else
 	for(i = 1; i <= E->lmesh.nno; i++)
-	  fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->SX[1][i], E->SX[2][i], E->SX[3][i]);
+	  fprintf(E->filed[13], "%13.6e %13.6e %13.6e\n", E->SX[1][i], E->SX[2][i], E->SX[3][i]);
       fclose(E->filed[13]);
       if((E->parallel.me_loc[3] == E->parallel.nprocz - 1) || /* top */ 
 	 (E->parallel.me_loc[3] == 0)){ /* bottom */
@@ -191,9 +187,9 @@ void output_velo_related_gzdir(E, file_number)
 	for(i = 1; i <= E->lmesh.nsf; i++){
 	  node = E->surf_node[snode];
 	  if(!E->control.Rsphere)	/* leave in redundancy for now */
-	    fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->X[1][node], E->X[2][node], E->X[3][node]);
+	    fprintf(E->filed[13], "%13.6e %13.6e %13.6e\n", E->X[1][node], E->X[2][node], E->X[3][node]);
 	  else
-	    fprintf(E->filed[13], "%.5e %.5e %.5e\n", E->SX[1][node], E->SX[2][node], E->SX[3][node]);
+	    fprintf(E->filed[13], "%13.6e %13.6e %13.6e\n", E->SX[1][node], E->SX[2][node], E->SX[3][node]);
 	}
 	fclose(E->filed[13]);
       }
@@ -257,7 +253,7 @@ void output_velo_related_gzdir(E, file_number)
 	      E->parallel.me, file_number);
       E->filed[10] = safe_fopen(output_file, "w");
       /* header line */
-      fprintf(E->filed[10], "# %6d %6d %.5e %.5e %.5e %.4e %.4e %.5e %.5e\n", 
+      fprintf(E->filed[10], "# %6d %6d %13.6e %13.6e %13.6e %12.4e %12.4e %13.6e %13.6e\n", 
 	      E->lmesh.noz, E->advection.timesteps, E->monitor.elapsed_time, 
 	      E->slice.Nut, E->slice.Nub, E->data.T_adi0, E->data.T_adi1, 
 	      E->monitor.Sigma_interior, E->monitor.Sigma_max);
@@ -266,13 +262,13 @@ void output_velo_related_gzdir(E, file_number)
       */
       if(!E->control.Rsphere){	/* cartesian */
 	for(i = 1; i <= E->lmesh.noz; i++){
-	  fprintf(E->filed[10], "%.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e\n", 
+	  fprintf(E->filed[10], "%12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e\n", 
 		  E->X[3][i],E->Have.T[i], E->Have.vrms[i], E->Have.Vi[i], E->Have.Rho[i], 
 		  E->Have.F[i], E->Have.f[i], E->Have.C[i], E->Have.Tadi[i]);
 	}
       }else{			/* spherical */
 	for(i = 1; i <= E->lmesh.noz; i++){
-	  fprintf(E->filed[10], "%.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e %.4e\n", 
+	  fprintf(E->filed[10], "%12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e %12.4e\n", 
 		  E->SX[3][i],E->Have.T[i], E->Have.vrms[i], E->Have.Vi[i], E->Have.Rho[i], 
 		  E->Have.F[i], E->Have.f[i], E->Have.C[i], E->Have.Tadi[i]);
 	}
@@ -292,7 +288,7 @@ void output_velo_related_gzdir(E, file_number)
 	sprintf(output_file,"%s/%d/t.%d.%d.gz",
 		E->control.data_file2,file_number,E->parallel.me,file_number);
 	gzout=safe_gzopen(output_file,"w");
-	gzprintf(gzout,"%d %d %.5e\n",
+	gzprintf(gzout,"%d %d %13.6e\n",
 		 file_number,E->lmesh.nno,
 		 E->monitor.elapsed_time);
 	gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno); /* for backward compatibility */
@@ -330,8 +326,9 @@ void output_velo_related_gzdir(E, file_number)
 	    gzprintf(gzout,"%.6e %.6e %.6e\n",cvec[0],cvec[1],cvec[2]);
 	  }
 	}else{			/* cartesian output in cm/yr */
-	  for(i=1;i<=E->lmesh.nno;i++) 
+	  for(i=1;i<=E->lmesh.nno;i++) {
 	    gzprintf(gzout,"%.6e %.6e %.6e\n",E->V[1][i],E->V[2][i],E->V[3][i]);
+	  }
 	}
 	gzclose(gzout);
 	if(vtk_pressure_out){
@@ -341,12 +338,99 @@ void output_velo_related_gzdir(E, file_number)
 	  sprintf(output_file,"%s/%d/p.%d.%d.gz",E->control.data_file2,
 		  file_number, E->parallel.me,file_number);
 	  gzout = safe_gzopen(output_file,"w");
-	  gzprintf(gzout,"%d %d %.5e\n",file_number,E->lmesh.nno,E->monitor.elapsed_time);
+	  gzprintf(gzout,"%d %d %13.6e\n",file_number,E->lmesh.nno,E->monitor.elapsed_time);
 	  gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
 	  for(i=1;i<=E->lmesh.nno;i++)          
 	    gzprintf(gzout,"%.6e\n",E->NP[i]);
 	  gzclose(gzout);
 	}
+	if(vtk_vgm_out){
+	  /* 
+	     
+	     print velocity gradient matrix  and ISA
+
+	  */
+	  sprintf(output_file,"%s/%d/edot.%d.%d.gz",
+		  E->control.data_file2,
+		  file_number, E->parallel.me,file_number);
+	  gzout = safe_gzopen(output_file,"w");
+	  for(i=1;i <= E->lmesh.nel;i++){ /* element loop */
+	    if(E->control.Rsphere){	/* need rtf for spherical */
+	      get_rtf(E, i, 1, rtf, lev); /* pressure points */
+	      if((i-1)%E->lmesh.elz==0)
+		construct_c3x3matrix_el(E,i,&Cc,&Ccx,lev,1);
+	    }
+	    for(j = 1; j <= ends; j++){	/* velocity at element nodes */
+	      node = E->ien[i].node[j];
+	      VV[1][j] = E->V[1][node];
+	      VV[2][j] = E->V[2][node];
+	      VV[3][j] = E->V[3][node];
+	    }
+	    /* find mean location */
+	    locx[0] = locx[1] = locx[2] = 0.0;
+	    for(j = 1; j <= ends; j++){
+	      node = E->ien[i].node[j];
+	      if(E->control.Rsphere){
+		rtp2xyz((float)E->SX[3][node],
+			(float)E->SX[1][node],
+			(float)E->SX[2][node],cvec);
+		locx[0] += cvec[0];
+		locx[1] += cvec[1];
+		locx[2] += cvec[2];
+	      }else{
+		locx[0] += E->X[1][node];
+		locx[1] += E->X[2][node];
+		locx[2] += E->X[3][node];
+	      }
+	    }
+	    locx[0] /= ends;locx[1] /= ends;locx[2] /= ends;
+	    /* calculate velocity gradient matrix */
+	    get_vgm_p(VV,&(E->N),&(E->GNX[lev][i]),&Cc, &Ccx,rtf,
+		      E->mesh.nsd,ppts,ends,(E->control.Rsphere),lgrad,
+		      evel);
+#ifdef  CITCOM_ALLOW_ANISOTROPIC_VISC
+	    /* calculate the ISA axis or whichever was used to align */
+	    switch(E->viscosity.anisotropic_init){
+	    case 3:
+	      calc_isa_from_vgm(lgrad,evel,i,isa,E,CITCOM_ANIVISC_ALIGN_WITH_VEL);
+	      break;
+	    case 4:
+	      calc_isa_from_vgm(lgrad,evel,i,isa,E,CITCOM_ANIVISC_ALIGN_WITH_ISA);
+	      break;
+	    case 5:
+	      calc_isa_from_vgm(lgrad,evel,i,isa,E,CITCOM_ANIVISC_MIXED_ALIGN);
+	      break;
+	    default:
+	      calc_isa_from_vgm(lgrad,evel,i,isa,E,CITCOM_ANIVISC_ALIGN_WITH_ISA);
+	      break;
+	    }
+	    normalize_vec3d(evel,(evel+1),(evel+2));
+#else
+	    isa[0]=isa[1]=isa[2]=evel[0]=evel[1]=evel[2]=0.0;
+#endif	    
+	    /*  */
+	    if(E->control.Rsphere){
+	      /* print velocity gradient matrix, ISA, and normalized velocities */
+	      xyz2rtp(locx[0],locx[1],locx[2],cvec);
+	      /* r theta phi d[upper right half] (CitcomS spherical system) ISA[3] */
+	      gzprintf(gzout,"%11g %11g %11g\t%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e  %13.6e %13.6e %13.6e\t%13.6e %13.6e %13.6e\t%13.6e %13.6e %13.6e\n",
+		       cvec[0],cvec[1],cvec[2],
+		       lgrad[0][0],lgrad[0][1],lgrad[0][2],
+		       lgrad[1][0],lgrad[1][1],lgrad[1][2],
+		       lgrad[2][0],lgrad[2][1],lgrad[2][2],
+		       isa[0],isa[1],isa[2],evel[0],evel[1],evel[2]);
+	    }else{
+	      gzprintf(gzout,"%11g %11g %11g\t%13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\t%13.6e %13.6e %13.6e\t%13.6e %13.6e %13.6e\n",
+		       locx[0],locx[1],locx[2],
+		       lgrad[0][0],lgrad[0][1],lgrad[0][2],
+		       lgrad[1][0],lgrad[1][1],lgrad[1][2],
+		       lgrad[2][0],lgrad[2][1],lgrad[2][2],
+		       isa[0],isa[1],isa[2],evel[0],evel[1],evel[2]);
+	    }
+	  } /* end element loop */
+	  gzclose(gzout);
+	}
+	
 	if(vtk_viscosity_out){
 	  /* 
 	     
@@ -359,7 +443,7 @@ void output_velo_related_gzdir(E, file_number)
 	  gzout=safe_gzopen(output_file,"w");
 	  gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
 	  for(i=1;i<=E->lmesh.nno;i++){
-	    gzprintf(gzout,"%.4e\n",E->VI[E->mesh.levmax][i]);
+	    gzprintf(gzout,"%12.4e\n",E->VI[lev][i]);
 	  }
 	  gzclose(gzout);
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
@@ -370,10 +454,10 @@ void output_velo_related_gzdir(E, file_number)
 	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
 	    for(i=1;i<=E->lmesh.nno;i++){
 	      gzprintf(gzout,"%10.4e %10.4e %10.4e %10.4e\n",
-		       E->VI2[E->mesh.levmax][i],
-		       E->VIn1[E->mesh.levmax][i],
-		       E->VIn2[E->mesh.levmax][i],
-		       E->VIn3[E->mesh.levmax][i]);
+		       E->VI2[lev][i],
+		       E->VIn1[lev][i],
+		       E->VIn2[lev][i],
+		       E->VIn3[lev][i]);
 	    }
 	    gzclose(gzout);
 
@@ -394,7 +478,7 @@ void output_velo_related_gzdir(E, file_number)
 	  gzout=safe_gzopen(output_file,"w");
 	  gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
 	  for(i=1;i<=E->lmesh.nno;i++)           
-	    gzprintf(gzout,"%.4e\n",E->C[i]);
+	    gzprintf(gzout,"%12.4e\n",E->C[i]);
 	  gzclose(gzout);
 	}
 	/* 
@@ -410,60 +494,60 @@ void output_velo_related_gzdir(E, file_number)
 	if(E->control.COMPRESS){
 	  sprintf(output_file, "%s/temp.%d.%d.gz", E->control.data_file2, E->parallel.me, file_number);
 	  gzout = safe_gzopen(output_file, "w");
-	  gzprintf(gzout, "%6d %6d %.5e\n", E->lmesh.nno, E->advection.timesteps, 
+	  gzprintf(gzout, "%6d %6d %13.6e\n", E->lmesh.nno, E->advection.timesteps, 
 		  E->monitor.elapsed_time);
 	  if((file_number % 2* E->control.record_every) == 0)
 	    {
 	      if(E->control.composition == 0)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //        gzprintf(gzout,"%.5e %.4e %.4e %.5e %.5e %.5e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->V[1][i],E->V[2][i],E->V[3][i]);
-		  //       gzprintf(gzout,"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-		  gzprintf(gzout, "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+		  //        gzprintf(gzout,"%13.6e %12.4e %12.4e %13.6e %13.6e %13.6e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->V[1][i],E->V[2][i],E->V[3][i]);
+		  //       gzprintf(gzout,"%13.6e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
+		  gzprintf(gzout, "%13.6e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
 	      else if(E->control.composition)
 	    for(i = 1; i <= E->lmesh.nno; i++)
-	      //      gzprintf(gzout,"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-	      gzprintf(gzout, "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+	      //      gzprintf(gzout,"%13.6e %12.4e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
+	      gzprintf(gzout, "%13.6e %12.4e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
 	    }
 	  else
 	    {
 	      if(E->control.composition == 0)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //      gzprintf(gzout,"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-		  gzprintf(gzout, "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+		  //      gzprintf(gzout,"%13.6e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
+		  gzprintf(gzout, "%13.6e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
 	      else if(E->control.composition)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //      gzprintf(gzout,"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-		  gzprintf(gzout, "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+		  //      gzprintf(gzout,"%13.6e %12.4e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
+		  gzprintf(gzout, "%13.6e %12.4e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
 	    }
 	  gzclose(gzout);
 
 	}else{
 	  sprintf(output_file, "%s/temp.%d.%d", E->control.data_file2, E->parallel.me, file_number);
 	  E->filed[10] = safe_fopen(output_file, "w");
-	  fprintf(E->filed[10], "%6d %6d %.5e\n", E->lmesh.nno, E->advection.timesteps, 
+	  fprintf(E->filed[10], "%6d %6d %13.6e\n", E->lmesh.nno, E->advection.timesteps, 
 		  E->monitor.elapsed_time);
 	  if(file_number % (2 * E->control.record_every) == 0)
 	    {
 	      if(E->control.composition == 0)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //        fprintf(E->filed[10],"%.5e %.4e %.4e %.5e %.5e %.5e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->V[1][i],E->V[2][i],E->V[3][i]);
-		  //       fprintf(E->filed[10],"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-		  fprintf(E->filed[10], "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+		  //        fprintf(E->filed[10],"%13.6e %12.4e %12.4e %13.6e %13.6e %13.6e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->V[1][i],E->V[2][i],E->V[3][i]);
+		  //       fprintf(E->filed[10],"%13.6e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
+		  fprintf(E->filed[10], "%13.6e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
 	      else if(E->control.composition)
 	    for(i = 1; i <= E->lmesh.nno; i++)
-	      //      fprintf(E->filed[10],"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-	      fprintf(E->filed[10], "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+	      //      fprintf(E->filed[10],"%13.6e %12.4e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
+	      fprintf(E->filed[10], "%13.6e %12.4e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
 	    }
 	  else
 	    {
 	      if(E->control.composition == 0)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //      fprintf(E->filed[10],"%.5e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
-		  fprintf(E->filed[10], "%.5e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
+		  //      fprintf(E->filed[10],"%13.6e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i]);
+		  fprintf(E->filed[10], "%13.6e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i]);
 	      else if(E->control.composition)
 		for(i = 1; i <= E->lmesh.nno; i++)
-		  //      fprintf(E->filed[10],"%.5e %.4e %.4e %.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
-		  fprintf(E->filed[10], "%.5e %.4e %.4e %.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
+		  //      fprintf(E->filed[10],"%13.6e %12.4e %12.4e %12.4e\n",E->T[i],E->heatflux[i],E->heatflux_adv[i],E->C[i]);
+		  fprintf(E->filed[10], "%13.6e %12.4e %12.4e %12.4e\n", E->T[i], E->V[3][i], E->heatflux_adv[i], E->C[i]);
 	    }
 	  fclose(E->filed[10]);
 	}
@@ -485,18 +569,18 @@ void output_velo_related_gzdir(E, file_number)
 	    sprintf(output_file, "%s/%d/th_t.%d.%d", 
 		    E->control.data_file2, file_number, E->parallel.me, file_number);
 	    E->filed[11] = safe_fopen(output_file, "w");
-	    fprintf(E->filed[11], "%6d %6d %.5e %.5e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut);
+	    fprintf(E->filed[11], "%6d %6d %13.6e %13.6e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut);
 	    for(i = 1; i <= E->lmesh.nsf; i++)
-	      fprintf(E->filed[11], "%.5e %.5e %.5e %.5e\n", 
+	      fprintf(E->filed[11], "%13.6e %13.6e %13.6e %13.6e\n", 
 		      E->slice.tpg[i], E->slice.shflux[i], E->Fas410_b[i], E->Fas670_b[i]);
 	    fclose(E->filed[11]);
 	  }else{
 	    sprintf(output_file, "%s/%d/th_t.%d.%d.gz", 
 		    E->control.data_file2, file_number, E->parallel.me, file_number);
 	    gzout = safe_gzopen(output_file, "w");
-	    gzprintf(gzout, "%6d %6d %.5e %.5e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut);
+	    gzprintf(gzout, "%6d %6d %13.6e %13.6e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nut);
 	    for(i = 1; i <= E->lmesh.nsf; i++)
-	      gzprintf(gzout, "%.5e %.5e %.5e %.5e\n", 
+	      gzprintf(gzout, "%13.6e %13.6e %13.6e %13.6e\n", 
 		      E->slice.tpg[i], E->slice.shflux[i], E->Fas410_b[i], E->Fas670_b[i]);
 	    gzclose(gzout);
 	  }
@@ -507,19 +591,19 @@ void output_velo_related_gzdir(E, file_number)
 	    sprintf(output_file, "%s/%d/th_b.%d.%d", 
 		    E->control.data_file2, file_number, E->parallel.me, file_number);
 	    E->filed[11] = safe_fopen(output_file, "w");
-	    fprintf(E->filed[11], "%6d %6d %.5e %.5e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nub);
+	    fprintf(E->filed[11], "%6d %6d %13.6e %13.6e\n", E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nub);
 	    for(i = 1; i <= E->lmesh.nsf; i++)
-	      fprintf(E->filed[11], "%.5e %.5e %.5e %.5e\n", 
+	      fprintf(E->filed[11], "%13.6e %13.6e %13.6e %13.6e\n", 
 		      E->slice.tpgb[i], E->slice.bhflux[i], E->Fas410_b[i], E->Fas670_b[i]);
 	    fclose(E->filed[11]);
 	  }else{
 	    sprintf(output_file, "%s/%d/th_b.%d.%d.gz", 
 		    E->control.data_file2, file_number, E->parallel.me, file_number);
 	    gzout = safe_gzopen(output_file, "w");
-	    gzprintf(gzout, "%6d %6d %.5e %.5e\n", 
+	    gzprintf(gzout, "%6d %6d %13.6e %13.6e\n", 
 		     E->lmesh.nsf, E->advection.timesteps, E->monitor.elapsed_time, E->slice.Nub);
 	    for(i = 1; i <= E->lmesh.nsf; i++)
-	      gzprintf(gzout, "%.5e %.5e %.5e %.5e\n", E->slice.tpgb[i], E->slice.bhflux[i], E->Fas410_b[i], E->Fas670_b[i]);
+	      gzprintf(gzout, "%13.6e %13.6e %13.6e %13.6e\n", E->slice.tpgb[i], E->slice.bhflux[i], E->Fas410_b[i], E->Fas670_b[i]);
 	    gzclose(gzout);
 	  }
 	}
@@ -539,7 +623,7 @@ void output_velo_related_gzdir(E, file_number)
       if(E->control.COMPRESS){	/* compressed output */
 	sprintf(output_file, "%s/%d/traces.%d.gz", E->control.data_file2, file_number,E->parallel.me);
 	gzout = safe_gzopen(output_file, "w");
-	gzprintf(gzout, "%6d %6d %.5e\n", E->advection.markers, E->advection.timesteps, E->monitor.elapsed_time);
+	gzprintf(gzout, "%6d %6d %13.6e\n", E->advection.markers, E->advection.timesteps, E->monitor.elapsed_time);
 	for(i = 1; i <= E->advection.markers; i++)
 	  gzprintf(gzout, "%g %g %g %d %d\n", E->XMC[1][i], E->XMC[2][i], E->XMC[3][i], E->CElement[i], E->C12[i]);
 	for(i = 1; i <= E->lmesh.nel; i++)
@@ -548,7 +632,7 @@ void output_velo_related_gzdir(E, file_number)
       }else{
 	sprintf(output_file, "%s/%d/traces.%d", E->control.data_file2, file_number, E->parallel.me);
 	E->filed[10] = safe_fopen(output_file, "w");
-	fprintf(E->filed[10], "%6d %6d %.5e\n", E->advection.markers, E->advection.timesteps, E->monitor.elapsed_time);
+	fprintf(E->filed[10], "%6d %6d %13.6e\n", E->advection.markers, E->advection.timesteps, E->monitor.elapsed_time);
 	for(i = 1; i <= E->advection.markers; i++)
 	  fprintf(E->filed[10], "%g %g %g %d %d\n", E->XMC[1][i], E->XMC[2][i], E->XMC[3][i], E->CElement[i], E->C12[i]);
 	for(i = 1; i <= E->lmesh.nel; i++)
@@ -558,6 +642,8 @@ void output_velo_related_gzdir(E, file_number)
     }
 
   if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
+  parallel_process_sync();
+
   return;
 }
 

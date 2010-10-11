@@ -200,7 +200,8 @@ void form_rtf_bc(int k, double x[4], double rtf[4][9], double bc[4][4])
 
 
 
-void get_rtf(struct All_variables *E, int el, int pressure, double rtf[4][9], int lev)
+void get_rtf(struct All_variables *E, int el, 
+	     int pressure, double rtf[4][9], int lev)
 {
 	//int i, j, k, d, e;
 	int i, k, d;
@@ -223,9 +224,9 @@ void get_rtf(struct All_variables *E, int el, int pressure, double rtf[4][9], in
 				for(i = 1; i <= ends; i++)
 					x[d] += E->XX[lev][d][E->IEN[lev][el].node[i]] * E->N.vpt[GNVINDEX(i, k)];
 
-			rtf[3][k] = 1.0 / sqrt(x[1] * x[1] + x[2] * x[2] + x[3] * x[3]);
-			rtf[1][k] = acos(x[3] * rtf[3][k]);
-			rtf[2][k] = myatan(x[2], x[1]);
+			rtf[3][k] = 1.0 / sqrt(x[1] * x[1] + x[2] * x[2] + x[3] * x[3]); /* 1/r */
+			rtf[1][k] = acos(x[3] * rtf[3][k]); /* theta */
+			rtf[2][k] = myatan(x[2], x[1]);	    /* phi */
 		}
 	}
 	else

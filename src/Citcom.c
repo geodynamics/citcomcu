@@ -108,16 +108,18 @@ int main(int argc, char **argv)
 
 	while(E.control.keep_going && (Emergency_stop == 0))
 	{
+	  //if(E.parallel.me == 0)fprintf(stderr,"processing heating\n");
 		process_heating(&E);
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
 			E.control.print_convergence = 1;
-
+		// if(E.parallel.me == 0)fprintf(stderr,"processing buoyancy\n");
 		 /**/ report(&E, "Update buoyancy for further `timesteps'");
 		(E.next_buoyancy_field) (&E);
-
+		//if(E.parallel.me == 0)fprintf(stderr,"processing temp\n");
 		 /**/ report(&E, "Process results of buoyancy update");
 		process_temp_field(&E, E.monitor.solution_cycles);
+		//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
 
 		general_stokes_solver(&E);
 	

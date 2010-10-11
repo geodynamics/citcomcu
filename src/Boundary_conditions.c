@@ -44,28 +44,28 @@
 void velocity_boundary_conditions(struct All_variables *E)
 {
 	int lv;
-	//int node, d;
-	int node;
-
+	int node,bottom,top;
+	bottom = 1;
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-		if(E->mesh.botvbc != 1)
+	  top = E->mesh.NOZ[lv];
+		if(E->mesh.botvbc != 1) /* free slip on bottom */
 		{
-			horizontal_bc(E, E->VB, 1, 1, 0.0, VBX, 0, lv);
-			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, 1, 2, 0.0, VBY, 0, lv);
-			horizontal_bc(E, E->VB, 1, 1, E->control.VBXbotval, SBX, 1, lv);
-			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, 1, 2, E->control.VBYbotval, SBY, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 1, 0.0, VBX, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 2, 0.0, VBY, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, SBX, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, SBY, 1, lv);
 		}
-		if(E->mesh.topvbc != 1)
+		if(E->mesh.topvbc != 1) /* free slip on top */
 		{
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, VBX, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, VBY, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, SBX, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, SBY, 1, lv);
+			horizontal_bc(E, E->VB, top, 1, 0.0, VBX, 0, lv);
+			horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
+			horizontal_bc(E, E->VB, top, 2, 0.0, VBY, 0, lv);
+			horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, SBX, 1, lv);
+			horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, SBY, 1, lv);
 		}
 	}
 
@@ -76,24 +76,25 @@ void velocity_boundary_conditions(struct All_variables *E)
 
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-		if(E->mesh.botvbc == 1)
+	  top = E->mesh.NOZ[lv];
+		if(E->mesh.botvbc == 1) /* bottom velocity boundary condition */
 		{
-			horizontal_bc(E, E->VB, 1, 1, E->control.VBXbotval, VBX, 1, lv);
-			horizontal_bc(E, E->VB, 1, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, 1, 2, E->control.VBYbotval, VBY, 1, lv);
-			horizontal_bc(E, E->VB, 1, 1, 0.0, SBX, 0, lv);
-			horizontal_bc(E, E->VB, 1, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, 1, 2, 0.0, SBY, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, VBX, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, VBY, 1, lv);
+			horizontal_bc(E, E->VB, bottom, 1, 0.0, SBX, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, bottom, 2, 0.0, SBY, 0, lv);
 		}
-		if(E->mesh.topvbc == 1)
+		if(E->mesh.topvbc == 1) /* top velocity boundary condition */
 		{
-			E->control.VBXtopval = E->control.plate_vel;
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, E->control.VBXtopval, VBX, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, E->control.VBYtopval, VBY, 1, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 1, 0.0, SBX, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, E->mesh.NOZ[lv], 2, 0.0, SBY, 0, lv);
+		        E->control.VBXtopval = E->control.plate_vel; /* this should be more explicit */
+			horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, VBX, 1, lv);
+			horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
+			horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, VBY, 1, lv);
+			horizontal_bc(E, E->VB, top, 1, 0.0, SBX, 0, lv);
+			horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
+			horizontal_bc(E, E->VB, top, 2, 0.0, SBY, 0, lv);
 		}
 	}
 
@@ -535,28 +536,25 @@ void temperatures_conform_bcs(struct All_variables *E)
 
 void velocities_conform_bcs(struct All_variables *E, double *U)
 {
-	//int node, d;
-	int node;
+  int node;
+  
+  const unsigned int typex = VBX;
+  const unsigned int typez = VBZ;
+  const unsigned int typey = VBY;
+  
+  const int nno = E->lmesh.nno;
 
-	const unsigned int typex = VBX;
-	const unsigned int typez = VBZ;
-	const unsigned int typey = VBY;
-
-	//const int dofs = E->mesh.dof;
-	const int nno = E->lmesh.nno;
-
-	for(node = 1; node <= nno; node++)
-	{
-		if(E->node[node] & typex)
-			U[E->id[node].doff[1]] = E->VB[1][node];
-		if(E->node[node] & typez)
-			U[E->id[node].doff[3]] = E->VB[3][node];
-		if(E->node[node] & typey)
-			U[E->id[node].doff[2]] = E->VB[2][node];
-
-	}
-
-	return;
+  for(node = 1; node <= nno; node++){
+    if(E->node[node] & typex)
+      U[E->id[node].doff[1]] = E->VB[1][node];
+    if(E->node[node] & typey)
+      U[E->id[node].doff[2]] = E->VB[2][node];
+    if(E->node[node] & typez){
+      U[E->id[node].doff[3]] = E->VB[3][node];
+    }
+  }
+  
+  return;
 }
 
 

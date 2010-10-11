@@ -81,16 +81,219 @@ void solve_constrained_flow_iterative(struct All_variables *E)
 	been_here = 1;
 
 	v_from_vector(E, E->V, E->U);
-	/* p_to_nodes(E,E->P,E->NP,E->mesh.levmax); */  
+#ifdef USE_GZDIR
+	if(E->control.gzdir)
+	  p_to_nodes(E,E->P,E->NP,E->mesh.levmax); 
+#endif
 
 	return;
 }
 
 
 
-/*  ==========================================================================  */
+/*  ==========================================================================  
 
-float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F, double imp, int *steps_max)
+adjusted CitcomS style (doesn't quite work yet)
+
+
+*/
+
+float solve_Ahat_p_fhat_new(struct All_variables *E, double *V, double *P, 
+			    double *FF, double imp, int *steps_max)
+{
+  int i, j, count, convergent, valid, problems, lev, npno, neq;
+  int gnpno, gneq;
+  
+  static int been_here = 0;
+  static double *r1, *r2, *z1, *s1, *s2, *u1;
+  double *F;
+  double *shuffle;
+  double alpha, delta, r0dotr0, r1dotz1, r0dotz0;
+  double residual, initial_residual, res_magnitude, v_res;
+  char message[500];
+  double time0, time;
+  static double timea;
+  float dpressure, dvelocity;
+
+  npno = E->lmesh.npno;
+  neq = E->lmesh.neq;
+  lev = E->mesh.levmax;  
+  gnpno = E->mesh.npno;
+  gneq = E->mesh.neq;
+  
+  if(been_here == 0)  {
+    r1 = (double *)malloc((npno + 1) * sizeof(double));
+    r2 = (double *)malloc((npno + 1) * sizeof(double));
+    z1 = (double *)malloc((npno + 1) * sizeof(double));
+    s1 = (double *)malloc((npno + 1) * sizeof(double));
+    s2 = (double *)malloc((npno + 1) * sizeof(double));
+    u1 = (double *)malloc((neq + 2) * sizeof(double));
+    F = (double *)malloc((neq+2)*sizeof(double));
+   
+    timea = CPU_time0();
+  }
+  been_here++;
+  
+  problems = 0;
+  time0 = time = CPU_time0();
+
+  /* copy the F vector */
+  for(j=0;j<neq;j++)
+    F[j] = FF[j];
+
+  v_res = sqrt(global_vdot(E, E->F, E->F, lev));
+
+
+  initial_vel_residual(E, V, P, F, u1,v_res);
+
+  assemble_div_u(E, V, r1, lev);
+
+  E->monitor.incompressibility = sqrt(global_div_norm2(E, r1)
+				      / (1e-32 + E->monitor.vdotv));
+  
+  dvelocity = 1.0;
+  dpressure = 1.0;
+  convergent = 0;
+  r0dotz0 = 0;
+
+  if(E->parallel.me == 0)
+    fprintf(stderr, "initial residue of momentum equation %g %d inc %g\n", 
+	    v_res, gneq,E->monitor.incompressibility );
+
+  count = 0;
+  E->monitor.vdotv = global_vdot(E, V, V, lev);
+  E->monitor.pdotp = global_pdot(E, P, P, lev);
+  E->monitor.vdotv = sqrt(E->monitor.vdotv/gneq);
+  E->monitor.pdotp = sqrt(E->monitor.pdotp/gnpno);
+
+  generate_log_message(count,time0,timea,dvelocity, dpressure,E);
+  residual = 0;
+  while((count < *steps_max) && (dpressure >= imp || dvelocity >= imp)){
+
+    for(j = 1; j <= npno; j++)
+      z1[j] = E->BPI[lev][j] * r1[j];
+    
+    r1dotz1 = global_pdot(E, r1, z1, lev);
+    assert(r1dotz1 != 0.0  /* Division by zero in head of incompressibility iteration */);
+
+    if((count == 0))
+      for(j = 1; j <= npno; j++)
+	s2[j] = z1[j];
+    else{
+      delta = r1dotz1 / r0dotr0;
+      for(j = 1; j <= npno; j++)
+	s2[j] = z1[j] + delta * s1[j];
+    }
+    
+    assemble_grad_p(E, s2, F, lev);
+
+    valid = solve_del2_u(E, u1, F, imp * v_res, lev);
+    strip_bcs_from_residual(E, u1, lev);
+    
+    assemble_div_u(E, u1, F, lev);
+    
+    alpha = r1dotz1 / global_pdot(E, s2, F, lev);
+
+    /* r2 = r1 - alpha * div(u1) */
+    for(j=1; j<=npno; j++)
+      r2[j] = r1[j] - alpha * F[j];
+
+    /* P = P + alpha * s2 */
+    for(j=1; j<=npno; j++)
+      P[j] += alpha * s2[j];
+
+    /* V = V - alpha * u1 */
+    for(j=0; j<neq; j++)
+      V[j] -= alpha * u1[j];
+
+    E->monitor.vdotv = global_vdot(E, V, V, lev);
+    E->monitor.pdotp = global_pdot(E, P, P, lev);
+
+    assemble_div_u(E, V, z1, lev);
+    E->monitor.incompressibility = sqrt(global_div_norm2(E, z1)
+					/ (1e-32 + E->monitor.vdotv));
+
+    dpressure = alpha * sqrt(global_pdot(E, s2, s2, lev) / (1.0e-32 + E->monitor.pdotp));
+    dvelocity = alpha * sqrt(global_vdot(E, u1, u1, lev) / (1.0e-32 + E->monitor.vdotv));
+    /* keep the normalized versions for the message */
+    E->monitor.vdotv = sqrt(E->monitor.vdotv/gneq);
+    E->monitor.pdotp = sqrt(E->monitor.pdotp/gnpno);
+
+    
+    count++;
+    
+    generate_log_message(count,time0,timea,dvelocity, dpressure,E);
+
+    shuffle = s1;
+    s1 = s2;
+    s2 = shuffle;
+
+    shuffle = r1;
+    r1 = r2;
+    r2 = shuffle;
+
+    /* shift <r0, z0> = <r1, z1> */
+    r0dotz0 = r1dotz1;
+    
+    
+  }							/* end loop for conjugate gradient   */
+  assemble_div_u(E, V, z1, lev);  
+  if(problems){
+    fprintf(E->fp, "Convergence of velocity solver may affect continuity\n");
+    fprintf(E->fp, "Consider running with the `see_convergence=on' option\n");
+    fprintf(E->fp, "To evaluate the performance of the current relaxation parameters\n");
+    fflush(E->fp);
+  }
+  
+  if(E->control.print_convergence && E->parallel.me == 0){
+    fprintf(E->fp, "after (%03d) pressure loops and %g sec for step %d\n", count, CPU_time0() - timea, E->monitor.solution_cycles);
+    fprintf(stderr, "after (%03d) pressure loops and %g sec for step %d\n", count, CPU_time0() - timea, E->monitor.solution_cycles);
+    fflush(E->fp);
+  }
+
+  
+  *steps_max = count;
+  
+  return (residual);
+}
+
+void initial_vel_residual(struct All_variables *E,
+			  double *V, double *P, double *F,double *u1,
+			  double acc)
+{
+  int neq = E->lmesh.neq;
+  int lev = E->mesh.levmax;
+  int i, valid;
+  
+  /* F = F - grad(P) - K*V */
+  assemble_grad_p(E, P, u1, lev);
+  for(i=0; i<neq; i++)
+      F[i] -= u1[i];
+  
+  assemble_del2_u(E, V, u1, lev, 1);
+  for(i=0; i<neq; i++)
+    F[i] -= u1[i];
+
+  strip_bcs_from_residual(E, F, lev);
+
+  /* solve K*u1 = F for u1 */
+  valid = solve_del2_u(E, u1, F, acc, lev);
+
+  if(!valid && (E->parallel.me==0)) {
+    fputs("Warning: solver not converging! 0\n", stderr);
+    fputs("Warning: solver not converging! 0\n", E->fp);
+  }
+  strip_bcs_from_residual(E, u1, lev);
+
+  /* V = V + u1 */
+  for(i=0; i < neq; i++)
+    V[i] += u1[i];
+  
+  return;
+}
+
+float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, 
+			double *F, double imp, int *steps_max)
 {
 	//int i, j, k, ii, count, convergent, valid, problems, lev, lev_low, npno, neq, steps;
 	int i, j, count, convergent, valid, problems, lev, npno, neq;
@@ -119,7 +322,7 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 	gnpno = E->mesh.npno;
 	gneq = E->mesh.neq;
 
-	if(been_here == 0)
+	if(been_here == 0)	/* been here gets incremented further down */
 	{
 		r0 = (double *)malloc((npno + 1) * sizeof(double));
 		r1 = (double *)malloc((npno + 1) * sizeof(double));
@@ -130,7 +333,7 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 		s2 = (double *)malloc((npno + 1) * sizeof(double));
 		Ah = (double *)malloc((neq + 1) * sizeof(double));
 		u1 = (double *)malloc((neq + 2) * sizeof(double));
-		been_here = 1;
+
 		timea = CPU_time0();
 	}
 
@@ -156,7 +359,7 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
 	strip_bcs_from_residual(E, Ah, lev);
 
-	valid = solve_del2_u(E, u1, Ah, imp * v_res, E->mesh.levmax, 0);
+	valid = solve_del2_u(E, u1, Ah, imp * v_res, E->mesh.levmax);
 	strip_bcs_from_residual(E, u1, lev);
 
 	for(i = 0; i < neq; i++)
@@ -209,7 +412,7 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 
 		assemble_grad_p(E, s2, Ah, lev);
 
-		valid = solve_del2_u(E, u1, Ah, imp * v_res, lev, 1);
+		valid = solve_del2_u(E, u1, Ah, imp * v_res, lev);
 		strip_bcs_from_residual(E, u1, lev);
 
 		assemble_div_u(E, u1, Ah, lev);
@@ -293,6 +496,8 @@ float solve_Ahat_p_fhat(struct All_variables *E, double *V, double *P, double *F
 	return (residual);
 }
 
+
+
 void generate_log_message(int count,double time0,double timea,double dvelocity,double dpressure, struct All_variables *E){
 
   const int old_version=0;
@@ -333,15 +538,15 @@ void v_from_vector(struct All_variables *E, float **V, double *F)
 
 	for(node = 1; node <= nno; node++)
 	{
-		V[1][node] = F[E->id[node].doff[1]];
-		V[2][node] = F[E->id[node].doff[2]];
-		V[3][node] = F[E->id[node].doff[3]];
-		if(E->node[node] & VBX)
-			V[1][node] = E->VB[1][node];
-		if(E->node[node] & VBZ)
-			V[3][node] = E->VB[3][node];
-		if(E->node[node] & VBY)
-			V[2][node] = E->VB[2][node];
+	  V[1][node] = F[E->id[node].doff[1]];
+	  V[2][node] = F[E->id[node].doff[2]];
+	  V[3][node] = F[E->id[node].doff[3]];
+	  if(E->node[node] & VBX)
+	    V[1][node] = E->VB[1][node];
+	  if(E->node[node] & VBY)
+	    V[2][node] = E->VB[2][node];
+	  if(E->node[node] & VBZ)
+	    V[3][node] = E->VB[3][node];
 	}
 	return;
 }

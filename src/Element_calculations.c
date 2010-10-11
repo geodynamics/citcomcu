@@ -116,8 +116,9 @@ void assemble_forces(struct All_variables *E, int penalty)
    fprintf(E->fp,"bb %d %g\n",a,  E->F[a]); 
 */
 
+	//if(E->parallel.me == 0)fprintf(stderr,"af exchange\n");
 	exchange_id_d20(E, E->F, lev);
-
+	//if(E->parallel.me == 0)fprintf(stderr,"af strip BC\n");
 	strip_bcs_from_residual(E, E->F, lev);
 
 	return;
@@ -152,18 +153,14 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 
   const int n = loc_mat_size[E->mesh.nsd];
   const int vpts = vpoints[E->mesh.nsd];
-  //const int ppts = ppoints[E->mesh.nsd];
   const int ends = enodes[E->mesh.nsd];
   const int dims = E->mesh.nsd;
-  //const int dofs = E->mesh.dof;
-  //const int sphere_key = 1;
-  //const double zero = 0.0;
   const double one = 1.0;
   const double two = 2.0;
 
 
   if(E->control.Rsphere)	/* need rtf for spherical */
-    get_rtf(E, el, 0, rtf, lev);
+    get_rtf(E, el, 0, rtf, lev); /* vpts */
   for(k = 1; k <= vpts; k++){
     off = (el-1)*vpts+k;
     W[k] = g_point[k].weight[dims - 1] * E->GDA[lev][el].vpt[k] * E->EVI[lev][off];
@@ -178,12 +175,12 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
   if(E->control.Rsphere){
     if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
       construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 0);
-    get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd,TRUE,ba);
+    get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd,vpts, ends,1,ba);
   }else{						/* end for sphere */
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
     if(E->viscosity.allow_anisotropic_viscosity){ /* only anisotropic cartesian uses ba[] */
       if(iconv == 1 || ((iconv == 0) && (el - 1) % E->lmesh.ELZ[lev] == 0))
-	get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd, FALSE,ba);
+	get_ba(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf, E->mesh.nsd, vpts, ends,0,ba);
     }
 #endif
     ;				/* only anisotropic cartesian needs ba factors */
@@ -198,11 +195,15 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
       if(E->viscosity.allow_anisotropic_viscosity){
 	for(i = 1; i <= dims; i++)
 	  for(j = 1; j <= dims; j++)
-	    for(k = 1; k <= VPOINTS3D; k++){
+	    for(k = 1; k <= vpts; k++){
 	      /* note that D is in 0,...,N-1 convention */
 	      for(l1=0;l1 < 6;l1++){ /* compute D*B */
-		btmp[l1] =  ( D[k][l1][0] * ba[b][j][k][1] +  D[k][l1][1] * ba[b][j][k][2]  + D[k][l1][2] * ba[b][j][k][3] +
-			      D[k][l1][3] * ba[b][j][k][4] +  D[k][l1][4] * ba[b][j][k][5]  + D[k][l1][5] * ba[b][j][k][6] );
+		btmp[l1] =  ( D[k][l1][0] * ba[b][j][k][1] +  
+			      D[k][l1][1] * ba[b][j][k][2] + 
+			      D[k][l1][2] * ba[b][j][k][3] +
+			      D[k][l1][3] * ba[b][j][k][4] +  
+			      D[k][l1][4] * ba[b][j][k][5] + 
+			      D[k][l1][5] * ba[b][j][k][6] );
 	      }
 	      /* compute B^T (D*B) */
 	      bdbmu[i][j] += W[k] * ( ba[a][i][k][1]*btmp[0] + ba[a][i][k][2]*btmp[1] + ba[a][i][k][3]*btmp[2]+
@@ -218,7 +219,7 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 	*/
       if(E->control.CART3D){
 	/* cartesian isotropic does not use ba[] */
-	for(k = 1; k <= VPOINTS3D; k++){
+	for(k = 1; k <= vpts; k++){
 	  bdbmu[1][1] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
 	  bdbmu[1][2] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
 	  bdbmu[1][3] += W[k] * E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)];
@@ -231,7 +232,7 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 	}
 	      
 	temp = 0.0;
-	for(k = 1; k <= VPOINTS3D; k++){
+	for(k = 1; k <= vpts; k++){
 	  temp += W[k] * (E->GNX[lev][el].vpt[GNVXINDEX(0, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(0, b, k)] + 
 			  E->GNX[lev][el].vpt[GNVXINDEX(1, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(1, b, k)] + 
 			  E->GNX[lev][el].vpt[GNVXINDEX(2, a, k)] * E->GNX[lev][el].vpt[GNVXINDEX(2, b, k)]);
@@ -245,7 +246,7 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
       }else if(E->control.Rsphere){
 	for(i = 1; i <= dims; i++)
 	  for(j = 1; j <= dims; j++)
-	    for(k = 1; k <= VPOINTS3D; k++){
+	    for(k = 1; k <= vpts; k++){
 	      bdbmu[i][j] += W[k] * (two * (ba[a][i][k][1] * ba[b][j][k][1] + 
 					    ba[a][i][k][2] * ba[b][j][k][2] + 
 					    ba[a][i][k][3] * ba[b][j][k][3]) + 
@@ -289,57 +290,64 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 }
 /* 
 
-compute the displacement gradient matrix B
+compute the displacement gradient matrix B at the velocity points
+(for element K computations)
 
 */
 void get_ba(struct Shape_function *N,struct Shape_function_dx *GNx,
 	    struct CC *cc, struct CCX *ccx, double rtf[4][9],
-	    int dims,int spherical, double ba[9][4][9][7])
+	    int dims,int vpts, int ends, int spherical, double ba[9][4][9][7])
 {
 
-  int i,k,a,vpts,ends;
+  int i,k,a;
   double ra[9], si[9], ct[9];
   const double one = 1.0;
   const double two = 2.0;
-  float gnx0, gnx1, gnx2;
+  double gnx0, gnx1, gnx2;
   double shp, cc1, cc2, cc3;
   
-  vpts = vpoints[dims];
-  ends = enodes[dims];
-
 
   if(spherical){
     for(k = 1; k <= vpts; k++){
-      ra[k] = rtf[3][k];
-      si[k] = one / sin(rtf[1][k]);
-      ct[k] = cos(rtf[1][k]) * si[k];
+      ra[k] = rtf[3][k];	/* 1/r */
+      si[k] = one / sin(rtf[1][k]); /* 1/sin(t) */
+      ct[k] = cos(rtf[1][k]) * si[k]; /* 1/tan(t) */
     }
     for(a = 1; a <= ends; a++)
-      for(i = 1; i <= dims; i++)
-	for(k = 1; k <= VPOINTS3D; k++){
-	  gnx0 = GNx->vpt[GNVXINDEX(0, a, k)];
-	  gnx1 = GNx->vpt[GNVXINDEX(1, a, k)];
-	  gnx2 = GNx->vpt[GNVXINDEX(2, a, k)];
-	  shp = N->vpt[GNVINDEX(a, k)];
-	  cc1 = cc->vpt[BVINDEX(1, i, a, k)];
-	  cc2 = cc->vpt[BVINDEX(2, i, a, k)];
-	  cc3 = cc->vpt[BVINDEX(3, i, a, k)];
-	    
-	  ba[a][i][k][1] = (gnx0 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 1, a, k)] + shp * cc3) * ra[k];
-	  
-	  ba[a][i][k][2] = (shp * cc1 * ct[k] + shp * cc3 + (gnx1 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 2, a, k)]) * si[k]) * ra[k];
-	  
+      for(k = 1; k <= vpts; k++){
+	gnx0 = GNx->vpt[GNVXINDEX(0, a, k)]; /* d_t */
+	gnx1 = GNx->vpt[GNVXINDEX(1, a, k)]; /* d_p */
+	gnx2 = GNx->vpt[GNVXINDEX(2, a, k)]; /* d_r */
+	shp = N->vpt[GNVINDEX(a, k)];
+	for(i = 1; i <= dims; i++){
+	  cc1 = cc->vpt[BVINDEX(1, i, a, k)]; /* t */
+	  cc2 = cc->vpt[BVINDEX(2, i, a, k)]; /* p */
+	  cc3 = cc->vpt[BVINDEX(3, i, a, k)]; /* r */
+	  /* tt = (d_t ut + ur)/r -- 11 */
+	  ba[a][i][k][1] = ((gnx0 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 1, a, k)]) + 
+			    shp * cc3) * ra[k];
+	  /* pp = (ut/tan(t) + ur + (d_p up)/sin(t))/r -- 22 */
+	  ba[a][i][k][2] = (shp * cc1 * ct[k] + 
+			    shp * cc3 + 
+			    (gnx1 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 2, a, k)]) * si[k]) * ra[k];
+	  /* rr = d_r ur -- 33 */
 	  ba[a][i][k][3] = gnx2 * cc3;
-	  
-	  ba[a][i][k][4] = (gnx0 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 1, a, k)] - shp * cc2 * ct[k] + (gnx1 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 2, a, k)]) * si[k]) * ra[k];
-	  
-	  ba[a][i][k][5] = gnx2 * cc1 + (gnx0 * cc3 + shp * (ccx->vpt[BVXINDEX(3, i, 1, a, k)] - cc1)) * ra[k];
-	  
-	  ba[a][i][k][6] = gnx2 * cc2 - ra[k] * shp * cc2 + (gnx1 * cc3 + shp * ccx->vpt[BVXINDEX(3, i, 2, a, k)]) * si[k] * ra[k];
+	  /* tp = (d_t up + up/tan(t) + d_p ut/sin(t) ) / r -- 21 + 12*/
+	  ba[a][i][k][4] = ((gnx0 * cc2 + shp * ccx->vpt[BVXINDEX(2, i, 1, a, k)]) - 
+			    shp * cc2 * ct[k] + 
+			    (gnx1 * cc1 + shp * ccx->vpt[BVXINDEX(1, i, 2, a, k)]) * si[k]) * ra[k];
+	  /* tr = d_r ut + (d_t ur - ut)/r -- 13 + 31 */
+	  ba[a][i][k][5] = gnx2 * cc1 + 
+	    (gnx0 * cc3 + 
+	     shp * (ccx->vpt[BVXINDEX(3, i, 1, a, k)] - cc1)) * ra[k];
+	  /* pr = d_r up - up/r - d_p ur/sin(t)/r -- 23 + 32 */
+	  ba[a][i][k][6] = gnx2 * cc2 +
+	    (( gnx1 * cc3 + shp * ccx->vpt[BVXINDEX(3,i,2,a,k)] ) * si[k] - shp * cc2 ) * ra[k];
 	}
+      }
   }else{			/* cartesian */
     for(a = 1; a <= ends; a++)
-      for(k = 1; k <= VPOINTS3D; k++){
+      for(k = 1; k <= vpts; k++){
 	gnx0 = GNx->vpt[GNVXINDEX(0, a, k)];
 	gnx1 = GNx->vpt[GNVXINDEX(1, a, k)];
 	gnx2 = GNx->vpt[GNVXINDEX(2, a, k)];
@@ -369,15 +377,234 @@ void get_ba(struct Shape_function *N,struct Shape_function_dx *GNx,
 	ba[a][3][k][6]  = gnx1;
 
       }
-  } /* end Caretsian */
+  } /* end Cartesian */
+
+}
+/* 
+
+   get B at the pressure integration points for strain-rate
+   computations
+
+ */
+void get_ba_p(struct Shape_function *N,
+	      struct Shape_function_dx *GNx,
+	      struct CC *cc, struct CCX *ccx, double rtf[4][9],
+	      int dims,int ppts, int ends, int spherical, 
+	      double ba[9][4][9][7])
+{
+
+  int i,k,a;
+  double ra[9], si[9], ct[9];
+  const double one = 1.0;
+  const double two = 2.0;
+  double gnx0, gnx1, gnx2;
+  double shp, cc1, cc2, cc3;
+  if(spherical){		/* spherical coordinates */
+    for(k = 1; k <= ppts; k++){
+      ra[k] = rtf[3][k];
+      si[k] = one / sin(rtf[1][k]);
+      ct[k] = cos(rtf[1][k]) * si[k]; /* cot(t) */
+    }
+    for(a = 1; a <= ends; a++)
+      for(k = 1; k <= ppts; k++){
+	gnx0 = GNx->ppt[GNPXINDEX(0, a, k)];
+	gnx1 = GNx->ppt[GNPXINDEX(1, a, k)];
+	gnx2 = GNx->ppt[GNPXINDEX(2, a, k)];
+	shp = N->ppt[GNPINDEX(a, k)];
+	for(i = 1; i <= dims; i++){
+	  cc1 = cc->ppt[BPINDEX(1, i, a, k)];
+	  cc2 = cc->ppt[BPINDEX(2, i, a, k)];
+	  cc3 = cc->ppt[BPINDEX(3, i, a, k)];
+	    
+	  /* d_tt  */
+	  ba[a][i][k][1] = (gnx0 * cc1 + shp * ccx->ppt[BPXINDEX(1, i, 1, a, k)] + shp * cc3) * ra[k];
+	  /* d_pp */
+	  ba[a][i][k][2] = (shp * cc1 * ct[k] + shp * cc3 + (gnx1 * cc2 + shp * ccx->ppt[BPXINDEX(2, i, 2, a, k)]) * si[k]) * ra[k];
+	  /* d_rr */
+	  ba[a][i][k][3] = gnx2 * cc3;
+	  /* d_tp */
+	  ba[a][i][k][4] = (gnx0 * cc2 + shp * ccx->ppt[BPXINDEX(2, i, 1, a, k)] - shp * cc2 * ct[k] + (gnx1 * cc1 + shp * ccx->ppt[BPXINDEX(1, i, 2, a, k)]) * si[k]) * ra[k];
+	  /* d_tr */
+	  ba[a][i][k][5] = gnx2 * cc1 + (gnx0 * cc3 + shp * (ccx->ppt[BPXINDEX(3, i, 1, a, k)] - cc1)) * ra[k];
+	  /* d_pr */
+	  ba[a][i][k][6] = gnx2 * cc2 + ((gnx1 * cc3 + shp * ccx->ppt[BPXINDEX(3, i, 2, a, k)]) * si[k] - shp * cc2 ) * ra[k];
+	}
+      }
+  }else{			
+    /* cartesian coordinates */
+    for(a = 1; a <= ends; a++)
+      for(k = 1; k <= ppts; k++){
+	gnx0 = GNx->ppt[GNPXINDEX(0, a, k)];
+	gnx1 = GNx->ppt[GNPXINDEX(1, a, k)];
+	gnx2 = GNx->ppt[GNPXINDEX(2, a, k)];
+	/* xx */
+	ba[a][1][k][1]  = gnx0;
+	ba[a][2][k][1]  = 0.;
+	ba[a][3][k][1]  = 0.;
+	/* yy */
+	ba[a][1][k][2]  = 0.;
+	ba[a][2][k][2]  = gnx1;
+	ba[a][3][k][2]  = 0.;
+	/* zz */
+	ba[a][1][k][3]  = 0.;
+	ba[a][2][k][3]  = 0.;
+	ba[a][3][k][3]  = gnx2;
+	/* xy */
+	ba[a][1][k][4]  = gnx1;
+	ba[a][2][k][4]  = gnx0;
+	ba[a][3][k][4]  = 0.;
+	/* xz */
+	ba[a][1][k][5]  = gnx2;
+	ba[a][2][k][5]  = 0.;
+	ba[a][3][k][5]  = gnx0;
+	/* yz  */
+	ba[a][1][k][6]  = 0.;
+	ba[a][2][k][6]  = gnx2;
+	ba[a][3][k][6]  = gnx1;
+
+      }
+  } /* end Cartesian */
+}
+
+/* 
+
+   get velocity gradient matrix at element, and also compute the
+   average velocity in this element
+   
+
+*/
+
+void get_vgm_p(double VV[4][9],struct Shape_function *N,
+	       struct Shape_function_dx *GNx,
+	       struct CC *cc, struct CCX *ccx, double rtf[4][9],
+	       int dims,int ppts, int ends, int spherical,
+	       double l[3][3], double v[3])
+{
+
+  int i,k,j,a;
+  double ra[9], si[9], ct[9];
+  const double one = 1.0;
+  const double two = 2.0;
+  double vgm[3][3];
+  double shp, cc1, cc2, cc3,d_t,d_r,d_p,up,ur,ut;
+  /* init L matrix */
+  for(i=0;i < 3;i++){
+    v[i] = 0.0;
+    for(j=0;j < 3; j++)
+      l[i][j] = 0.0;
+  }
+  /* mean velocity at pressure integration point */
+  for(a=1;a <= ends;a++){
+    v[0] += N->ppt[GNPINDEX(a, 1)] * VV[1][a];
+    v[1] += N->ppt[GNPINDEX(a, 1)] * VV[2][a];
+    v[2] += N->ppt[GNPINDEX(a, 1)] * VV[3][a];
+  }
+  if(spherical){
+    for(k = 1; k <= ppts; k++){
+      ra[k] = rtf[3][k];	      /* 1/r */
+      si[k] = one / sin(rtf[1][k]); /* 1/sin(t) */
+      ct[k] = cos(rtf[1][k]) * si[k]; /* cot(t) */
+    }
+    for(a = 1; a <= ends; a++){
+      for(k = 1; k <= ppts; k++){
+	d_t = GNx->ppt[GNPXINDEX(0, a, k)]; /* d_t */
+	d_p = GNx->ppt[GNPXINDEX(1, a, k)]; /* d_p */
+	d_r = GNx->ppt[GNPXINDEX(2, a, k)]; /* d_r */
+	shp = N->ppt[GNPINDEX(a, k)];
+	for(i = 1; i <= dims; i++){
+	  ut = cc->ppt[BPINDEX(1, i, a, k)]; /* ut */
+	  up = cc->ppt[BPINDEX(2, i, a, k)]; /* up */
+	  ur = cc->ppt[BPINDEX(3, i, a, k)]; /* ur */
+	  
+	  /* velocity gradient matrix is transpose of grad v, using Citcom sort t, p, r
+	
+	     | d_t(vt) d_p(vt) d_r(vt) |
+	     | d_t(vp) d_p(vp) d_r(vp) |
+	     | d_t(vr) d_p(vr) d_r(vr) |
+
+	  */
+
+	  /* d_t vt = 1/r (d_t vt + vr) */
+	  vgm[0][0] =  ((d_t * ut + shp * ccx->ppt[BPXINDEX(1, i, 1, a, k)]) + 
+			shp * ur) * ra[k];
+	  /* d_p vt = 1/r (1/sin(t) d_p vt -vp/tan(t)) */
+	  vgm[0][1] =  ((d_p * ut + shp * ccx->ppt[BPXINDEX(1, i, 2, a, k)]) * si[k] - 
+			shp * up * ct[k]) * ra[k];
+	  /* d_r vt = d_r v_t */
+	  vgm[0][2] = d_r * ut;
+	  /* d_t vp = 1/r d_t v_p*/
+	  vgm[1][0] = (d_t * up + shp * ccx->ppt[BPXINDEX(2, i, 1, a, k)]) * ra[k];
+	  /* d_p vp = 1/r((d_p vp)/sin(t) + vt/tan(t) + vr) */
+	  vgm[1][1] = ((d_p * up + shp * ccx->ppt[BPXINDEX(2, i, 2, a, k)]) * si[k] + 
+		       shp * ut * ct[k] + shp * ur) * ra[k];
+	  /* d_r vp = d_r v_p */
+	  vgm[1][2] =  d_r * up;
+	  /* d_t vr = 1/r(d_t vr - vt) */
+	  vgm[2][0] = ((d_t * ur + shp * ccx->ppt[BPXINDEX(3, i, 1, a, k)]) -
+		       shp * ut) * ra[k];
+	  /* d_p vr =  1/r(1/sin(t) d_p vr - vp) */
+	  vgm[2][1] = (( d_p * ur + shp * ccx->ppt[BPXINDEX(3,i, 2,a,k)] ) * si[k] -
+		       shp * up ) * ra[k];
+	  /* d_r vr = d_r vr */
+	  vgm[2][2] = d_r * ur;
+
+
+	  l[0][0] += vgm[0][0] * VV[i][a];
+	  l[0][1] += vgm[0][1] * VV[i][a];
+	  l[0][2] += vgm[0][2] * VV[1][a];
+	  
+	  l[1][0] += vgm[1][0] * VV[i][a];
+	  l[1][1] += vgm[1][1] * VV[i][a];
+	  l[1][2] += vgm[1][2] * VV[i][a];
+	  
+	  l[2][0] += vgm[2][0] * VV[i][a];
+	  l[2][1] += vgm[2][1] * VV[i][a];
+	  l[2][2] += vgm[2][2] * VV[i][a];
+	  
+	}
+      }
+    }
+  }else{		
+    /* cartesian */
+    for(k = 1; k <= ppts; k++){
+      for(a = 1; a <= ends; a++){
+	/* velocity gradient matrix is transpose of grad v
+	
+	     | d_x(vx) d_y(vx) d_z(vx) |
+	     | d_x(vy) d_y(vy) d_z(vy) |
+	     | d_x(vz) d_y(vz) d_z(vz) |
+	*/
+	l[0][0] += GNx->ppt[GNPXINDEX(0, a, k)] * VV[1][a]; /* other contributions are zero */
+	l[0][1] += GNx->ppt[GNPXINDEX(1, a, k)] * VV[1][a];
+	l[0][2] += GNx->ppt[GNPXINDEX(2, a, k)] * VV[1][a];
+
+	l[1][0] += GNx->ppt[GNPXINDEX(0, a, k)] * VV[2][a];
+	l[1][1] += GNx->ppt[GNPXINDEX(1, a, k)] * VV[2][a];
+	l[1][2] += GNx->ppt[GNPXINDEX(2, a, k)] * VV[2][a];
+
+	l[2][0] += GNx->ppt[GNPXINDEX(0, a, k)] * VV[3][a];
+	l[2][1] += GNx->ppt[GNPXINDEX(1, a, k)] * VV[3][a];
+	l[2][2] += GNx->ppt[GNPXINDEX(2, a, k)] * VV[3][a];
+
+      }
+    }
+  }
+  if(ppts != 1){
+    for(i=0;i<3;i++)
+      for(j=0;j<3;j++)
+	l[i][j] /= (float)ppts;
+  }
 
 }
 
-	/* =============================================
-	 * General calling function for del_squared: 
-	 * according to whether it should be element by
-	 * element or node by node.
-	 * ============================================= */
+
+
+
+/* =============================================
+ * General calling function for del_squared: 
+ * according to whether it should be element by
+ * element or node by node.
+ * ============================================= */
 
 void assemble_del2_u(struct All_variables *E, double *u, double *Au, int level, int strip_bcs)
 {
@@ -694,7 +921,7 @@ double assemble_dAhatp_entry(struct All_variables *E, int e, int level)
 	{
 		p = (a - 1) * dims;
 		j = E->LMD[level][e].node[a].doff[1];
-		gradP[p] += E->BI[level][j] * E->elt_del[level][e].g[p][0];
+		gradP[p]     += E->BI[level][j] * E->elt_del[level][e].g[p][0];
 
 		j = E->LMD[level][e].node[a].doff[2];
 		gradP[p + 1] += E->BI[level][j] * E->elt_del[level][e].g[p + 1][0];
@@ -732,70 +959,105 @@ double assemble_dAhatp_entry(struct All_variables *E, int e, int level)
 
 void get_elt_g(struct All_variables *E, int el, higher_precision elt_del[24][1], int lev)
 {
-	//double dGNdash[3];
-	//double recip_radius, temp;
-	double temp;
-	//int p, a, nint, es, d, i, j, k;
-	int p, a, i;
-	double ra, ct, si, x[4], rtf[4][9];
-	//int lmsize;
+  double temp;
+  int p, a, i;
+  double ra, ct,si, x[4], rtf[4][9];
+  static struct CC Cc;
+  static struct CCX Ccx;
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
+  const int ppts = ppoints[dims];
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  const int modify_g = 1;
+  //const int modify_g = 0;
+  int j,k,off;
+  double Dtmp[6][6],Duse[6][6],rtf2[4][9],weight;
+  double ba[9][4][9][7];
+  const int vpts = vpoints[dims];
+#endif
 
-	//struct Shape_function GN;
-	//struct Shape_function_dA dOmega;
-	//struct Shape_function_dx GNx;
-	static struct CC Cc;
-	static struct CCX Ccx;
 
-	const int dims = E->mesh.nsd;
-	//const int dofs = E->mesh.dof;
-	const int ends = enodes[dims];
-	//const int vpts = vpoints[dims];
-	//const int sphere_key = 1;
-
-	/* Special case, 4/8 node bilinear cartesian square/cube element -> 1 pressure point */
-
-	temp = p_point[1].weight[dims - 1] * E->GDA[lev][el].ppt[1];
-
-	/* unroll etc some more */
-
-	if(E->control.Rsphere)
-	{
-		if((el - 1) % E->lmesh.ELZ[lev] == 0)
-			construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 1);
-
-		get_rtf(E, el, 2, rtf, lev);
-
-		ra = rtf[3][1];
-		si = 1.0 / sin(rtf[1][1]);
-		ct = cos(rtf[1][1]) * si;
-
-		for(a = 1; a <= ends; a++)
-		{
-			for(i = 1; i <= dims; i++)
-				x[i] = E->GNX[lev][el].ppt[GNPXINDEX(2, a, 1)] * Cc.ppt[BPINDEX(3, i, a, 1)]
-					+ 2.0 * ra * E->N.ppt[GNPINDEX(a, 1)] * Cc.ppt[BPINDEX(3, i, a, 1)] + ra * (E->GNX[lev][el].ppt[GNPXINDEX(0, a, 1)] * Cc.ppt[BPINDEX(1, i, a, 1)] + E->N.ppt[GNPINDEX(a, 1)] * Ccx.ppt[BPXINDEX(1, i, 1, a, 1)] + ct * E->N.ppt[GNPINDEX(a, 1)] * Cc.ppt[BPINDEX(1, i, a, 1)] + si * (E->GNX[lev][el].ppt[GNPXINDEX(1, a, 1)] * Cc.ppt[BPINDEX(2, i, a, 1)] + E->N.ppt[GNPINDEX(a, 1)] * Ccx.ppt[BPXINDEX(2, i, 2, a, 1)]));
-
-			p = dims * (a - 1);
-			elt_del[p][0] = -x[1] * temp;
-			elt_del[p + 1][0] = -x[2] * temp;
-			elt_del[p + 2][0] = -x[3] * temp;
-
-		}
-
+  /* Special case, 4/8 node bilinear cartesian square/cube element ->
+     1 pressure point */
+  
+  temp = p_point[1].weight[dims - 1] * E->GDA[lev][el].ppt[1];
+  
+  /* unroll etc some more */
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  if(E->viscosity.allow_anisotropic_viscosity){
+    if(E->control.Rsphere)
+      get_rtf(E, el, 0, rtf2, lev); /* vpts */
+    /* find avg constitutive matrix */
+    for(i=0;i<6;i++)
+      for(j=0;j<6;j++)
+	Duse[i][j]=0.0;
+    weight = 1./(2.*vpts);
+    for(i=1;i <= vpts;i++){
+      off = (el-1)*vpts+i;
+      get_constitutive(Dtmp,lev,off,rtf2[1][i],rtf2[2][i],(E->control.Rsphere),E);
+      for(j=0;j<6;j++)
+	for(k=0;k<6;k++)
+	  Duse[j][k] += Dtmp[j][k]*weight;
+    }
+    if(E->control.Rsphere){
+      if((el - 1) % E->lmesh.ELZ[lev] == 0)
+	construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 1);
+      get_rtf(E, el, 1, rtf, lev);
+    }
+    get_ba_p(&(E->N),&(E->GNX[lev][el]),&Cc, &Ccx,rtf,
+	     E->mesh.nsd,ppts,ends,(E->control.Rsphere),ba);
+    /* assume single pressure point */
+    for(a = 1; a <= ends; a++){
+      for(i = 1; i <= dims; i++){
+	x[i] = 0.0;
+	for(k=0;k < 6;k++){
+	  x[i] += Duse[0][k] * ba[a][i][1][k+1];
+	  x[i] += Duse[1][k] * ba[a][i][1][k+1];
+	  x[i] += Duse[2][k] * ba[a][i][1][k+1];
 	}
-	else if(E->control.CART3D)
-	{
+      }
+      
+      p = dims * (a - 1);
+      elt_del[p][0] =     -x[1] * temp; /* contributions of each velocity to pressure */
+      elt_del[p + 1][0] = -x[2] * temp;
+      elt_del[p + 2][0] = -x[3] * temp;
+    }
+  }else{
+#endif
+    if(E->control.Rsphere){
+      if((el - 1) % E->lmesh.ELZ[lev] == 0)
+	construct_c3x3matrix_el(E, el, &Cc, &Ccx, lev, 1);
+      
+      get_rtf(E, el, 1, rtf, lev);
+      
+      ra = rtf[3][1];
+      si = 1.0 / sin(rtf[1][1]);
+      ct = cos(rtf[1][1]) * si;
 
-		for(a = 1; a <= ends; a++)
-		{
-			p = dims * (a - 1);
-			elt_del[p][0] = -E->GNX[lev][el].ppt[GNPXINDEX(0, a, 1)] * temp;
-			elt_del[p + 1][0] = -E->GNX[lev][el].ppt[GNPXINDEX(1, a, 1)] * temp;
-			elt_del[p + 2][0] = -E->GNX[lev][el].ppt[GNPXINDEX(2, a, 1)] * temp;
-		}
-	}
-
-	return;
+      for(a = 1; a <= ends; a++){
+	for(i = 1; i <= dims; i++)
+	  x[i] = E->GNX[lev][el].ppt[GNPXINDEX(2, a, 1)] * Cc.ppt[BPINDEX(3, i, a, 1)]
+	    + 2.0 * ra * E->N.ppt[GNPINDEX(a, 1)] * Cc.ppt[BPINDEX(3, i, a, 1)] + ra * (E->GNX[lev][el].ppt[GNPXINDEX(0, a, 1)] * Cc.ppt[BPINDEX(1, i, a, 1)] + E->N.ppt[GNPINDEX(a, 1)] * Ccx.ppt[BPXINDEX(1, i, 1, a, 1)] + ct * E->N.ppt[GNPINDEX(a, 1)] * Cc.ppt[BPINDEX(1, i, a, 1)] + si * (E->GNX[lev][el].ppt[GNPXINDEX(1, a, 1)] * Cc.ppt[BPINDEX(2, i, a, 1)] + E->N.ppt[GNPINDEX(a, 1)] * Ccx.ppt[BPXINDEX(2, i, 2, a, 1)]));
+	
+	p = dims * (a - 1);
+	elt_del[p][0] = -x[1] * temp;
+	elt_del[p + 1][0] = -x[2] * temp;
+	elt_del[p + 2][0] = -x[3] * temp;
+	
+      }
+    }else if(E->control.CART3D){
+      for(a = 1; a <= ends; a++){
+	p = dims * (a - 1);
+	elt_del[p][0]     = -E->GNX[lev][el].ppt[GNPXINDEX(0, a, 1)] * temp;
+	elt_del[p + 1][0] = -E->GNX[lev][el].ppt[GNPXINDEX(1, a, 1)] * temp;
+	elt_del[p + 2][0] = -E->GNX[lev][el].ppt[GNPXINDEX(2, a, 1)] * temp;
+      }
+    }
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  }
+#endif
+  
+  return;
 }
 
 
@@ -854,30 +1116,17 @@ void get_elt_h(struct All_variables *E, int el, double elt_h[1], int penalty)
 void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, int bcs)
 {
 
-	//int aid, i, p, a, b, d, j, k, q, es;
 	int i, p, a, b, j, k, q;
-	//int node[5], back_front, got_elt_k, nodea, nodeb;
 	int got_elt_k, nodea, nodeb;
 	unsigned int type[4];
-	//static int been_here = 0;
 
-	//double force[9], force_at_gs[9], stress[9];
 	double force[9], force_at_gs[9];
-	//double vector[4], magnitude;
-	//double tmp, rtf[4][9];
-	//double rtf[4][9];
 	double elt_k[24 * 24];
 
-	//struct Shape_function GN;
-	//struct Shape_function_dA dOmega;
-	//struct Shape_function_dx GNx;
-	//struct Shape_function1 GM;
-	//struct Shape_function1_dA dGammax;
 	static struct CC Cc;
 	static struct CCX Ccx;
 
 	const int dims = E->mesh.nsd;
-	//const int dofs = E->mesh.dof;
 	const int n = loc_mat_size[dims];
 	const int ends = enodes[dims];
 	const int vpts = vpoints[dims];
@@ -950,7 +1199,6 @@ void get_elt_f(struct All_variables *E, int el, double elt_f[24], int penalty, i
 	else if(E->control.Rsphere)
 	{
 
-		//get_rtf(E, el, 0, rtf, E->mesh.levmax);
 		if((el - 1) % E->lmesh.elz == 0)
 			construct_c3x3matrix_el(E, el, &Cc, &Ccx, E->mesh.levmax, 0);
 

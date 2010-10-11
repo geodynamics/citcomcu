@@ -141,7 +141,6 @@ void PG_timestep_particle(struct All_variables *E)
 	{
 	}
 
-
 	if(on_off == 0)
 	{
 		E->advection.timesteps++;
@@ -187,7 +186,6 @@ void PG_timestep_particle(struct All_variables *E)
 					corrector(E, E->T, E->Tdot, DTdot);
 				}
 			}
-
 			/* get the max temperature for new T */
 			E->monitor.T_interior = Tmax(E, E->T);
 
@@ -209,18 +207,15 @@ void PG_timestep_particle(struct All_variables *E)
 		count++;
 
 		temperatures_conform_bcs(E);
-
 		E->advection.last_sub_iterations = count;
 
 
 		Euler(E, E->C, E->V, on_off);
-
+	
 		E->monitor.elapsed_time += E->advection.timestep;
 	}							/* end for on_off==0  */
 
-
 	thermal_buoyancy(E);
-
 	if(E->monitor.solution_cycles < E->advection.max_timesteps)
 		E->control.keep_going = 1;
 	else

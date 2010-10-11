@@ -1,5 +1,7 @@
 /* 
 
+   set of routines to deal with anisotropic viscosity
+
    orthotropic viscosity following Muehlhaus, Moresi, Hobbs and Dufour
    (PAGEOPH, 159, 2311, 2002)
 
@@ -28,20 +30,33 @@ void get_constitutive(double D[6][6], int lev,
   double n[3];
   if(E->viscosity.allow_anisotropic_viscosity){
     if((E->monitor.solution_cycles == 0)&&
-       (E->viscosity.anivisc_start_from_iso)&&(E->monitor.visc_iter_count == 0))
-      /* first iteration of "stress-dependent" loop for first timestep */
+       (E->viscosity.anivisc_start_from_iso)&&(E->monitor.visc_iter_count == 0)){
+      /* 
+	 first iteration of "stress-dependent" loop for first timestep 
+      */
       get_constitutive_isotropic(D);
-    else{      
-      /* allow for a possibly anisotropic viscosity */
+    }else{      
+      /* 
+	 allow for a possibly anisotropic viscosity 
+      */
       n[0] =  E->EVIn1[lev][off];
       n[1] =  E->EVIn2[lev][off];
       n[2] =  E->EVIn3[lev][off]; /* Cartesian directors */
-      if(E->viscosity.allow_anisotropic_viscosity == 1){ /* orthotropic */
-	get_constitutive_orthotropic_viscosity(D,E->EVI2[lev][off],n,convert_to_spherical,theta,phi); 
-      }else if(E->viscosity.allow_anisotropic_viscosity == 2){
-	/* transversely isotropic */
-	get_constitutive_ti_viscosity(D,E->EVI2[lev][off],0.,n,convert_to_spherical,theta,phi); 
+      if(E->avmode[lev][off] == CITCOM_ANIVISC_ORTHO_MODE){ 
+	/* 
+	   orthotropic 
+	*/
+	get_constitutive_orthotropic_viscosity(D,E->EVI2[lev][off],
+					       n,convert_to_spherical,theta,phi); 
+      }else if(E->avmode[lev][off] == CITCOM_ANIVISC_TI_MODE){
+	/* 
+	   transversely isotropic 
+	*/
+	get_constitutive_ti_viscosity(D,E->EVI2[lev][off],0.,
+				      n,convert_to_spherical,
+				      theta,phi); 
       }
+      //if(E->EVI2[lev][off] != 0) print_6x6_mat(stderr,D); 
     }
   }else{
     get_constitutive_isotropic(D);
@@ -218,81 +233,105 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
   double vis2,n[3],u,v,s,r;
   const int vpts = vpoints[E->mesh.nsd];
   
-  if(E->viscosity.allow_anisotropic_viscosity){
-    if(init_stage){	
-      if(E->viscosity.anisotropic_viscosity_init)
-	myerror("anisotropic viscosity should not be initialized twice?!",E);
-      /* first call */
-      /* initialize anisotropic viscosity at element level, nodes will
-	 get assigned later */
-      switch(E->viscosity.anisotropic_init){
-      case 0:			/* isotropic */
-	if(E->parallel.me == 0)fprintf(stderr,"set_anisotropic_viscosity_at_element_level: initializing isotropic viscosity\n");
-	for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
-	  nel  = E->lmesh.NEL[i];
-	  for(k=1;k <= nel;k++){
-	    for(l=1;l <= vpts;l++){ /* assign to all integration points */
-	      off = (k-1)*vpts + l;
-	      E->EVI2[i][off] = 0.0;
-	      E->EVIn1[i][off] = 1.0; E->EVIn2[i][off] = E->EVIn3[i][off] = 0.0;
-	    }
+  if(init_stage){
+    if(E->parallel.me == 0)
+      fprintf(stderr,"set_anisotropic_viscosity: allowing for %s viscosity\n",
+	     (E->viscosity.allow_anisotropic_viscosity == 1)?("orthotropic"):("transversely isotropic"));
+    if(E->viscosity.anisotropic_viscosity_init)
+      myerror("anisotropic viscosity should not be initialized twice?!",E);
+    /* first call */
+    /* initialize anisotropic viscosity at element level, nodes will
+       get assigned later */
+    switch(E->viscosity.anisotropic_init){
+    case 3:			/* first init for vel */
+    case 4:			/* ISA */
+    case 5:			/* same for mixed alignment */
+    case 0:			/* isotropic */
+      if(E->parallel.me == 0)fprintf(stderr,"set_anisotropic_viscosity_at_element_level: initializing isotropic viscosity\n");
+      for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
+	nel  = E->lmesh.NEL[i];
+	for(k=1;k <= nel;k++){
+	  for(l=1;l <= vpts;l++){ /* assign to all integration points */
+	    off = (k-1)*vpts + l;
+	    E->EVI2[i][off] = 0.0;
+	    E->EVIn1[i][off] = 1.0; E->EVIn2[i][off] = E->EVIn3[i][off] = 0.0;
+	    E->avmode[i][off] = (unsigned char)
+	      E->viscosity.allow_anisotropic_viscosity;
 	  }
 	}
-	break;
-      case 1:			/* 
+      }
+      break;
+    case 1:			/* 
 				   random fluctuations, for testing a
 				   worst case scenario
 				   
 				*/
-	if(E->parallel.me == 0)fprintf(stderr,"set_anisotropic_viscosity_at_element_level: initializing random viscosity\n");
-	for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
-	  nel  = E->lmesh.NEL[i];
-	  for(k=1;k <= nel;k++){
-	    /* by element (srand48 call should be in citcom.c or somewhere? */
-	    vis2 = drand48()*0.9; /* random fluctuation,
-				     corresponding to same strength
-				     (0) and 10 fold reduction
-				     (0.9) */
-	    /* get random vector */
-	    do{
-	      u = -1 + drand48()*2;v = -1 + drand48()*2;
-	      s = u*u + v*v;		
-	    }while(s > 1);
-	    r = 2.0 * sqrt(1.0-s );
-	    n[0] = u * r;		/* x */
-	    n[1] = v * r;		/* y */
-	    n[2] = 2.0*s -1 ;		/* z */
-	    for(l=1;l <= vpts;l++){ /* assign to all integration points */
-	      off = (k-1)*vpts + l;
-	      E->EVI2[i][off] = vis2;
-	      E->EVIn1[i][off] = n[0]; 
-	      E->EVIn2[i][off] = n[1];
-	      E->EVIn3[i][off] = n[2];
-	    }
+      if(E->parallel.me == 0)fprintf(stderr,"set_anisotropic_viscosity_at_element_level: initializing random viscosity\n");
+      for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
+	nel  = E->lmesh.NEL[i];
+	for(k=1;k <= nel;k++){
+	  vis2 = 0.01+drand48()*0.99; /* random fluctuation */
+	  /* get random vector */
+	  do{
+	    u = -1 + drand48()*2;v = -1 + drand48()*2;
+	    s = u*u + v*v;		
+	  }while(s > 1);
+	  r = 2.0 * sqrt(1.0-s );
+	  n[0] = u * r;		/* x */
+	  n[1] = v * r;		/* y */
+	  n[2] = 2.0*s -1 ;		/* z */
+	  for(l=1;l <= vpts;l++){ /* assign to all integration points */
+	    off = (k-1)*vpts + l;
+	    E->EVI2[i][off] = vis2;
+	    E->EVIn1[i][off] = n[0]; 
+	    E->EVIn2[i][off] = n[1];
+	    E->EVIn3[i][off] = n[2];
+	    E->avmode[i][off] = (unsigned char)
+	      E->viscosity.allow_anisotropic_viscosity;
+
 	  }
 	}
-	break;
-      case 2:			/* from file */
+      }
+      break;
+    case 2:			/* from file */
 #ifndef USE_GGRD	
-	fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init mode 2 requires USE_GGRD compilation\n");
-	parallel_process_termination();
+      fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init mode 2 requires USE_GGRD compilation\n");
+      parallel_process_termination();
 #endif
-	ggrd_read_anivisc_from_file(E);
+      ggrd_read_anivisc_from_file(E);
+      break;
+    default:
+      fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init %i undefined\n",
+	      E->viscosity.anisotropic_init);
+      parallel_process_termination();
+      break;
+    }
+    E->viscosity.anisotropic_viscosity_init = TRUE;
+    /* end initialization stage */
+  }else{
+    //if(E->parallel.me == 0)fprintf(stderr,"reassigning anisotropic viscosity, mode %i\n",E->viscosity.anisotropic_init);
+    if((E->monitor.solution_cycles > 0) || (E->monitor.visc_iter_count > 0)){
+      /* standard operation every time step */
+      switch(E->viscosity.anisotropic_init){
+	/* if flow has been computed, use director aligned with ISA */
+      case 3:		     /* vel lignment */
+	/* we have a velocity solution already */
+	
+	align_director_with_ISA_for_element(E,CITCOM_ANIVISC_ALIGN_WITH_VEL);
 	break;
-      default:
-	fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init %i undefined\n",
-		E->viscosity.anisotropic_init);
-	parallel_process_termination();
+      case 4:		     /* vel alignment */
+	if((E->monitor.solution_cycles > 0) || (E->monitor.visc_iter_count > 0))
+	  align_director_with_ISA_for_element(E,CITCOM_ANIVISC_ALIGN_WITH_ISA);
+	break;
+      case 5:		     /* mixed alignment */
+	if((E->monitor.solution_cycles > 0) || (E->monitor.visc_iter_count > 0))
+	  align_director_with_ISA_for_element(E,CITCOM_ANIVISC_MIXED_ALIGN);
+	break;
+      default:			/* default, no action */
 	break;
       }
-      E->viscosity.anisotropic_viscosity_init = TRUE;
-      /* end initialization stage */
-    }else{
-      /* standard operation every time step */
-      
-
     }
-  } /* end anisotropic viscosity branch */
+  }
 }
 
 
@@ -327,7 +366,7 @@ c and p cannot be the same matrix
 
 */
 
-  void conv_cart4x4_to_spherical(double c[3][3][3][3], double theta, double phi, double p[3][3][3][3])
+void conv_cart4x4_to_spherical(double c[3][3][3][3], double theta, double phi, double p[3][3][3][3])
 {
   double rot[3][3];
   get_citcom_spherical_rot(theta,phi,rot);
@@ -359,7 +398,7 @@ n will be normalized, just in case
 */
 void rotate_ti6x6_to_director(double D[6][6],double n[3])
 {
-  double a[3][3][3][3],b[3][3][3][3],rot[3][3],test[3],testr[3],prod[3],
+  double a[3][3][3][3],b[3][3][3][3],rot[3][3],
     hlen2,x2,y2,xy,zm1;
   /* normalize */
   normalize_vec3d((n+0),(n+1),(n+2));
@@ -411,7 +450,8 @@ void get_orth_delta(double d[3][3][3][3],double n[3])
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       for(k=0;k<3;k++)
-	for(l=0;l<3;l++){	/* eq. (4) from Muehlhaus et al. (2002) */
+	for(l=0;l<3;l++){	/* eq. (4) from Muehlhaus et
+				   al. (2002) */
 	  tmp  = n[i]*n[k]*CITCOM_DELTA(l,j);
 	  tmp += n[j]*n[k]*CITCOM_DELTA(i,l);
 	  tmp += n[i]*n[l]*CITCOM_DELTA(k,j);
@@ -423,13 +463,209 @@ void get_orth_delta(double d[3][3][3][3],double n[3])
 
 }
 
+/* 
+   mode  = 
+   CITCOM_ANIVISC_ALIGN_WITH_VEL: align with velocity
+   CITCOM_ANIVISC_ALIGN_WITH_ISA: align with ISA
+   CITCOM_ANIVISC_MIXED_ALIGN: mixed alignment
+ 
 
+ */
+void align_director_with_ISA_for_element(struct All_variables *E,
+					 int mode)
+{
+  double rtf[4][9];
+  double VV[4][9],lgrad[3][3],isa[3],evel[3];
+  int e,i,off;
+  float base[9],n[3];
+  static struct CC Cc;
+  static struct CCX Ccx;
+  const int dims = E->mesh.nsd;
+  const int ppts = ppoints[dims];
+  const int vpts = vpoints[dims];
+  const int ends = enodes[dims];
+  const int lev = E->mesh.levmax;
+  const int nel = E->lmesh.nel;
+  unsigned char avmode;
+  double vis2 ; 
+  /* anisotropy maximum strength */
+  vis2 = 1. - E->viscosity.ani_vis2_factor; /* 1-eta_w/eta_s */
+
+  if(E->parallel.me == 0){
+    switch(mode){
+    case CITCOM_ANIVISC_ALIGN_WITH_VEL:
+      fprintf(stderr,"align_director_with_ISA_for_element: aligning, max ani %g, align with vel\n",
+	      vis2);
+      break;
+    case CITCOM_ANIVISC_ALIGN_WITH_ISA:
+      fprintf(stderr,"align_director_with_ISA_for_element: aligning, max ani %g, align with ISA\n",
+	      vis2);
+      break;
+    case CITCOM_ANIVISC_MIXED_ALIGN:
+      fprintf(stderr,"align_director_with_ISA_for_element: aligning, max ani %g, align with uniaxial/vel\n",
+	      vis2);
+      break;
+    default:
+      fprintf(stderr,"align_director_with_ISA_for_element: mode %i undefined\n",mode);
+      myerror("",E);
+    }
+  }
+  for(e=1; e <= nel; e++) {
+    if(((E->viscosity.anivisc_layer > 0)&&
+	(E->mat[e] <=   E->viscosity.anivisc_layer))||
+       ((E->viscosity.anivisc_layer < 0)&&
+	(E->mat[e] ==  -E->viscosity.anivisc_layer))){
+      
+      if(E->control.Rsphere){	/* need rtf for spherical */
+	get_rtf(E, e, 1, rtf, lev); /* pressure points */
+	//if((e-1)%E->lmesh.elz==0)
+	construct_c3x3matrix_el(E,e,&Cc,&Ccx,lev,1);
+      }
+      for(i = 1; i <= ends; i++){	/* velocity at element nodes */
+	off = E->ien[e].node[i];
+	VV[1][i] = E->V[1][off];
+	VV[2][i] = E->V[2][off];
+	VV[3][i] = E->V[3][off];
+      }
+      /* calculate velocity gradient matrix */
+      get_vgm_p(VV,&(E->N),&(E->GNX[lev][e]),&Cc, &Ccx,rtf,
+		E->mesh.nsd,ppts,ends,(E->control.Rsphere),lgrad,
+		evel);
+      /* calculate the ISA axis and determine the type of
+	 anisotropy */
+      avmode = calc_isa_from_vgm(lgrad,evel,e,isa,E,mode);
+      /* 
+	 convert for spherical (Citcom system) to Cartesian 
+      */
+      if(E->control.Rsphere){
+	calc_cbase_at_tp(rtf[1][1],rtf[2][1],base);
+	convert_pvec_to_cvec(isa[2],isa[0],isa[1],base,n);
+      }else{
+	n[0]=isa[0];n[1]=isa[1];n[2]=isa[2];
+      }
+      /* assign to director for all vpoints */
+      for(i=1;i <= vpts;i++){
+	off = (e-1)*vpts + i;
+	E->avmode[lev][off] = avmode;
+	E->EVI2[lev][off] = vis2;
+	E->EVIn1[lev][off] = n[0]; 
+	E->EVIn2[lev][off] = n[1];
+	E->EVIn3[lev][off] = n[2];
+      }
+    } /* end in layer branch */
+  }
+}
+/* 
+   compute the ISA axis from velocity gradient tensor l, element
+   velocity evel, and element number e
+   
+   mode input: 
+   CITCOM_ANIVISC_ALIGN_WITH_VEL: align with velocity
+   CITCOM_ANIVISC_ALIGN_WITH_ISA: align with ISA
+   CITCOM_ANIVISC_MIXED_ALIGN: mixed alignment
+
+   returns type of anisotropy  CITCOM_ANIVISC_ORTHO_MODE : orthotropic (shear/normal) 
+                               CITCOM_ANIVISC_TI_MODE : TI 
+			      
+*/
+unsigned char calc_isa_from_vgm(double l[3][3], double ev[3], 
+				int e,double isa[3], 
+				struct All_variables *E,
+				int mode)
+{
+  double d[3][3],r[3][3],ltrace,eval[3],lc[3][3],
+    evec[3][3],strain_scale,gol,t1,t2;
+  int i,j,isa_mode;
+  /* copy */
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++)
+      lc[i][j] = l[i][j];
+  remove_trace_3x3(lc);
+  calc_strain_from_vgm(lc,d);	/* strain-rate */
+#ifndef USE_GGRD
+  myerror("need USE_GGRD compile for ISA axes",E);
+#else
+  ggrd_solve_eigen3x3(d,eval,evec,E); /* compute the eigensystem */
+#endif
+  /* normalize by largest abs(eigenvalue) */
+  strain_scale = ((t1=fabs(eval[2])) > (t2=fabs(eval[0])))?(t1):(t2);
+  for(i=0;i<3;i++){
+    eval[i] /= strain_scale;	/* normalized eigenvalues */
+    for(j=0;j<3;j++)
+      lc[i][j] /= strain_scale;
+  }
+  /* recompute normalized strain rate and rotation */
+  calc_strain_from_vgm(lc,d);
+  calc_rot_from_vgm(lc,r);	/* rotation */
+  switch(mode){
+  case CITCOM_ANIVISC_ALIGN_WITH_VEL:			/* use velocity */
+    isa[0] = ev[0];isa[1] = ev[1];isa[2]=ev[2];
+    normalize_vec3d(isa,(isa+1),(isa+2));
+    return CITCOM_ANIVISC_TI_MODE;
+    break;
+  case CITCOM_ANIVISC_ALIGN_WITH_ISA:
+    isacalc(lc,&gol,isa,E,&isa_mode);
+    if((isa_mode == -1)||(isa_mode == 0)){
+      /* ISA cannot be found = align with flow */
+      isa[0] = ev[0];isa[1] = ev[1];isa[2]=ev[2]; 
+      normalize_vec3d(isa,(isa+1),(isa+2));
+      return CITCOM_ANIVISC_TI_MODE;
+    }else{			/* actual ISA */
+      return CITCOM_ANIVISC_ORTHO_MODE;
+    }
+    break;
+  case CITCOM_ANIVISC_MIXED_ALIGN:
+    /* mixed */
+    if(is_pure_shear(lc,d,r)){
+      /* align any pure shear state with the biggest absolute
+	 eigenvector */
+      /* largest EV (extensional) */
+      //isa[0] = evec[0][0];isa[1] = evec[0][1];isa[2] = evec[0][2];
+      /* smallest (compressive) EV */
+      isa[0] = evec[2][0];isa[1] = evec[2][1];isa[2] = evec[2][2];     
+      return CITCOM_ANIVISC_ORTHO_MODE;		
+    }else{
+      /* simple shear */
+      isa[0] = ev[0];isa[1] = ev[1];isa[2]=ev[2]; /* align with vel for now */
+      normalize_vec3d(isa,(isa+1),(isa+2));
+      return CITCOM_ANIVISC_TI_MODE;			/* TI */
+    }
+    break;
+  default:
+    myerror("ISA mode undefined",E);
+    break;
+  }
+  return 0;
+}
+/* 
+   determine if deformation state is pure shear from normalized
+   velocity gradient, strain, and rotation tensor
+
+*/
+
+int is_pure_shear(double l[3][3],double e[3][3],double r[3][3])
+{
+
+  double mrot,tmp,e2;
+  /* find max rotation */
+  mrot = fabs(r[0][1]);		/* xy */
+  if((tmp=fabs(r[0][2]))>mrot)mrot = tmp; /* xz */
+  if((tmp=fabs(r[1][2]))>mrot)mrot = tmp; /* yz */
+  /* second invariant of strain-rate tensor */
+  e2 = second_invariant_from_3x3(e);
+  if(mrot/e2 >= 1)
+    return 0;			/* simple shear */
+  else
+    return 1;			/* pure shear */
+  
+}
 /* 
    rotate fourth order tensor 
    c4 and c4c cannot be the same matrix
 
 */
-void rot_4x4(double c4[3][3][3][3], double r[3][3], double c4c[3][3][3][3])
+void rot_4x4(double c4[3][3][3][3], double r[3][3], 
+	     double c4c[3][3][3][3])
 {
 
   int i1,i2,i3,i4,j1,j2,j3,j4;
@@ -444,8 +680,9 @@ void rot_4x4(double c4[3][3][3][3], double r[3][3], double c4c[3][3][3][3])
 	    for(j2=0;j2<3;j2++)
 	      for(j3=0;j3<3;j3++)
 		for(j4=0;j4<3;j4++)
-		  c4c[i1][i2][i3][i4] += r[i1][j1] * r[i2][j2] * 
-		                         r[i3][j3]* r[i4][j4]  * c4[j1][j2][j3][j4];
+		  c4c[i1][i2][i3][i4] += 
+		    r[i1][j1] * r[i2][j2] * 
+		    r[i3][j3] * r[i4][j4] * c4[j1][j2][j3][j4];
 
 }
 void zero_6x6(double a[6][6])
@@ -490,7 +727,16 @@ void print_6x6_mat(FILE *out, double c[6][6])
   int i,j;
   for(i=0;i<6;i++){
     for(j=0;j<6;j++)
-      fprintf(out,"%10g ",(fabs(c[i][j])<5e-15)?(0):(c[i][j]));
+      fprintf(out,"%14.5e ",(fabs(c[i][j])<5e-15)?(0):(c[i][j]));
+    fprintf(out,"\n");
+  }
+}
+void print_3x3_mat(FILE *out, double c[3][3])
+{
+  int i,j;
+  for(i=0;i<3;i++){
+    for(j=0;j<3;j++)
+      fprintf(out,"%14.5e ",(fabs(c[i][j])<5e-15)?(0):(c[i][j]));
     fprintf(out,"\n");
   }
 }
@@ -590,36 +836,201 @@ void c6fromc4(double c[6][6],double c4[3][3][3][3])
       c[j][i] = c[i][j];
 }
 
-void mat_mult_vec_3x3(double a[3][3],double b[3],double c[3])
+void isacalc(double l[3][3], double *gol,double isa[3],
+	     struct All_variables *E,int *isa_mode)
 {
-  int i,j;
-  for(i=0;i<3;i++){
-    c[i]=0;
-    for(j=0;j<3;j++)
-      c[i] += a[i][j] * b[j];
+
+  //
+  // input: l: *normalized* velocity gradient tensor, in FORTRAN sorting
+  // output: isa(3): infite strain axis, 
+  // gol: grain orientation lag
+  double ltrace,isa_diff;
+  double f[3][3],eval[3],evec[3][3],u[3][3],le[3][3];
+
+  // make sure l does not have a trace
+  remove_trace_3x3(l);
+  
+#ifdef CITCOM_USE_EXPOKIT
+  calc_exp_matrixt(l,75,le,E);	/* following Kaminski & Ribe (G-Cubed, 2001) */
+  f_times_ft(le,u);ggrd_solve_eigen3x3(u,eval,evec,E); 
+  isa[0] = evec[0][0]; isa[1] = evec[0][1]; isa[2] = evec[0][2];
+  calc_exp_matrixt(l,80,le,E);	f_times_ft(le,u);ggrd_solve_eigen3x3(u,eval,evec,E); 
+  isa_diff = 1.-fabs(evec[0][0]*isa[0]+evec[0][1]*isa[1]+evec[0][2]*isa[2]);
+  if(isa_diff > 1e-4)		/* ISA does not exist */
+    *isa_mode = -1;
+  else
+    *isa_mode = 1;
+  //fprintf(stderr,"A: %11g %11g %11g - %11g %i\n",isa[0],isa[1],isa[2],isa_diff,*isa_mode);
+  
+#else
+  // Limit deformation gradient tensor for infinite time
+  // calculation of the ISE orientation using Sylvester's formula
+  drex_eigen(l,f,isa_mode);
+  if(*isa_mode == -1){
+    // isa is flow1
+    isa[0]=isa[1]=isa[2] = -1.;
+  }else if(*isa_mode == 0){
+    isa[0] = isa[1] = isa[2] = 0;
+    *gol = -1.;
+  }else{
+    // 2. formation of the left-stretch tensor U = FFt
+    f_times_ft(f,u);
+    // 3. eigen-values and eigen-vectors of U
+    ggrd_solve_eigen3x3(u,eval,evec,E); 
+    // largest eigenvector
+    isa[0] = evec[0][0];isa[1] = evec[0][1];isa[2] = evec[0][2];
+    //fprintf(stderr,"B: %11g %11g %11g\n",evec[0][0],evec[0][1],evec[0][2]);
+  }
+#endif
+}
+/* 
+   F^2 = F * F^T
+ */
+void f_times_ft(double f[3][3],double out[3][3])
+{
+ int i,j,k;
+ for(i=0;i<3;i++)
+   for(j=0;j<3;j++){
+     out[i][j] = 0.0;
+     for(k=0;k<3;k++)
+       out[i][j] += f[i][k] * f[j][k];
+   }
+}
+/* find eigenvalues of velocity gradient tensor (modified from DREX
+   code of Kaminski et al. 2004)
+
+*/
+void drex_eigen(double l[3][3],double f[3][3], int *mode)
+{
+  double a2,a3,q,q3,r2,r,theta,xx,lambda1,lambda2,lambda3,sq2;
+  const double four_pi = 4.0*M_PI,
+    two_pi = 2.0*M_PI,
+    one_third=1./3.;
+  /* looking for the eigen-values of L (using tr(l)=0) */
+  a2 = l[0][0] * l[1][1] + l[1][1] * l[2][2] + l[2][2]*l[0][0] -
+    l[0][1] * l[1][0] - l[1][2]*l[2][1] - l[2][0]*l[0][2];
+  a3 = l[0][0]*l[1][2]*l[2][1] + l[0][1]*l[1][0]*l[2][2] + 
+    l[0][2]*l[1][1]*l[2][0] - l[0][0]*l[1][1]*l[2][2] - 
+    l[0][1]*l[1][2]*l[2][0] - l[0][2]*l[1][0]*l[2][1];
+  
+  q = -a2/3.;
+  r =  a3/2.;
+  q3 = q*q*q;
+  r2 = r*r;
+ 
+  if(fabs(q) < 1e-9){
+    /* simple shear, isa=veloc */
+    *mode = -1;
+  }else if(q3-r2 >= 0){
+    sq2 = 2*sqrt(q);
+
+    theta = acos(pow(r/q,1.5));
+    lambda1 = -sq2*cos(theta/3);
+    lambda2 = -sq2*cos((theta+two_pi)/3.);
+    lambda3 = -sq2*cos((theta+four_pi)/3.);
+    
+    if (fabs(lambda1-lambda2) < 1e-13) 
+      lambda1 = lambda2;
+    if (fabs(lambda2-lambda3) < 1e-13) 
+      lambda2 = lambda3;
+    if (fabs(lambda3-lambda1) < 1e-13) 
+      lambda3 = lambda1;
+    
+    if((lambda1 > lambda2)  && (lambda1 > lambda3)) {
+      malmul_scaled_id(f,l,-lambda2,-lambda3);*mode=1;
+    }else if((lambda2 > lambda3 ) && (lambda2 > lambda1)){
+      malmul_scaled_id(f,l,-lambda3,-lambda1);*mode = 1;
+    }else if((lambda3 > lambda1 ) && (lambda3 > lambda2)){
+      malmul_scaled_id(f,l,-lambda1,-lambda2);*mode = 1;
+    }else if((lambda1 == lambda2 ) && (lambda3 > lambda1)) {
+      malmul_scaled_id(f,l,-lambda1,-lambda2);*mode = 1;
+    }else if((lambda2 == lambda3 ) && (lambda1 > lambda2)){
+      malmul_scaled_id(f,l,-lambda2,-lambda3);*mode = 1;
+    }else if((lambda3 == lambda1 ) && (lambda2 > lambda3)){
+      malmul_scaled_id(f,l,-lambda3,-lambda1);*mode = 1;
+    }else if((lambda1 == lambda2 ) && (lambda3 < lambda1)){
+      *mode =0;
+    }else if((lambda2 == lambda3 ) && (lambda1 < lambda2)){
+      *mode = 0;
+    }else if((lambda3 == lambda1 ) && (lambda2 < lambda3)){
+      *mode = 0;
+    }
+  }else{
+    xx = pow(sqrt(r2-q3)+fabs(r),one_third);
+    if(r < 0)
+      lambda1 =  xx+q/xx;
+    else
+      lambda1 = -xx+q/xx;
+    lambda2 = -lambda1/2.;
+    lambda3 = -lambda1/2.;
+    if (lambda1 > 1e-9) {
+      malmul_scaled_id(f,l,-lambda2,-lambda3);
+      *mode = 2;
+    }else{
+      *mode = 0;
+    }
+
   }
 }
-void normalize_vec3(float *x, float *y, float *z)
+/* f = matmul(l-lambda2*Id,l-lambda3*Id); */
+void malmul_scaled_id(double f[3][3],double l[3][3],
+		      double f1,double f2)
 {
-  double len = 0.;
-  len += (double)(*x) * (double)(*x);
-  len += (double)(*y) * (double)(*y);
-  len += (double)(*z) * (double)(*z);
-  len = sqrt(len);
-  *x /= len;*y /= len;*z /= len;
+  double a[3][3],b[3][3];
+  int i,j;
+  for(i=0;i<3;i++)
+    for(j=0;j<3;j++){
+      a[i][j] = b[i][j] = l[i][j];
+      if(i==j){
+	a[i][j] += f1;
+	b[i][j] += f2;
+      }
+    }
+  matmul_3x3(a,b,f);
+      
+
 }
-void normalize_vec3d(double *x, double *y, double *z)
+#ifdef CITCOM_USE_EXPOKIT
+/*
+
+calculate exp(A t) using DGPADM from EXPOKIT for a 3x3
+
+(needs LAPACK)
+
+*/
+void calc_exp_matrixt(double a[3][3],double t,double ae[3][3],
+		      struct All_variables *E)
 {
-  double len = 0.;
-  len += (*x) * (*x);len += (*y) * (*y);len += (*z) * (*z);
-  len = sqrt(len);
-  *x /= len;*y /= len;*z /= len;
+  int ideg=6;// degre of Pade approximation, six should be ok
+  int m=3,ldh=3;// a(ldh,m) dimensions
+  double *wsp;// work space
+  double af[9];
+  int ipiv[4],iexph,ns;// workspace, output pointer, nr of squareas
+  int iflag,lwsp;// exit code, size of workspace
+  int i,j,k;
+  /* 
+     work space 
+  */
+  lwsp = 2*(4*m*m+ideg+1);// size of workspace, oversized by factor two
+  wsp = (double *)calloc(lwsp,sizeof(double));
+  /* assign fortran style */
+  for(k=i=0;i<3;i++)
+    for(j=0;j<3;j++,k++)
+      af[k] = a[i][j];
+  //
+  // call to expokit routine
+  dgpadm_(&ideg,&m,&t,af,&ldh,wsp,&lwsp,ipiv,&iexph,&ns,&iflag);
+  if(iflag < 0)
+    myerror("calc_exp_matrixt: problem in dgpadm",E);
+  // assign to output
+  for(i=0,k=iexph-1;i<3;i++)
+    for(j=0;j<3;j++,k++)
+      ae[i][j] = wsp[k];
+  
+  free(wsp);
+
 }
-void cross_product(double a[3],double b[3],double c[3])
-{
-  c[0]=a[1]*b[2]-a[2]*b[1];
-  c[1]=a[2]*b[0]-a[0]*b[2];
-  c[2]=a[0]*b[1]-a[1]*b[0];
-}
+#endif
+
 
 #endif

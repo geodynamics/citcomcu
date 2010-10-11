@@ -85,13 +85,11 @@ void thermal_buoyancy(struct All_variables *E)
 	//const int i2 = 670;
 
 	H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-
 	for(i = 1; i <= E->lmesh.nno; i++)
 	{
 		j = (i - 1) % (E->lmesh.noz) + 1;
 		E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
 	}
-
 	if(E->control.Ra_670 != 0.0 || E->control.Ra_410 != 0.0)
 	{
 
@@ -103,9 +101,7 @@ void thermal_buoyancy(struct All_variables *E)
 		}
 
 	}
-
 	remove_horiz_ave(E, E->buoyancy, H, 0);
-
 	free((void *)H);
 	return;
 }
@@ -929,9 +925,93 @@ void xyz2rtp(float x,float y,float z,float *rout)
 void myerror(char *message, struct All_variables *E)
 {
   E->control.verbose = 1;
+  fprintf(stderr,"node %3i: error: %s\n",E->parallel.me,message);
   record(E,message);
-  fprintf(stderr,"node %3i: error: %s\n",
-	  E->parallel.me,message);
   parallel_process_termination();
 }
 
+void get_9vec_from_3x3(double *l,double vgm[3][3])
+{
+  l[0] = vgm[0][0];l[1] = vgm[0][1];l[2] = vgm[0][2];
+  l[3] = vgm[1][0];l[4] = vgm[1][1];l[5] = vgm[1][2];
+  l[6] = vgm[2][0];l[7] = vgm[2][1];l[8] = vgm[2][2];
+}
+
+void get_3x3_from_9vec(double l[3][3], double *l9)
+{
+  l[0][0]=l9[0];  l[0][1]=l9[1];  l[0][2]=l9[2];
+  l[1][0]=l9[3];  l[1][1]=l9[4];  l[1][2]=l9[5];
+  l[2][0]=l9[6];  l[2][1]=l9[7];  l[2][2]=l9[8];
+}
+/* symmetric */
+void get_3x3_from_6vec(double l[3][3], double *l6)
+{
+  l[0][0]=l6[0];  l[0][1]=l6[1];  l[0][2]=l6[2];
+  l[1][0]=l6[1];  l[1][1]=l6[3];  l[1][2]=l6[4];
+  l[2][0]=l6[2];  l[2][1]=l6[4];  l[2][2]=l6[5];
+}
+
+void mat_mult_vec_3x3(double a[3][3],double b[3],double c[3])
+{
+  int i,j;
+  for(i=0;i<3;i++){
+    c[i]=0;
+    for(j=0;j<3;j++)
+      c[i] += a[i][j] * b[j];
+  }
+}
+void normalize_vec3(float *x, float *y, float *z)
+{
+  double len = 0.;
+  len += (double)(*x) * (double)(*x);
+  len += (double)(*y) * (double)(*y);
+  len += (double)(*z) * (double)(*z);
+  len = sqrt(len);
+  *x /= len;*y /= len;*z /= len;
+}
+void normalize_vec3d(double *x, double *y, double *z)
+{
+  double len = 0.;
+  len += (*x) * (*x);len += (*y) * (*y);len += (*z) * (*z);
+  len = sqrt(len);
+  *x /= len;*y /= len;*z /= len;
+}
+void cross_product(double a[3],double b[3],double c[3])
+{
+  c[0]=a[1]*b[2]-a[2]*b[1];
+  c[1]=a[2]*b[0]-a[0]*b[2];
+  c[2]=a[0]*b[1]-a[1]*b[0];
+}
+/* 
+   C = A * B
+
+   for 3x3 matrix
+   
+*/
+void matmul_3x3(double a[3][3],double b[3][3],double c[3][3])
+{
+  int i,j,k;
+  double tmp;
+  for(i=0;i < 3;i++)
+    for(j=0;j < 3;j++){
+      tmp = 0.;
+      for(k=0;k < 3;k++)
+	tmp += a[i][k] * b[k][j];
+      c[i][j] = tmp;
+    }
+}
+
+void assign_to_3x3(double a[3][3],double val)
+{
+  a[0][0]=a[0][1]=a[0][2]=
+    a[1][0]=a[1][1]=a[1][2]=
+    a[2][0]=a[2][1]=a[2][2] = val;
+}
+void remove_trace_3x3(double a[3][3])
+{
+  double trace;
+  trace = (a[0][0]+a[1][1]+a[2][2])/3;
+  a[0][0] -= trace;
+  a[1][1] -= trace;
+  a[2][2] -= trace;
+}

@@ -80,11 +80,12 @@ void general_stokes_solver(struct All_variables *E)
 	      damp = 0;
 	    }
 	  } /* end iterate */
-		oldU = (double *)malloc(neq * sizeof(double));
-		for(i = 0; i < neq; i++)
-			oldU[i] = 0.0;
-		visits++;
+	  oldU = (double *)malloc(neq * sizeof(double));
+	  for(i = 0; i < neq; i++)
+	    oldU[i] = 0.0;
+	  visits++;
 	}
+	//if(E->parallel.me==0)fprintf(stderr,"Stoked prep done\n");
 
 	dUdot_mag = 0.0;
 
@@ -99,7 +100,9 @@ void general_stokes_solver(struct All_variables *E)
 		time = CPU_time0();
 
 	velocities_conform_bcs(E, E->U);
+	//if(E->parallel.me==0)fprintf(stderr,"assembling forces\n");
 	assemble_forces(E, 0);
+	
 
 /*	
 	if(E->parallel.me==0)
@@ -114,8 +117,9 @@ void general_stokes_solver(struct All_variables *E)
 	do
 	{
 		if(E->viscosity.update_allowed)
-			get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
+		  get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
 		construct_stiffness_B_matrix(E);
+		//if(E->parallel.me==0)fprintf(stderr,"calling solver\n");
 		solve_constrained_flow_iterative(E);
 
 		E->monitor.visc_iter_count++;
@@ -145,28 +149,32 @@ void general_stokes_solver(struct All_variables *E)
 				fprintf(E->fp, "Stress dependent viscosity: DUdot = %.4e (%.4e) for iteration %d\n", dUdot_mag, Udot_mag, E->monitor.visc_iter_count);
 				fflush(E->fp);
 			}
-			E->monitor.visc_iter_count++;
-		}						/* end for SDEPV / BDEPV  */
-	} while((E->monitor.visc_iter_count < 50) && (dUdot_mag > E->viscosity.sdepv_misfit) && iterate);
+		}						/* end for stress type iterations  */
+	} while(iterate && 
+		(dUdot_mag > E->viscosity.sdepv_misfit) && 
+		(E->monitor.visc_iter_count < 50) );
 
+	
 	free((void *)delta_U);
 
 	return;
 }
+
 int need_to_iterate(struct All_variables *E){
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
   /* anisotropic viscosity */
   if(E->viscosity.allow_anisotropic_viscosity){
-    if((E->monitor.solution_cycles == 0) && 
-       E->viscosity.anivisc_start_from_iso) /* first step will be
+    if(E->viscosity.anivisc_start_from_iso) /* first step will be
 					       solved isotropically at
 					       first  */
-      return TRUE;
+      return 1;
     else
-      return (E->viscosity.SDEPV || E->viscosity.BDEPV)?(TRUE):(FALSE);
-  }
-#else
+      return (E->viscosity.SDEPV || E->viscosity.BDEPV)?(1):(0);
+  }else{
+#endif
   /* regular operation */
-  return ((E->viscosity.SDEPV || E->viscosity.BDEPV)?(TRUE):(FALSE));
+  return ((E->viscosity.SDEPV || E->viscosity.BDEPV)?(1):(0));
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+  }
 #endif
 }

@@ -365,7 +365,8 @@ float fnmax(struct All_variables *E, float *A, int a, int b)
     Iterative solver also using multigrid  ........
     ===========================================================  */
 
-int solve_del2_u(struct All_variables *E, double *d0, double *F, double acc, int high_lev, int ic)
+int solve_del2_u(struct All_variables *E, double *d0, double *F, 
+		 double acc, int high_lev)
 {
 	static int been_here = 0;
 	static int up_heavy, down_heavy, v_steps_high;
@@ -481,7 +482,8 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F, double acc, int
 		}
 	}
 
-	if((count > 0) && (residual > r0 * 2.0) || (fabs(residual - prior_residual) < acc * 0.1 && (residual > acc * 10.0)))
+	if((count > 0) && (residual > r0 * 2.0) || 
+	   (fabs(residual - prior_residual) < acc * 0.1 && (residual > acc * 10.0)))
 		convergent = 0;
 	else
 	{

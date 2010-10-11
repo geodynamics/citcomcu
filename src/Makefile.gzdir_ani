@@ -18,16 +18,23 @@
 
 #COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
-GMT_DIR = ../../../GMT4.5.3/
-NETCDF_DIR = ../../../netcdf-3.6.2/
+GMT_DIR = $(GMTHOME)
+NETCDF_DIR = $(NETCDFHOME)
 HC_DIR = ../../../hc-svn/
 LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
-#LIB_LIST= -lmpi
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
-LIB= $(LIB_PATH) $(LIB_LIST) -lm
+
+
+# use the expokit stuff?
+EXPO_DEFINE = -DCITCOM_USE_EXPOKIT
+EXPO_FILES = expokit/dgpadm.f
+EXPO_LIBS = $(EXPO_OBJS) -llapack -lblas 
+
+
+LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS)  -lm
 
 DEFINES = -DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
-	-I$(HC_DIR)/ -Werror \
+	-I$(HC_DIR)/  $(EXPO_DEFINE) \
 	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
 	-DPREM_MODEL_FILE=\"$(PWD)/prem/prem.dat\"
 
@@ -40,8 +47,9 @@ DEFINES = -DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
 #CC=/usr/lib/cmplrs/cc/gemc_cc
 #CC=$(HOME)/usr/local/mpich/bin/mpicc
 CC=mpicc
-F77=f77
+F77=mpif77
 CPP=
+
 
 CEXT=c
 FEXT=F   # which implies further action of cpp
@@ -114,7 +122,8 @@ SGIOPTIM=-O -fsingle
 LinuxFLAGS=
 LinuxLDFLAGS=
 #LinuxOPTIM=-g
-LinuxOPTIM=-O2 $(DEFINES)
+#LinuxOPTIM=-O3 -mtune=core2 -Werror $(DEFINES)
+LinuxOPTIM=-O2 -Werror $(DEFINES)
 
 ####################################
 #PARAGON 
@@ -174,30 +183,32 @@ CFILES= Advection_diffusion.c\
 
 
 
-HEADER = element_definitions.h\
-	 global_defs.h\
-	 viscosity_descriptions.h\
-	 anisotropic_viscosity.h\
-	 advection.h
+HEADER = element_definitions.h \
+	 global_defs.h \
+	 viscosity_descriptions.h \
+	 anisotropic_viscosity.h \
+	 advection.h \
+	 prototypes.h
 
 
-FFILES=#Blas_lapack_interfaces.F
 
-OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
+FFILES=$(EXPO_FILES) #Blas_lapack_interfaces.F
+
+OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o) 
 
 
 ####################################################################
 # Makefile rules follow
 ####################################################################
 
-default: citcom.mpi
+default: citcom.mpi 
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
+	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
 	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
-	rm -f *.o
+	rm -f $(OBJFILES)
 
 clean-all:
 	rm -f *.o citcom.mpi
@@ -318,4 +329,5 @@ Output_gzdir.o: $(HEADER) Output_gzdir.c
 Ggrd_handling.o: $(HEADER) Ggrd_handling.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Ggrd_handling.c
 
-
+expokit/dgpadm.o: expokit/dgpadm.f $(HEADER)
+	$(F77) $(OPTIM) $(FOPTIM) -c expokit/dgpadm.f -o expokit/dgpadm.o

@@ -43,6 +43,7 @@
 
 #ifdef USE_GGRD
 #include "hc.h"
+
 #endif
 
 #if defined(__osf__)
@@ -757,9 +758,9 @@ struct CONTROL
 	float Ra_410, clapeyron410, transT410, width410;
 #ifdef USE_GGRD
    struct ggrd_master ggrd;
-  int slab_slice;
-  float slab_theta_bound;
-
+  int ggrd_slab_slice;
+  float ggrd_slab_theta_bound[4];
+  struct ggrd_gt ggrd_ss_grd[4];
 
 #endif
 
@@ -985,6 +986,7 @@ struct All_variables
   float *VIn1[MAX_LEVELS],*EVIn1[MAX_LEVELS];
   float *VIn2[MAX_LEVELS],*EVIn2[MAX_LEVELS];
   float *VIn3[MAX_LEVELS],*EVIn3[MAX_LEVELS];
+  unsigned char *avmode[MAX_LEVELS];
 #endif
 
 
@@ -1041,7 +1043,20 @@ struct All_variables
 
 /* To regenerate function prototypes:
  * 	1. Comment out the #include line below, and save this file
- * 	2. Run command: cproto -q -p -f 3 *.c > prototypes.h
+ * 	2. Run command: cproto -q -p -f 2 *.c > prototypes.h
  * 	3. Uncomment the #include line below, and save this file
+
+ could also use 
+  cproto -DCITCOM_ALLOW_ANISOTROPIC_VISC -DUSE_GGRD -q -p -I. -f2 *.c > prototypes.h
+
  */
+void twiddle_thumbs(struct All_variables *, int ); /* somehow, cproto
+						      does not pick up
+						      these functions?! */
+void convection_initial_temperature_ggrd(struct All_variables *);
+void set_2dc_defaults(struct All_variables *);
+void remove_horiz_ave(struct All_variables *, float *, float *, int );
+void output_velo_related_gzdir(struct All_variables *, int);
+void output_velo_related(struct All_variables *, int);
+
 #include "prototypes.h"

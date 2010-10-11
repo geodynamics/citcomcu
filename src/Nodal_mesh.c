@@ -54,7 +54,6 @@ void node_locations(struct All_variables *E)
 {
 	//int lev, nodel, i, j, k, ii, d, node;
 	int lev, nodel, i, j, k, d;
-	//float x00, *XX[4], *XG[4], dx[4], dxx[40], dx1, dx2;
 	float *XX[4], *XG[4], dx[4], dxx[40];
 	//int n00, nox, noz, noy, fn;
 	int nox, noz, noy;

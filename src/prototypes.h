@@ -11,6 +11,33 @@ void element_residual(struct All_variables *, int, struct Shape_function, float 
 void std_timestep(struct All_variables *);
 void process_heating(struct All_variables *);
 /* Anisotropic_viscosity.c */
+void get_constitutive(double [6][6], int, int, double, double, int, struct All_variables *);
+void get_constitutive_ti_viscosity(double [6][6], double, double, double [3], int, double, double);
+void get_constitutive_orthotropic_viscosity(double [6][6], double, double [3], int, double, double);
+void get_constitutive_isotropic(double [6][6]);
+void set_anisotropic_viscosity_at_element_level(struct All_variables *, int);
+void normalize_director_at_nodes(struct All_variables *, float *, float *, float *, int);
+void normalize_director_at_gint(struct All_variables *, float *, float *, float *, int);
+void conv_cart4x4_to_spherical(double [3][3][3][3], double, double, double [3][3][3][3]);
+void conv_cart6x6_to_spherical(double [6][6], double, double, double [6][6]);
+void rotate_ti6x6_to_director(double [6][6], double [3]);
+void get_citcom_spherical_rot(double, double, double [3][3]);
+void get_orth_delta(double [3][3][3][3], double [3]);
+void align_director_with_ISA_for_element(struct All_variables *, int);
+unsigned char calc_isa_from_vgm(double [3][3], double [3], int, double [3], struct All_variables *, int);
+int is_pure_shear(double [3][3], double [3][3], double [3][3]);
+void rot_4x4(double [3][3][3][3], double [3][3], double [3][3][3][3]);
+void zero_6x6(double [6][6]);
+void zero_4x4(double [3][3][3][3]);
+void copy_4x4(double [3][3][3][3], double [3][3][3][3]);
+void copy_6x6(double [6][6], double [6][6]);
+void print_6x6_mat(FILE *, double [6][6]);
+void c4fromc6(double [3][3][3][3], double [6][6]);
+void c6fromc4(double [6][6], double [3][3][3][3]);
+void drex_isacalc(double [3][3], double *, double [3], struct All_variables *, int *);
+void f_times_ft(double [3][3], double [3][3]);
+void drex_eigen(double [3][3], double [3][3], int *);
+void malmul_scaled_id(double [3][3], double [3][3], double, double);
 /* Boundary_conditions.c */
 void velocity_boundary_conditions(struct All_variables *);
 void temperature_boundary_conditions(struct All_variables *);
@@ -76,6 +103,9 @@ int need_to_iterate(struct All_variables *);
 /* Element_calculations.c */
 void assemble_forces(struct All_variables *, int);
 void get_elt_k(struct All_variables *, int, double [24 * 24], int, int);
+void get_ba(struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [9][4][9][7]);
+void get_ba_p(struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [9][4][9][7]);
+void get_vgm_p(double [4][9], struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [3][3], double [3]);
 void assemble_del2_u(struct All_variables *, double *, double *, int, int);
 void e_assemble_del2_u(struct All_variables *, double *, double *, int, int);
 void n_assemble_del2_u(struct All_variables *, double *, double *, int, int);
@@ -112,7 +142,7 @@ void dvcopy(double *, double *, int, int);
 void vcopy(float *, float *, int, int);
 void vprod(double *, double *, double *, int, int);
 float fnmax(struct All_variables *, float *, int, int);
-int solve_del2_u(struct All_variables *, double *, double *, double, int, int);
+int solve_del2_u(struct All_variables *, double *, double *, double, int);
 double multi_grid(struct All_variables *, double *, double *, double *, double, int);
 double conj_grad(struct All_variables *, double *, double *, double *, double, int *, int);
 void jacobi(struct All_variables *, double *, double *, double *, double, int *, int, int);
@@ -134,10 +164,13 @@ void set_2pt5dc_defaults(struct All_variables *);
 void set_3ds_defaults(struct All_variables *);
 void set_3dc_defaults(struct All_variables *);
 /* Ggrd_handling.c */
+void ggrd_solve_eigen3x3(double [3][3], double [3], double [3][3], struct All_variables *);
+void ggrd_read_anivisc_from_file(struct All_variables *);
 /* Global_operations.c */
 void return_horiz_sum(struct All_variables *, float *, float *, int);
 void return_horiz_ave(struct All_variables *, float *, float *);
 float return_bulk_value(struct All_variables *, float *, float, int);
+double global_div_norm2(struct All_variables *, double *);
 double global_vdot(struct All_variables *, double *, double *, int);
 double global_pdot(struct All_variables *, double *, double *, int);
 float global_tdot(struct All_variables *, float *, float *, int);
@@ -209,7 +242,18 @@ void *safe_malloc(size_t);
 void calc_cbase_at_tp(float, float, float *);
 void convert_pvec_to_cvec(float, float, float, float *, float *);
 void rtp2xyz(float, float, float, float *);
+void xyz2rtp(float, float, float, float *);
 void myerror(char *, struct All_variables *);
+void get_9vec_from_3x3(double *, double [3][3]);
+void get_3x3_from_9vec(double [3][3], double *);
+void get_3x3_from_6vec(double [3][3], double *);
+void mat_mult_vec_3x3(double [3][3], double [3], double [3]);
+void normalize_vec3(float *, float *, float *);
+void normalize_vec3d(double *, double *, double *);
+void cross_product(double [3], double [3], double [3]);
+void matmul_3x3(double [3][3], double [3][3], double [3][3]);
+void assign_to_3x3(double [3][3], double);
+void remove_trace_3x3(double [3][3]);
 /* Parallel_related.c */
 void parallel_process_termination(void);
 void parallel_domain_decomp1(struct All_variables *);
@@ -243,11 +287,14 @@ int input_float_vector(char *, int, float *, int);
 int input_double_vector(char *, int, double *, int);
 int interpret_control_string(char *, int *, double *, double *, double *);
 /* Phase_change.c */
+void phase_change(struct All_variables *, float *, float *, float *, float *);
 /* Process_buoyancy.c */
+void process_temp_field(struct All_variables *, int);
 void heat_flux(struct All_variables *);
 void heat_flux1(struct All_variables *);
 void plume_buoyancy_flux(struct All_variables *);
 /* Process_velocity.c */
+void process_new_velocity(struct All_variables *, int);
 void get_surface_velo(struct All_variables *, float *);
 void get_ele_visc(struct All_variables *, float *);
 void get_surf_stress(struct All_variables *, float *, float *, float *, float *, float *, float *);
@@ -255,9 +302,11 @@ void averages(struct All_variables *);
 /* Profiling.c */
 float CPU_time(void);
 /* Shape_functions.c */
+void construct_shape_functions(struct All_variables *);
 double lpoly(int, double);
 double lpolydash(int, double);
 /* Size_does_matter.c */
+void twiddle_thumbs(struct All_variables *, int);
 void get_global_shape_fn(struct All_variables *, int, int, double [4][9], int, int);
 void form_rtf_bc(int, double [4], double [4][9], double [4][4]);
 void get_rtf(struct All_variables *, int, int, double [4][9], int);
@@ -266,6 +315,7 @@ void get_global_1d_shape_fn(struct All_variables *, int, struct Shape_function1 
 void get_global_1d_shape_fn1(struct All_variables *, int, struct Shape_function1 *, struct Shape_function1_dA *, int);
 void mass_matrix(struct All_variables *);
 /* Solver_conj_grad.c */
+void set_cg_defaults(struct All_variables *);
 void cg_allocate_vars(struct All_variables *);
 void assemble_forces_iterative(struct All_variables *);
 /* Solver_multigrid.c */
@@ -282,6 +332,7 @@ void un_inject_vector(struct All_variables *, int, double *, double *);
 void inject_scalar(struct All_variables *, int, float *, float *);
 void inject_scalar_e(struct All_variables *, int, float *, float *);
 /* Sphere_harmonics.c */
+void set_sphere_harmonics(struct All_variables *);
 void sphere_harmonics_layer(struct All_variables *, float **, float *, float *, int, char *);
 void sphere_interpolate(struct All_variables *, float **, float *);
 void sphere_expansion(struct All_variables *, float *, float *, float *);
@@ -289,7 +340,10 @@ void inv_sphere_harmonics(struct All_variables *, float *, float *, float *, int
 void compute_sphereh_table(struct All_variables *);
 /* Stokes_flow_Incomp.c */
 void solve_constrained_flow_iterative(struct All_variables *);
+float solve_Ahat_p_fhat_new(struct All_variables *, double *, double *, double *, double, int *);
+void initial_vel_residual(struct All_variables *, double *, double *, double *, double *, double);
 float solve_Ahat_p_fhat(struct All_variables *, double *, double *, double *, double, int *);
+void generate_log_message(int, double, double, double, double, struct All_variables *);
 void v_from_vector(struct All_variables *, float **, double *);
 /* Topo_gravity.c */
 void get_CBF_topo(struct All_variables *, float *, float *);
@@ -304,15 +358,13 @@ void visc_from_mat(struct All_variables *, float *, float *);
 void visc_from_T(struct All_variables *, float *, float *, int);
 void visc_from_S(struct All_variables *, float *, float *, int);
 void strain_rate_2_inv(struct All_variables *, float *, int);
+double second_invariant_from_3x3(double [3][3]);
+void calc_vgm_matrix(struct All_variables *, double *, double *);
+void calc_strain_from_vgm(double [3][3], double [3][3]);
+void calc_strain_from_vgm9(double *, double [3][3]);
+void calc_rot_from_vgm(double [3][3], double [3][3]);
+void calc_strain_rate_matrix(struct All_variables *, double *);
 int layers(struct All_variables *, float);
 int weak_zones(struct All_variables *, int, float);
 float boundary_thickness(struct All_variables *, float *);
-void twiddle_thumbs(struct All_variables *, int );
-
-void xyz2rtp(float ,float ,float ,float *);
-void generate_log_message(int ,double ,double ,double , double , struct All_variables *);
-
-void get_ba(struct Shape_function *,struct Shape_function_dx *,
-	    struct CC *, struct CCX *, double [4][9],
-	    int ,int, double [9][4][9][7]);
-
+int in_slab_slice(float , int , struct All_variables *);

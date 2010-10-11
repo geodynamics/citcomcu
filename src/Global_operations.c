@@ -313,6 +313,28 @@ float return_bulk_value(struct All_variables *E, float *Z, float z_thld, int ave
 }
 
 
+/* return ||A||^2, where A_i is \int{div(u) d\Omega_i} */
+double global_div_norm2(struct All_variables *E,  double *A)
+{
+    int i;
+    double prod, temp;
+
+    temp = 0.0;
+    prod = 0.0;
+    for (i=1; i<=E->lmesh.npno; i++) {
+      /* L2 norm of div(u) */
+      temp += A[i] * A[i] / E->eco[i].area;
+      
+      /* L1 norm */
+      /*temp += fabs(A[m][i]);*/
+    }
+    
+    MPI_Allreduce(&temp, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+    return (prod/E->mesh.volume);
+}
+
+
 
 double global_vdot(struct All_variables *E, double *A, double *B, int lev)
 {

@@ -164,10 +164,10 @@ CFILES= Advection_diffusion.c\
 
 
 
-HEADER = element_definitions.h\
-	 global_defs.h\
-	 viscosity_descriptions.h\
-	 advection.h
+HEADER = element_definitions.h \
+	 global_defs.h \
+	 viscosity_descriptions.h \
+	 advection.h prototypes.h
 
 
 FFILES=#Blas_lapack_interfaces.F

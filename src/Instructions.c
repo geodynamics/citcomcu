@@ -289,6 +289,7 @@ void allocate_common_vars(struct All_variables *E)
 	    nel  = E->lmesh.NEL[i];
 	    nno  = E->lmesh.NNO[i];
 	    E->EVI2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->avmode[i] = (unsigned char *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(unsigned char));
 	    E->EVIn1[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
 	    E->EVIn2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
 	    E->EVIn3[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
@@ -306,10 +307,6 @@ void allocate_common_vars(struct All_variables *E)
 	    }
 	  }
 	  E->viscosity.anisotropic_viscosity_init = FALSE;
-	  if(E->parallel.me == 0)
-	    fprintf(stderr,"allocated for anisotropic viscosity (%s) levmax %i\n",
-		    (E->viscosity.allow_anisotropic_viscosity == 1)?("orthotropic"):("transversely isotropic"),
-		    E->mesh.levmax);
 	}
 
 #endif
@@ -678,7 +675,6 @@ void read_initial_settings(struct All_variables *E)
 
 	m = E->parallel.me;
 	
-	if(E->parallel.me == 0)fprintf(stderr, "ok20\n");
 
 	input_string("Problem", E->control.PROBLEM_TYPE, NULL, m);
 	if(strcmp(E->control.PROBLEM_TYPE, "convection") == 0)
@@ -700,7 +696,6 @@ void read_initial_settings(struct All_variables *E)
 		E->control.CONVECTION = 1;
 		set_convection_defaults(E);
 	}
-	if(E->parallel.me == 0)fprintf(stderr, "ok21\n");
 
 	input_string("Geometry", E->control.GEOMETRY, NULL, m);
 	if(strcmp(E->control.GEOMETRY, "cart2d") == 0)
@@ -840,8 +835,10 @@ void read_initial_settings(struct All_variables *E)
 	input_string("ggrd_cinit_dfile",E->control.ggrd.comp.dfile,"", m);
 	input_double("ggrd_cinit_offset",&(E->control.ggrd.comp.offset),"0.0", m);
 	/* slab slice handling */
-	input_boolean("slab_slice",&(E->control.slab_slice),"off", m);
-	input_float("slab_theta_bound",&(E->control.slab_theta_bound),"1.0", m);
+	input_int("slab_slice",&(E->control.ggrd_slab_slice),"0", m);
+	if(E->control.ggrd_slab_slice > 3)
+	  myerror("too many slab slices",E);
+	input_float_vector("slab_theta_bound",E->control.ggrd_slab_slice,(E->control.ggrd_slab_theta_bound), m);
 	
 #endif
 
@@ -883,7 +880,13 @@ void read_initial_settings(struct All_variables *E)
 	input_float("toptbcval", &(E->control.TBCtopval), "0.0", m);
 	input_float("bottbcval", &(E->control.TBCbotval), "1.0", m);
 
+	/* this used to override the VBC settings, I didn't think this
+	   should work that way TWB */
 	input_float("plate_velocity", &(E->control.plate_vel), "0.0", m);
+	if((E->parallel.me == 0) && (fabs(E->control.plate_vel) > 5e-7))
+	  fprintf(stderr,"WARNING: plate velocity is overriding VBx \n");
+	  
+
 	input_float("plate_age", &(E->control.plate_age), "0.0", m);
 	input_float("plume_radius", &(E->segment.plume_radius), "0.0", m);
 	input_float("plume_DT", &(E->segment.plume_DT), "0.0", m);
@@ -1003,11 +1006,8 @@ void read_initial_settings(struct All_variables *E)
 
 
 
-	if(E->parallel.me == 0)fprintf(stderr, "ok22\n");
 	(E->problem_settings) (E);
-	if(E->parallel.me == 0)fprintf(stderr, "ok23\n");
 	viscosity_parameters(E);
-
 	return;
 }
 

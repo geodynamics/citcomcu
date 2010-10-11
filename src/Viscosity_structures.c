@@ -57,7 +57,7 @@ void viscosity_parameters(struct All_variables *E)
 {
 	int i, l;
 	float temp;
-  int m = E->parallel.me ;
+	int m = E->parallel.me ;
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
 	E->viscosity.SDEPV = E->viscosity.TDEPV = E->viscosity.BDEPV = 
@@ -67,7 +67,7 @@ void viscosity_parameters(struct All_variables *E)
 
 	input_boolean("plasticity_dimensional",&(E->viscosity.plasticity_dimensional),"on",m);
 
-	for(i = 0; i < 40; i++)
+	for(i = 0; i < CITCOM_CU_VISC_MAXLAYER; i++)
 	{
 		E->viscosity.N0[i] = 1.0;
 		E->viscosity.T[i] = 0.0;
@@ -98,7 +98,9 @@ void viscosity_parameters(struct All_variables *E)
 		
 		/* comp dep visc */
 		E->viscosity.pre_comp[i] = 1.0;
-		
+
+
+		E->viscosity.zbase_layer[i] = -999; /* not assigned by default */
 	} /* end layer loop */
 
 	/* read in information */
@@ -110,8 +112,6 @@ void viscosity_parameters(struct All_variables *E)
 	E->viscosity.zlm = 1.0;
 	E->viscosity.z410 = 1.0;
 	E->viscosity.zlith = 0.0;
-
-	E->viscosity.zbase_layer[0] = E->viscosity.zbase_layer[1] = -999;
 	if(E->control.CART3D)	/* defaults could be betters */
 	{
 		input_float("z_lmantle", &(E->viscosity.zlm), "1.0", m);
@@ -127,27 +127,19 @@ void viscosity_parameters(struct All_variables *E)
 		input_float_vector("r_layer",E->viscosity.num_mat,(E->viscosity.zbase_layer),m);
 	}
 
-	/* no z_layer input found */
 	if((fabs(E->viscosity.zbase_layer[0]+999) < 1e-5) &&
 	   (fabs(E->viscosity.zbase_layer[1]+999) < 1e-5)) {
-	  
+	  /* no z_layer input found */	  
 	  if(E->viscosity.num_mat != 4)
-            myerror("error: either use z_layer for non dim layer depths, or set num_mat to four",E);
-	  
+            myerror("either use z_layer for non dim layer depths, or set num_mat to four",E);
 	  E->viscosity.zbase_layer[0] = E->viscosity.zlith;
 	  E->viscosity.zbase_layer[1] = E->viscosity.z410;
 	  E->viscosity.zbase_layer[2] = E->viscosity.zlm;
-	  E->viscosity.zbase_layer[3] = 0.55;
+	  if(E->control.Rsphere)
+	    E->viscosity.zbase_layer[3] = 0.55;
+	  else
+	    E->viscosity.zbase_layer[3] = 0.;
 	}
-
-
-
-
-
-
-
-
-
 
 	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T),m);	/* redundant */
 	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T),m);
@@ -194,7 +186,15 @@ void viscosity_parameters(struct All_variables *E)
 							 parameters for
 							 anisotropic
 							 viscosity */
-	  input_int("anisotropic_init",&(E->viscosity.anisotropic_init),"0",m); /* 0: isotropic 1: random 2: read in director and log10(eta_s/eta) */
+	  input_int("anisotropic_init",&(E->viscosity.anisotropic_init),"0",m); /* 0: isotropic
+										   1: random
+										   2: read in director orientation
+										      and log10(eta_s/eta) 
+										   3: align with velocity 
+										   4: align with ISA
+										   5: align mixed depending on deformation state
+										   
+										*/
 	  input_string("anisotropic_init_dir",(E->viscosity.anisotropic_init_dir),"",m); /* directory
 											    for
 											    ggrd
@@ -209,9 +209,17 @@ void viscosity_parameters(struct All_variables *E)
 									   from
 									   isotropic
 									   solution? */
+	  if(!E->viscosity.anivisc_start_from_iso)
+	    if(E->viscosity.anisotropic_init == 3){
+	      if(E->parallel.me == 0)fprintf(stderr,"WARNING: overriding anisotropic first step for ani init mode\n");
+	      E->viscosity.anivisc_start_from_iso = TRUE;
+	    }
+	  /* ratio between weak and strong direction */
+	  input_double("ani_vis2_factor",&(E->viscosity.ani_vis2_factor),"0.1",m);
+
+
 	}
 #endif
-
 
 
 
@@ -689,125 +697,277 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
 }
 
 
-void strain_rate_2_inv(struct All_variables *E, float *EEDOT, int SQRT)
+void strain_rate_2_inv(struct All_variables *E, float *EEDOT, 
+		       int SQRT)
 {
-	double edot[4][4], dudx[4][4], rtf[4][9];
-	float VV[4][9], Vxyz[9][9];
+  double edot[4][4], dudx[4][4], rtf[4][9];
+  float VV[4][9], Vxyz[9][9];
+  
+  //int e, i, j, p, q, n, nel, k;
+  int e, i, j, p, q, n, nel;
+  
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
+  const int lev = E->mesh.levmax;
+  const int ppts = ppoints[dims];
+  
+  nel = E->lmesh.nel;
+  
+  
+  if(E->control.Rsphere){
+    
+    for(e = 1; e <= nel; e++){
 
-	//int e, i, j, p, q, n, nel, k;
-	int e, i, j, p, q, n, nel;
+      get_rtf(E, e, 1, rtf, lev); /* pressure */
+      
+      for(i = 1; i <= ends; i++){
+	n = E->ien[e].node[i];
+	VV[1][i] = E->V[1][n];
+	VV[2][i] = E->V[2][n];
+	VV[3][i] = E->V[3][n];
+      }
+      
+      for(j = 1; j <= ppts; j++){
+	Vxyz[1][j] = 0.0;
+	Vxyz[2][j] = 0.0;
+	Vxyz[3][j] = 0.0;
+	Vxyz[4][j] = 0.0;
+	Vxyz[5][j] = 0.0;
+	Vxyz[6][j] = 0.0;
+      }
 
-	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
-	const int lev = E->mesh.levmax;
-	//const int nno = E->lmesh.nno;
-	//const int vpts = vpoints[dims];
-	const int ppts = ppoints[dims];
-	//const int sphere_key = 1;
-
-	nel = E->lmesh.nel;
-
-	if(E->control.Rsphere)
-	{
-
-		for(e = 1; e <= nel; e++)
-		{
-
-			get_rtf(E, e, 2, rtf, lev);
-
-			for(i = 1; i <= ends; i++)
-			{
-				n = E->ien[e].node[i];
-				VV[1][i] = E->V[1][n];
-				VV[2][i] = E->V[2][n];
-				VV[3][i] = E->V[3][n];
-			}
-
-			for(j = 1; j <= ppts; j++)
-			{
-				Vxyz[1][j] = 0.0;
-				Vxyz[2][j] = 0.0;
-				Vxyz[3][j] = 0.0;
-				Vxyz[4][j] = 0.0;
-				Vxyz[5][j] = 0.0;
-				Vxyz[6][j] = 0.0;
-			}
-
-			for(j = 1; j <= ppts; j++)
-			{
-				for(i = 1; i <= ends; i++)
-				{
-					Vxyz[1][j] += (VV[1][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)] + VV[3][i] * E->N.ppt[GNPINDEX(i, j)]) * rtf[3][j];
-					Vxyz[2][j] += ((VV[2][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] + VV[1][i] * E->N.ppt[GNPINDEX(i, j)] * cos(rtf[1][j])) / sin(rtf[1][j]) + VV[3][i] * E->N.ppt[GNPINDEX(i, j)]) * rtf[3][j];
-					Vxyz[3][j] += VV[3][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)];
-
-					Vxyz[4][j] += ((VV[1][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] - VV[2][i] * E->N.ppt[GNPINDEX(i, j)] * cos(rtf[1][j])) / sin(rtf[1][j]) + VV[2][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)]) * rtf[3][j];
-					Vxyz[5][j] += VV[1][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)] + rtf[3][j] * (VV[3][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)] - VV[1][i] * E->N.ppt[GNPINDEX(i, j)]);
-					Vxyz[6][j] += VV[2][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)] + rtf[3][j] * (VV[3][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] / sin(rtf[1][j]) - VV[2][i] * E->N.ppt[GNPINDEX(i, j)]);
-				}
-				edot[1][1] = 2.0 * Vxyz[1][j];
-				edot[2][2] = 2.0 * Vxyz[2][j];
-				edot[3][3] = 2.0 * Vxyz[3][j];
-				edot[1][2] = Vxyz[4][j];
-				edot[1][3] = Vxyz[5][j];
-				edot[2][3] = Vxyz[6][j];
-			}
-
-			EEDOT[e] = edot[1][1] * edot[1][1] + edot[1][2] * edot[1][2] * 2.0 + edot[2][2] * edot[2][2] + edot[2][3] * edot[2][3] * 2.0 + edot[3][3] * edot[3][3] + edot[1][3] * edot[1][3] * 2.0;
-
-		}
-
+      for(j = 1; j <= ppts; j++){ /* only makes "sense" for ppts = 1 */
+	for(i = 1; i <= ends; i++){
+	  Vxyz[1][j] += (VV[1][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)] + VV[3][i] * E->N.ppt[GNPINDEX(i, j)]) * rtf[3][j]; /* tt */
+	  Vxyz[2][j] += ((VV[2][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] + VV[1][i] * E->N.ppt[GNPINDEX(i, j)] * cos(rtf[1][j])) / sin(rtf[1][j]) + VV[3][i] * E->N.ppt[GNPINDEX(i, j)]) * rtf[3][j]; /* pp */
+	  Vxyz[3][j] += VV[3][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)]; /* rr */
+	  
+	  Vxyz[4][j] += ((VV[1][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] - VV[2][i] * E->N.ppt[GNPINDEX(i, j)] * cos(rtf[1][j])) / sin(rtf[1][j]) + VV[2][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)]) * rtf[3][j]; /* tp */
+	  Vxyz[5][j] += VV[1][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)] + rtf[3][j] * (VV[3][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)] - VV[1][i] * E->N.ppt[GNPINDEX(i, j)]); /* tr */
+	  Vxyz[6][j] += VV[2][i] * E->gNX[e].ppt[GNPXINDEX(2, i, j)] + rtf[3][j] * (VV[3][i] * E->gNX[e].ppt[GNPXINDEX(1, i, j)] / sin(rtf[1][j]) - VV[2][i] * E->N.ppt[GNPINDEX(i, j)]); /* pr */
 	}
+	edot[1][1] = 2.0 * Vxyz[1][j]; /* this should be a summation */
+	edot[2][2] = 2.0 * Vxyz[2][j];
+	edot[3][3] = 2.0 * Vxyz[3][j];
+	edot[1][2] = Vxyz[4][j];
+	edot[1][3] = Vxyz[5][j];
+	edot[2][3] = Vxyz[6][j];
+      }
+      /* /\* eps: rr, rt, rp, tt, tp, pp *\/ */
+      /* if(e < 5)fprintf(stderr,"1: %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n",edot[3][3]/2,edot[1][3]/2,edot[2][3]/2,edot[1][1]/2,edot[1][2]/2,edot[2][2]/2); */
+      EEDOT[e] = edot[1][1] * edot[1][1] + edot[1][2] * edot[1][2] * 2.0 + edot[2][2] * edot[2][2] + edot[2][3] * edot[2][3] * 2.0 + edot[3][3] * edot[3][3] + edot[1][3] * edot[1][3] * 2.0;
+      
+    }
 
-	else if(E->control.CART3D)
-	{
+  }else if(E->control.CART3D){
+    for(e = 1; e <= nel; e++){
+      for(i = 1; i <= ends; i++){
+	n = E->ien[e].node[i];
+	VV[1][i] = E->V[1][n];
+	VV[2][i] = E->V[2][n];
+	if(dims == 3)
+	  VV[3][i] = E->V[3][n];
+      }
+      for(p = 1; p <= dims; p++)
+	for(q = 1; q <= dims; q++)
+	  dudx[p][q] = 0.0;
+      
+      for(i = 1; i <= ends; i++)
+	for(p = 1; p <= dims; p++)
+	  for(q = 1; q <= dims; q++)
+	    dudx[p][q] += VV[p][i] * E->gNX[e].ppt[GNPXINDEX(q - 1, i, 1)];
+      
+      for(p = 1; p <= dims; p++)
+	for(q = 1; q <= dims; q++)
+	  edot[p][q] = dudx[p][q] + dudx[q][p];
 
-		for(e = 1; e <= nel; e++)
-		{
+      /* if(e < 5)fprintf(stderr,"1: %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n",edot[1][1]/2,edot[1][2]/2,edot[1][3]/2,edot[2][2]/2,edot[2][3]/2,edot[3][3]/2); */
 
-			for(i = 1; i <= ends; i++)
-			{
-				n = E->ien[e].node[i];
-				VV[1][i] = E->V[1][n];
-				VV[2][i] = E->V[2][n];
-				if(dims == 3)
-					VV[3][i] = E->V[3][n];
-			}
+      
+      if(dims == 2)
+	EEDOT[e] = edot[1][1] * edot[1][1] + edot[2][2] * edot[2][2] + edot[1][2] * edot[1][2] * 2.0;
+      
+      else if(dims == 3)
+	EEDOT[e] = edot[1][1] * edot[1][1] + edot[1][2] * edot[1][2] * 2.0 + edot[2][2] * edot[2][2] + edot[2][3] * edot[2][3] * 2.0 + edot[3][3] * edot[3][3] + edot[1][3] * edot[1][3] * 2.0;
+      
+    }
+  }
+  
 
-			for(p = 1; p <= dims; p++)
-				for(q = 1; q <= dims; q++)
-					dudx[p][q] = 0.0;
-
-			for(i = 1; i <= ends; i++)
-				for(p = 1; p <= dims; p++)
-					for(q = 1; q <= dims; q++)
-						dudx[p][q] += VV[p][i] * E->gNX[e].ppt[GNPXINDEX(q - 1, i, 1)];
-
-			for(p = 1; p <= dims; p++)
-				for(q = 1; q <= dims; q++)
-					edot[p][q] = dudx[p][q] + dudx[q][p];
-
-			if(dims == 2)
-				EEDOT[e] = edot[1][1] * edot[1][1] + edot[2][2] * edot[2][2] + edot[1][2] * edot[1][2] * 2.0;
-
-			else if(dims == 3)
-				EEDOT[e] = edot[1][1] * edot[1][1] + edot[1][2] * edot[1][2] * 2.0 + edot[2][2] * edot[2][2] + edot[2][3] * edot[2][3] * 2.0 + edot[3][3] * edot[3][3] + edot[1][3] * edot[1][3] * 2.0;
-
-		}
-	}
-
-
-	if(SQRT)
-		for(e = 1; e <= nel; e++)
-			EEDOT[e] = sqrt(0.5 * EEDOT[e]);
-	else
-		for(e = 1; e <= nel; e++)
-			EEDOT[e] *= 0.5;
-
-	return;
+  
+  if(SQRT)
+    for(e = 1; e <= nel; e++)
+      EEDOT[e] = sqrt(0.5 * EEDOT[e]);
+  else
+    for(e = 1; e <= nel; e++)
+      EEDOT[e] *= 0.5;
+  
+  return;
 }
 
+/* compute second invariant from a strain-rate tensor in 0,...2 format
 
+ */
+double second_invariant_from_3x3(double e[3][3])
+{
+  return(sqrt(0.5*
+	      (e[0][0] * e[0][0] + 
+	       e[0][1] * e[0][1] * 2.0 + 
+	       e[1][1] * e[1][1] + 
+	       e[1][2] * e[1][2] * 2.0 + 
+	       e[2][2] * e[2][2] + 
+	       e[0][2] * e[0][2] * 2.0)));
+}
+
+/* 
+
+   calculate velocity gradient matrix for all elements
+
+   l is stored as (e-1)*9 
+   
+*/
+void calc_vgm_matrix(struct All_variables *E, double *l,double *evel)
+{
+  double rtf[4][9];
+  double VV[4][9],vgm[3][3];
+  int e,j,i,n,p,q,eoff;
+  double d[6];
+  static struct CC Cc;
+  static struct CCX Ccx;
+  const int dims = E->mesh.nsd;
+  const int ppts = ppoints[dims];
+  const int ends = enodes[dims];
+  const int lev = E->mesh.levmax;
+  const int nel = E->lmesh.nel;
+
+  for(eoff=0,e=1; e <= nel; e++, eoff += 9) {
+    if(E->control.Rsphere){	/* need rtf for spherical */
+      get_rtf(E, e, 1, rtf, lev); /* pressure points */
+      if((e-1)%E->lmesh.elz==0)
+	construct_c3x3matrix_el(E,e,&Cc,&Ccx,lev,1);
+    }
+    for(i = 1; i <= ends; i++){	/* velocity at element nodes */
+      n = E->ien[e].node[i];
+      VV[1][i] = E->V[1][n];
+      VV[2][i] = E->V[2][n];
+      VV[3][i] = E->V[3][n];
+    }
+    get_vgm_p(VV,&(E->N),&(E->GNX[lev][e]),&Cc, &Ccx,rtf,
+	      E->mesh.nsd,ppts,ends,(E->control.Rsphere),vgm,evel);
+    get_9vec_from_3x3((l+eoff),vgm);
+  }
+}
+/* 
+
+   given a 3x3 velocity gradient matrix l, compute a d[3][3]
+   strain-rate matrix
+
+*/
+
+void calc_strain_from_vgm(double l[3][3], double d[3][3])
+{
+  int i,j;
+  for(i=0;i < 3;i++)
+    for(j=0;j < 3;j++)
+      d[i][j] = 0.5 * (l[i][j] + l[j][i]);
+}
+void calc_strain_from_vgm9(double *l9, double d[3][3])
+{
+  double l[3][3];
+  get_3x3_from_9vec(l, l9);
+  calc_strain_from_vgm(l, d);
+}
+/* 
+
+   given a 3x3 velocity gradient matrix l, compute a rotation matrix
+
+*/
+
+void calc_rot_from_vgm(double l[3][3], double r[3][3])
+{
+  int i,j;
+  for(i=0;i < 3;i++)
+    for(j=0;j < 3;j++)
+      r[i][j] = 0.5 * (l[i][j] - l[j][i]);
+}
+
+/* 
+
+   different version of strain-rate computation, obtain strain-rate
+   matrix at all elements, storing it in edot as (e-1)*6 upper
+   triangle format
+
+
+*/
+void calc_strain_rate_matrix(struct All_variables *E, 
+			     double *edot)
+{
+  double rtf[4][9];
+  double VV[4][9], Vxyz[7][9];
+  int e,j,i,n,p,q,eoff;
+  static struct CC Cc;
+  static struct CCX Ccx;
+  double ba[9][4][9][7];
+  const int dims = E->mesh.nsd;
+  const int ppts = ppoints[dims];
+  const int ends = enodes[dims];
+  const int lev = E->mesh.levmax;
+  const int nel = E->lmesh.nel;
+  //fprintf(stderr,"\n");
+  for(eoff=0,e=1; e <= nel; e++,eoff+=6) {
+    if(E->control.Rsphere){	/* need rtf for spherical */
+      get_rtf(E, e, 1, rtf, lev); /* pressure */
+      if((e-1)%E->lmesh.elz==0)
+	construct_c3x3matrix_el(E,e,&Cc,&Ccx,lev,1);
+    }
+    for(i = 1; i <= ends; i++){	/* velocity at element nodes */
+      n = E->ien[e].node[i];
+      VV[1][i] = E->V[1][n];
+      VV[2][i] = E->V[2][n];
+      VV[3][i] = E->V[3][n];
+    }
+    for(j = 1; j <= ppts; j++){
+      Vxyz[1][j] = 0.0;
+      Vxyz[2][j] = 0.0;
+      Vxyz[3][j] = 0.0;
+      Vxyz[4][j] = 0.0;
+      Vxyz[5][j] = 0.0;
+      Vxyz[6][j] = 0.0;
+    }
+    get_ba_p(&(E->N),&(E->GNX[lev][e]),&Cc, &Ccx,rtf,
+	     E->mesh.nsd,ppts,ends,(E->control.Rsphere),ba);
+    for(j=1;j <= ppts;j++)
+      for(p=1;p <= 6;p++)
+	for(i=1;i <= ends;i++)
+	  for(q=1;q <= dims;q++) {
+	    Vxyz[p][j] += ba[i][q][j][p] * VV[q][i];
+	  }
+    edot[eoff+0] = edot[eoff+1] = edot[eoff+2] =
+      edot[eoff+3] = edot[eoff+4] = edot[eoff+5] = 0.0;
+
+    for(j=1; j <= ppts; j++) {
+      edot[eoff+0] += Vxyz[1][j];   /* e_xx = e_tt */
+      edot[eoff+1] += Vxyz[4][j]/2; /* e_xy = e_tp */
+      edot[eoff+2] += Vxyz[5][j]/2; /* e_xz = e_tr */
+      edot[eoff+3] += Vxyz[2][j];   /* e_yy = e_pp */
+      edot[eoff+4] += Vxyz[6][j]/2; /* e_yz = e_pr */
+      edot[eoff+5] += Vxyz[3][j];   /* e_zz = e_rr */
+    }
+    if(ppts != 1){
+      for(i=0;i<6;i++)
+	edot[eoff+i] /= (float)ppts;
+    }
+
+    /* if(e < 5){ */
+    /*   if(E->control.Rsphere){ */
+    /* 	/\* rr rt rp tt tp pp *\/ */
+    /* 	fprintf(stderr,"2: %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e \n",edot[eoff+5],edot[eoff+2],edot[eoff+4],edot[eoff+0],edot[eoff+1],edot[eoff+3]); */
+    /*   }else{ */
+    /* 	fprintf(stderr,"2: %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e \n",edot[eoff+0],edot[eoff+1],edot[eoff+2],edot[eoff+3],edot[eoff+4],edot[eoff+5]); */
+    /*   } */
+    /* } */
+  }
+}
 
 
 int layers(struct All_variables *E, float x3)
@@ -979,7 +1139,7 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  eta_old2 = eta_old * eta_old;
 	  eta_new = (tau2 * eta_old)/(tau2 + 2.0 * eta_old2 * eedot[i]);
 	  EEta[ (i-1)*vpts + jj ] = ettnew;
-	  //if(E->parallel.me==0)fprintf(stderr,"tau: %11g eII: %11g eta_old: %11g eta_new: %11g\n",tau, eedot[i],eta_old,eta_new);
+	  //if(E->parallel.me==0)fprintf(stderr,"tau: %11.4e eII: %11.4e eta_old: %11.4e eta_new: %11.4e\n",tau, eedot[i],eta_old,eta_new);
 	}
       }
     }
@@ -1070,7 +1230,7 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 		  ettnew*E->data.ref_viscosity); 
 #endif
 	//      if(visited)
-	//	fprintf(stderr,"%11g %11g %11g %11g\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
+	//	fprintf(stderr,"%11.4e %11.4e %11.4e %11.4e\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
 	EEta[ (i-1)*vpts + jj ] = ettnew;
       }
     } /* end regular plasticity */
@@ -1107,8 +1267,10 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
       /* determine composition of each of the nodes of the element */
       for(kk = 1; kk <= ends; kk++){
 	CC[kk] = E->C[E->ien[i].node[kk]];
-	if(CC[kk] < 0)CC[kk]=0.0;
-	if(CC[kk] > 1)CC[kk]=1.0;
+	if(E->control.check_c_irange){
+	  if(CC[kk] < 0)CC[kk]=0.0;
+	  if(CC[kk] > 1)CC[kk]=1.0;
+	}
       }
       for(jj = 1; jj <= vpts; jj++)
 	{
@@ -1124,3 +1286,4 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
     }
   visited++;
 }
+

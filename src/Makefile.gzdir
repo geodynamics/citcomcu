@@ -18,8 +18,8 @@
 
 #COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
-GMT_DIR = ../../../GMT4.5.3/
-NETCDF_DIR = ../../../netcdf-3.6.2/
+GMT_DIR = $(GMTHOME)
+NETCDF_DIR = $(NETCDFHOME)
 HC_DIR = ../../../hc-svn/
 LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
 #LIB_LIST= -lmpi
@@ -172,10 +172,11 @@ CFILES= Advection_diffusion.c\
 
 
 
-HEADER = element_definitions.h\
-	 global_defs.h\
-	 viscosity_descriptions.h\
-	 advection.h
+HEADER = element_definitions.h \
+	 global_defs.h \
+	 viscosity_descriptions.h \
+	 advection.h \
+	 prototypes.h
 
 
 FFILES=#Blas_lapack_interfaces.F

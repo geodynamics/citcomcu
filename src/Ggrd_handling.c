@@ -51,7 +51,7 @@
 
 void convection_initial_temperature_ggrd(struct All_variables *E)
 {
-  int ll, mm, i, j, k, p, node, ii;
+  int ll, mm, i, j, k, p, node, ii,slice,hit;
   double temp, temp1, temp2, temp3, base, radius, radius2;
   unsigned int type;
 
@@ -86,7 +86,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   /* top and bottom temperatures for initial assign (only use if
      temperatures are set, else defaults */
-  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 1.0;
+  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 0.0;
   top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 1.0;
 
   for(i=1;i<=E->lmesh.nno;i++) {
@@ -129,13 +129,23 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	/* 
 	   initialize the GMT grid files 
 	*/
-	if(E->control.slab_slice){ /* only slice of x - depth */
-
-	  if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.temp.gfile, 
-					char_dummy,"",E->control.ggrd.temp.d,
-					(E->parallel.me==0),
-					FALSE))
-	    myerror("grdtrack x-z init error",E);
+	if(E->control.ggrd_slab_slice){ /* only a few slices of x - depth */
+	  if(E->control.ggrd_slab_slice == 1){
+	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.temp.gfile, 
+					  char_dummy,"",E->control.ggrd_ss_grd,
+					  (E->parallel.me==0),
+					  FALSE))
+	      myerror("grdtrack x-z init error",E);
+	  }else{		/* several slab slices */
+	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
+	      sprintf(pfile,"%s.%i.grd",E->control.ggrd.temp.gfile,slice+1);
+	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
+					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
+					    (E->parallel.me==0),
+					    FALSE))
+		myerror("grdtrack x-z init error",E);
+	    }
+	  }
 	}else{			/* 3-D */
 	  if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.temp.gfile, 
 					E->control.ggrd.temp.dfile,"",
@@ -175,38 +185,39 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  for(j=1;j<=nox;j++) 
 	    for(k=1;k<=noz;k++)  {
 	      node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
-	      if(E->control.slab_slice){
+	      if(E->control.ggrd_slab_slice){
 		/* 
 
 		slab slice input 
 
 		*/
-		if(E->control.Rsphere) {
-		  if(E->SX[1][node] <= E->control.slab_theta_bound)
-		    /* spherical interpolation */
-		    ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
-						 (double)E->SX[1][node],
-						 E->control.ggrd.temp.d,&tadd,
-						 FALSE);
-		  else{
-		    if(E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1])
-		      tadd = E->control.TBCtopval;
-		    else
-		      tadd = 1.0;
-		  }
-		}else{		/* cartesian interpolation */
-		  if(E->X[2][node] <= E->control.slab_theta_bound)
-		    ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
-						 (double)E->X[3][node],
-						 E->control.ggrd.temp.d,&tadd,
-						 FALSE);
-		  else{
-		    if(E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1])
-		      tadd = E->control.TBCtopval;
-		    else
-		      tadd = 1.0;
+		for(slice=hit=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+		  if(E->control.Rsphere) {
+		    if(in_slab_slice(E->SX[1][node],slice,E)){
+		      /* spherical interpolation */
+		      ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
+						   (double)E->SX[1][node],
+						   (E->control.ggrd_ss_grd+slice),&tadd,
+						   FALSE);
+		      hit=1;
+		    }
+		  }else{		/* cartesian interpolation */
+		    if(in_slab_slice(E->X[2][node],slice,E)){
+		      ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
+						   (double)E->X[3][node],
+						   (E->control.ggrd_ss_grd+slice),&tadd,
+						   FALSE);
+		      hit = 1;
+		    }
 		  }
 		}
+		if(!hit)
+		  if(((E->control.Rsphere) && (E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))||
+		     (E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))
+		    tadd = E->control.TBCtopval;
+		  else
+		    tadd = 1.0;
+		/* end slice part */
 	      }else{
 		/* 
 		   
@@ -335,7 +346,6 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		  y1 = E->SX[2][node];
 		  /* linear */
 		  tz = (z1 -  E->sphere.ri)/(E->sphere.ro - E->sphere.ri) * (top_t-bot_t) + bot_t;
-		    
 		  E->T[node] += tz;
 		  if(E->convection.random_t_init){
 		    /* random init */
@@ -346,7 +356,8 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		      ll = E->convection.perturb_ll[p];
 		      con = E->convection.perturb_mag[p];
 		      
-		      E->T[node] += E->convection.perturb_mag[p] * modified_plgndr_a(ll, mm, x1) * cos(mm * y1) * 
+		      E->T[node] += E->convection.perturb_mag[p] *
+			modified_plgndr_a(ll, mm, x1) * cos(mm * y1) * 
 			sin(M_PI * (z1 - E->sphere.ri) / (E->sphere.ro - E->sphere.ri));
 		    }
 		  }
@@ -371,14 +382,23 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
 			    MPI_COMM_WORLD, &mpi_stat);
 	}
-	if(E->control.slab_slice){ 
-	  /* x - z slice */
-	  if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.comp.gfile, 
-					char_dummy,"",
-					E->control.ggrd.comp.d,
-					/* (E->parallel.me==0)*/
-					FALSE,FALSE))
-	    myerror("grdtrack init error",E);
+	if(E->control.ggrd_slab_slice){ 
+	  if(E->control.ggrd_slab_slice == 1){
+	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.comp.gfile, 
+					  char_dummy,"",E->control.ggrd_ss_grd,
+					  (E->parallel.me==0),
+					  FALSE))
+	      myerror("grdtrack x-z init error",E);
+	  }else{		/* several slab slices */
+	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
+	      sprintf(pfile,"%s.%i.grd",E->control.ggrd.comp.gfile,slice+1);
+	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
+					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
+					    (E->parallel.me==0),
+					    FALSE))
+		myerror("grdtrack x-z init error",E);
+	    }
+	  }
 	}else{
 	  /* 3-D  */
 	  if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.comp.gfile, 
@@ -401,27 +421,32 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  for(j=1;j<=nox;j++) 
 	    for(k=1;k<=noz;k++)  {
 	      node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
-	      if(E->control.slab_slice){
+	      if(E->control.ggrd_slab_slice){
 		/* slab */
-		if(E->control.Rsphere) {
-		  if(E->SX[1][node] <= E->control.slab_theta_bound)
-		    /* spherical interpolation */
-		    ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
-						 (double)E->SX[1][node],
-						 E->control.ggrd.comp.d,&tadd,
-						 FALSE);
-		  else
-		    tadd = 0.0;
-		}else{		/* cartesian interpolation */
-		  if(E->X[2][node] <= E->control.slab_theta_bound){
-		    ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
-						 (double)E->X[3][node],
-						 E->control.ggrd.comp.d,&tadd,
-						 FALSE);
-		  }else{
-		    tadd = 0.0;
+		for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+		  if(E->control.Rsphere) {
+		    if(in_slab_slice(E->SX[1][node],slice,E)){
+		      /* spherical interpolation */
+		      ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
+						   (double)E->SX[1][node],
+						   (E->control.ggrd_ss_grd+slice),&tadd,
+						   FALSE);
+		      hit = 1;
+		    }
+		  }else{		/* cartesian interpolation */
+		    if(in_slab_slice(E->X[2][node],slice,E)){
+
+		      ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
+						   (double)E->X[3][node],
+						   (E->control.ggrd_ss_grd+slice),&tadd,
+						   FALSE);
+		      hit  = 1 ;
+		    }
 		  }
-		}
+		} /* end slice loop */
+		if(!hit)
+		  tadd = 0;
+		/* end slab slice */
 	      }else{
 		/* 3-D */
 		if(E->control.Rsphere) /* spherical interpolation */
@@ -437,7 +462,6 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 						E->control.ggrd.comp.d,&tadd,
 						FALSE);
 	      }
-
 	      E->C[node] =  E->control.ggrd.comp.offset + tadd *  
 		E->control.ggrd.comp.scale;
 	    }
@@ -487,6 +511,55 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   return;
 } 
+int in_slab_slice(float coord, int slice, struct All_variables *E)
+{
+  if((slice < 0)||(slice > E->control.ggrd_slab_slice-1))
+    myerror("slab slice out of bounds",E);
+  if(E->control.ggrd_slab_slice < 1)
+    myerror("total slab slice out of bounds",E);
+
+  if(E->control.ggrd_slab_slice == 1)
+    if(coord <=  E->control.ggrd_slab_theta_bound[0])
+      return 1;
+    else
+      return 0;
+  else{
+    if(slice == 0)
+      if(coord <=  E->control.ggrd_slab_theta_bound[0])
+	return 1;
+      else
+	return 0;
+    else
+      if((coord <=  E->control.ggrd_slab_theta_bound[slice]) && (coord > E->control.ggrd_slab_theta_bound[slice-1]))
+	return 1;
+      else
+	return 0;
+  }
+}
+
+/* 
+
+solve a eigenproblem for a symmetric [3][3] matrix (which will not be
+overwritten)
+
+on output, d has the sorted eigenvalues, 
+and e the eigenvectors in each column
+
+d[0] > d[1] > d[2]
+
+
+ */
+void ggrd_solve_eigen3x3(double a[3][3],double d[3],
+			 double e[3][3],struct All_variables *E)
+{
+  GMT_LONG n=3,nrots;
+  double x[3],b[3],z[3],v[9],a9[9];
+  get_9vec_from_3x3(a9,a);
+  /* the j-th column of V is the eigenvector corresponding to the j-th eigenvalue */
+  if (GMT_jacobi (a9, &n, &n, d, v, b, z, &nrots))
+    myerror("GMT Eigenvalue routine failed to converge in 50 sweeps", E);
+  get_3x3_from_9vec(e,v);
+}
 
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
 /*
@@ -514,12 +587,12 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   float base[9];
   char tfilename[1000];
   static ggrd_boolean shift_to_pos_lon = FALSE;
-  const int dims=E->mesh.nsd;
+  const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
   FILE *in;
   struct ggrd_gt *vis2_grd,*ntheta_grd,*nphi_grd,*nr_grd;
   const int vpts = vpoints[E->mesh.nsd];
-
+  static int init = FALSE;
   
   nox=E->mesh.nox;noy=E->mesh.noy;noz=E->mesh.noz;
   elx=E->lmesh.elx;elz=E->lmesh.elz;ely=E->lmesh.ely;
@@ -529,8 +602,12 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 
   if(E->viscosity.allow_anisotropic_viscosity == 0)
     myerror("ggrd_read_anivisc_from_file: called, but allow_anisotropic_viscosity is FALSE?!",E);
-  
-  /* isotropic default */
+  if(init)
+    myerror("ggrd_read_anivisc_from_file: called twice",E);
+
+  /* 
+     isotropic default 
+  */
   for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
     nel  = E->lmesh.NEL[i];
     for(k=1;k <= nel;k++){
@@ -538,6 +615,8 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 	ind = (k-1)*vpts + l;
 	E->EVI2[i][ind] = 0.0;
 	E->EVIn1[i][ind] = 1.0; E->EVIn2[i][ind] = E->EVIn3[i][ind] = 0.0;
+	E->avmode[i][ind] = (unsigned char)
+	  E->viscosity.allow_anisotropic_viscosity;
       }
     }
   }
@@ -563,12 +642,12 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   if(E->parallel.me==0)
     if(E->viscosity.anivisc_layer > 0)
       fprintf(stderr,"ggrd_read_anivisc_from_file: initializing, assigning to all elements above %g km, input is %s\n",
-	      E->monitor.length_scale*E->viscosity.zbase_layer[E->viscosity.anivisc_layer - 1],
+	      E->monitor.length_scale*E->viscosity.zbase_layer[E->viscosity.anivisc_layer - 1]/1000,
 	      ("regional"));
     else
       fprintf(stderr,"ggrd_read_anivisc_from_file: initializing, assigning to all elements between  %g and %g km, input is %s\n",
-	      E->monitor.length_scale*((E->viscosity.anivisc_layer<-1)?(E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 2]):(0)),
-	      E->monitor.length_scale*E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 1],
+	      E->monitor.length_scale/1000*((E->viscosity.anivisc_layer<-1)?(E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 2]):(0)),
+	      E->monitor.length_scale/1000*E->viscosity.zbase_layer[-E->viscosity.anivisc_layer - 1],
 	      ("regional"));
 
   /* 
@@ -731,7 +810,8 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   ggrd_grdtrack_free_gstruc(nr_grd);
   ggrd_grdtrack_free_gstruc(ntheta_grd);
   ggrd_grdtrack_free_gstruc(nphi_grd);
-  
+
+  init = TRUE;
   
 }
 

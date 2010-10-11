@@ -354,7 +354,7 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 		Sxz = 0.0;
 		Szy = 0.0;
 		if(E->control.Rsphere)
-		  get_rtf(E, e, 0, rtf, lev);
+		  get_rtf(E, e, 0, rtf, lev); /* vpts */
 
 		for(j = 1; j <= vpts; j++)
 		{
