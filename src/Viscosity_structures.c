@@ -190,9 +190,10 @@ void viscosity_parameters(struct All_variables *E)
 										   1: random
 										   2: read in director orientation
 										      and log10(eta_s/eta) 
-										   3: align with velocity 
-										   4: align with ISA
-										   5: align mixed depending on deformation state
+										   3: align with velocity, use ani_vis2_factor for eta_s/eta
+										   4: align with ISA, use ani_vis2_factor for eta_s/eta
+										   5: align mixed depending on deformation state, use ani_vis2_factor for eta_s/eta
+										   6: use radially aligned director and taper eta_s/eta from base (1) to top of layer (ani_vis2_factor)
 										   
 										*/
 	  input_string("anisotropic_init_dir",(E->viscosity.anisotropic_init_dir),"",m); /* directory
@@ -203,6 +204,8 @@ void viscosity_parameters(struct All_variables *E)
 	  input_int("anivisc_layer",&(E->viscosity.anivisc_layer),"1",m); /* >0: assign to layers on top of anivisc_layer
 									     <0: assign to layer = anivisc_layer
 									  */
+	  if((E->viscosity.anisotropic_init == 6) && (E->viscosity.anivisc_layer >= 0))
+	    myerror("anisotropic init mode 6 requires selection of layer where anisotropy applies",E);
 	  
 	  input_boolean("anivisc_start_from_iso",
 			&(E->viscosity.anivisc_start_from_iso),"on",m); /* start
@@ -215,7 +218,7 @@ void viscosity_parameters(struct All_variables *E)
 	      E->viscosity.anivisc_start_from_iso = TRUE;
 	    }
 	  /* ratio between weak and strong direction */
-	  input_double("ani_vis2_factor",&(E->viscosity.ani_vis2_factor),"0.1",m);
+	  input_double("ani_vis2_factor",&(E->viscosity.ani_vis2_factor),"1.0",m);
 
 
 	}

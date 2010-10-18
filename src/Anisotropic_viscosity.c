@@ -229,10 +229,11 @@ void get_constitutive_isotropic(double D[6][6])
 }
 void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int init_stage)
 {
-  int i,k,l,off,nel;
-  double vis2,n[3],u,v,s,r;
+  int i,j,k,l,m,off,nel,elx,ely,elz,inode,elxlz,el,ani_layer;
+  double vis2,n[3],u,v,s,r,xloc[3],z_top,z_bottom;
+  float base[9],rout[3];
   const int vpts = vpoints[E->mesh.nsd];
-  
+  const int ends = enodes[E->mesh.nsd];
   if(init_stage){
     if(E->parallel.me == 0)
       fprintf(stderr,"set_anisotropic_viscosity: allowing for %s viscosity\n",
@@ -300,6 +301,76 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
 #endif
       ggrd_read_anivisc_from_file(E);
       break;
+    case 6:			/* tapered within layer */
+      if(E->parallel.me == 0)
+	fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic tapered, vis2 min %g\n",
+		E->viscosity.ani_vis2_factor);
+      if(E->viscosity.anivisc_layer >= 0)myerror("set_anisotropic_viscosity_at_element_level: need to select layer",E);
+      ani_layer = -E->viscosity.anivisc_layer;
+      z_bottom = E->viscosity.zbase_layer[ani_layer-1];
+      if(ani_layer == 1)
+	z_top = E->segment.zzlayer[E->segment.zlayers-1];
+      else
+	z_top = E->viscosity.zbase_layer[ani_layer-2];
+	
+      for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
+	elx = E->lmesh.ELX[i];elz = E->lmesh.ELZ[i];ely = E->lmesh.ELY[i];
+	elxlz = elx * elz;
+	for (j=1;j <= elz;j++)
+	  if(E->mat[j] ==  -E->viscosity.anivisc_layer){
+	    
+	    for(u=0.,inode=1;inode <= ends;inode++){ /* mean vertical coordinate */
+	      off = E->ien[j].node[inode];
+	      if(E->control.Rsphere)
+		u += E->SX[3][off];
+	      else
+		u += E->X[3][off];
+	    }
+	    u /= ends;
+	    /* do a log scale decrease of vis2 to ani_vis2_factor from bottom to top of layer */
+	    vis2 = exp(log(E->viscosity.ani_vis2_factor) * (u-z_bottom)/(z_top-z_bottom));
+	    //fprintf(stderr,"z %g (%g/%g) vis2 %g vis2_o %g frac %g\n",u,z_top,z_bottom,vis2, E->viscosity.ani_vis2_factor,(u-z_bottom)/(z_top-z_bottom));
+	    /* 1-eta_s/eta */
+	    vis2 = 1 - vis2;
+	    for (k=1;k <= ely;k++){
+	      for (l=1;l <= elx;l++)   {
+		/* eq.(1) */
+		el = j + (l-1) * elz + (k-1)*elxlz;
+		if(E->control.Rsphere){ /* director in r direction */
+		  xloc[0] = xloc[1] = xloc[2] = 0.0;
+		  for(inode=1;inode <= ends;inode++){
+		    off = E->ien[el].node[inode];
+		    rtp2xyz((float)E->SX[3][off],(float)E->SX[1][off],(float)E->SX[2][off],rout);
+		    xloc[0] += rout[0];xloc[1] += rout[1];xloc[2] += rout[2];
+		  }
+		  xloc[0]/=ends;xloc[1]/=ends;xloc[2]/=ends;xyz2rtp(xloc[0],xloc[1],xloc[2],rout); 
+		  calc_cbase_at_tp(rout[1],rout[2],base);convert_pvec_to_cvec(1.,0.,0.,base,rout);
+		  n[0]=rout[0];n[1]=rout[1];n[2]=rout[2];
+		}else{		/* director in z direction */
+		  n[0] = 0.;n[1] = 0.;n[2] = 1.;	
+		}
+		for(m=1;m <= vpts;m++){ /* assign to all integration points */
+		  off = (el-1)*vpts + m;
+		  E->EVI2[i][off] = vis2;
+		  E->EVIn1[i][off] = n[0]; E->EVIn2[i][off] = n[1];E->EVIn3[i][off] = n[2];
+		  E->avmode[i][off] = CITCOM_ANIVISC_ORTHO_MODE;
+		}
+	      }
+	    }
+	  }else{		/* outside layer = isotropic */
+	    for (k=1;k <= ely;k++)
+	      for (l=1;l <= elx;l++){
+		el = j + (l-1) * elz + (k-1)*elxlz;
+		for(m=1;m <= vpts;m++){ /* assign to all integration points */
+		  off = (el-1)*vpts + m;
+		  E->EVI2[i][off] = 0;
+		  E->EVIn1[i][off] = 1; E->EVIn2[i][off] = 0;E->EVIn3[i][off] = 0;
+		  E->avmode[i][off] = CITCOM_ANIVISC_ORTHO_MODE;
+		}
+	      }
+	  }
+      }	/* end multigrid level loop */
+      break;
     default:
       fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init %i undefined\n",
 	      E->viscosity.anisotropic_init);
@@ -327,7 +398,8 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
 	if((E->monitor.solution_cycles > 0) || (E->monitor.visc_iter_count > 0))
 	  align_director_with_ISA_for_element(E,CITCOM_ANIVISC_MIXED_ALIGN);
 	break;
-      default:			/* default, no action */
+      default:			/* default, no further modification of
+				   anisotropy */
 	break;
       }
     }

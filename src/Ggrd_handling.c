@@ -578,7 +578,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   MPI_Status mpi_stat;
   int mpi_rc;
   int mpi_inmsg, mpi_success_message = 1;
-  int el,i,j,k,l,inode,i1,i2,elxlz,elxlylz,ind,nel;
+  int el,i,j,k,l,inode,i1,i2,elxlz,ind,nel;
   int llayer,nox,noy,noz,level,lselect,idim,elx,ely,elz;
   char gmt_string[10],char_dummy;
   double vis2,log_vis,ntheta,nphi,nr;
@@ -591,14 +591,12 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   const int ends = enodes[dims];
   FILE *in;
   struct ggrd_gt *vis2_grd,*ntheta_grd,*nphi_grd,*nr_grd;
-  const int vpts = vpoints[E->mesh.nsd];
+  const int vpts = vpoints[dims];
   static int init = FALSE;
-  
+
   nox=E->mesh.nox;noy=E->mesh.noy;noz=E->mesh.noz;
   elx=E->lmesh.elx;elz=E->lmesh.elz;ely=E->lmesh.ely;
   elxlz = elx * elz;
-  elxlylz = elxlz * ely;
-
 
   if(E->viscosity.allow_anisotropic_viscosity == 0)
     myerror("ggrd_read_anivisc_from_file: called, but allow_anisotropic_viscosity is FALSE?!",E);
@@ -712,13 +710,13 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 	  */
 	  if(E->control.CART3D){
 	    rout[0]=rout[1]=rout[2]=0.0;
-	    for(inode=1;inode <= 4;inode++){
+	    for(inode=1;inode <= ends;inode++){
 	      ind = E->ien[el].node[inode];
 	      rout[0] += E->X[1][ind];
 	      rout[1] += E->X[2][ind];
 	      rout[2] += E->X[3][ind];
 	    }
-	    rout[0]/=4.;rout[1]/=4.;rout[2]/=4.;
+	    rout[0]/=ends;rout[1]/=ends;rout[2]/=ends;
 	    if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],vis2_grd,&log_vis,FALSE)){
 	      fprintf(stderr,"ggrd_read_anivisc_from_file: interpolation error at x: %g y: %g\n",
 		      rout[0],rout[1]);
@@ -744,7 +742,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 	  }else{
 	    /* spherical */
 	    xloc[0] = xloc[1] = xloc[2] = 0.0;
-	    for(inode=1;inode <= 4;inode++){
+	    for(inode=1;inode <= ends;inode++){
 	      ind = E->ien[el].node[inode];
 	      rtp2xyz((float)E->SX[3][ind],(float)E->SX[1][ind],
 		      (float)E->SX[2][ind],rout);
@@ -752,7 +750,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 	      xloc[1] += rout[1];
 	      xloc[2] += rout[2];
 	    }
-	    xloc[0]/=4.;xloc[1]/=4.;xloc[2]/=4.;
+	    xloc[0]/=ends;xloc[1]/=ends;xloc[2]/=ends;
 	    xyz2rtp(xloc[0],xloc[1],xloc[2],rout); /* convert to spherical */
 	    
 	    /* vis2 */
