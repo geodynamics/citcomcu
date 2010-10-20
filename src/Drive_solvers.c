@@ -69,6 +69,7 @@ void general_stokes_solver(struct All_variables *E)
 	  
 	  
 	  if(iterate){
+
 	    /* damping factors */
 	    alpha = E->viscosity.sdepv_iter_damp;
 	    alpha1 = 1 - alpha;

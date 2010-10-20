@@ -451,7 +451,7 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F,
 
 		cycles = 0;
 		count = 0;
-		if(E->monitor.solution_cycles % 5 == 0 && E->parallel.me == 0)
+		if(E->monitor.solution_cycles % E->monitor.solution_cycles_out == 0 && E->parallel.me == 0)
 		{
 			fprintf(E->fp, "resi = %.6e for iter %d acc %.6e\n", residual, count, acc);
 		}

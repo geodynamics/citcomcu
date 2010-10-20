@@ -648,7 +648,7 @@ struct MONITOR
 	int node_output_cols;
 	int sobs_output_cols;
 
-	int solution_cycles;
+  int solution_cycles,solution_cycles_out;
   int visc_iter_count;
 
 	float time_scale,time_scale_ma;

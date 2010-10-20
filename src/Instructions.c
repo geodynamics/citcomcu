@@ -817,7 +817,7 @@ void read_initial_settings(struct All_variables *E)
 	input_int("obs_maxlongk", &(E->slice.maxlong), "100,1", m);
 	input_int("obs_minlongk", &(E->slice.minlong), "1,1", m);
 
-
+	input_int("solution_cycles_out",&(E->monitor.solution_cycles_out),"5",m);
 
 #ifdef USE_GGRD
 	/* ggrd control */
