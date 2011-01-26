@@ -312,11 +312,22 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 	}
 #endif
 	
-	
+
 	if(E->viscosity.TDEPV)
 		visc_from_T(E, visc, evisc, propogate);
 	else
 		visc_from_mat(E, visc, evisc);
+#ifdef USE_GGRD
+	/* pre-factor applies here */
+	if(E->control.ggrd.mat_control != 0){
+	  ggrd_read_mat_from_file(E);
+	  for(i = 1; i <= E->lmesh.nel; i++){
+	    for(j = 1; j <= vpoints[E->mesh.nsd]; j++){
+	      evisc[(i - 1) * vpoints[E->mesh.nsd] + j] *= E->VIP[i];
+	    }
+	  }
+	}
+#endif	
 
 	if(E->viscosity.CDEPV)
 	  visc_from_C(E, visc, evisc, propogate);
@@ -330,6 +341,7 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 
 	if(E->viscosity.SMOOTH)
 	  apply_viscosity_smoother(E, visc, evisc);
+
 
 
 	if(E->viscosity.MAX)

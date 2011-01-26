@@ -11,7 +11,7 @@ void element_residual(struct All_variables *, int, struct Shape_function, float 
 void std_timestep(struct All_variables *);
 void process_heating(struct All_variables *);
 /* Anisotropic_viscosity.c */
-void get_constitutive(double [6][6], int, int, double, double, int, struct All_variables *);
+void get_constitutive(double [6][6], double, double, int, float, float, float, float, int, struct All_variables *);
 void get_constitutive_ti_viscosity(double [6][6], double, double, double [3], int, double, double);
 void get_constitutive_orthotropic_viscosity(double [6][6], double, double [3], int, double, double);
 void get_constitutive_isotropic(double [6][6]);
@@ -32,9 +32,10 @@ void zero_4x4(double [3][3][3][3]);
 void copy_4x4(double [3][3][3][3], double [3][3][3][3]);
 void copy_6x6(double [6][6], double [6][6]);
 void print_6x6_mat(FILE *, double [6][6]);
+void print_3x3_mat(FILE *, double [3][3]);
 void c4fromc6(double [3][3][3][3], double [6][6]);
 void c6fromc4(double [6][6], double [3][3][3][3]);
-void drex_isacalc(double [3][3], double *, double [3], struct All_variables *, int *);
+void isacalc(double [3][3], double *, double [3], struct All_variables *, int *);
 void f_times_ft(double [3][3], double [3][3]);
 void drex_eigen(double [3][3], double [3][3], int *);
 void malmul_scaled_id(double [3][3], double [3][3], double, double);
@@ -164,6 +165,8 @@ void set_2pt5dc_defaults(struct All_variables *);
 void set_3ds_defaults(struct All_variables *);
 void set_3dc_defaults(struct All_variables *);
 /* Ggrd_handling.c */
+int in_slab_slice(float, int, struct All_variables *);
+void ggrd_read_mat_from_file(struct All_variables *);
 void ggrd_solve_eigen3x3(double [3][3], double [3], double [3][3], struct All_variables *);
 void ggrd_read_anivisc_from_file(struct All_variables *);
 /* Global_operations.c */
@@ -367,4 +370,3 @@ void calc_strain_rate_matrix(struct All_variables *, double *);
 int layers(struct All_variables *, float);
 int weak_zones(struct All_variables *, int, float);
 float boundary_thickness(struct All_variables *, float *);
-int in_slab_slice(float , int , struct All_variables *);

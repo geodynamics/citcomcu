@@ -757,13 +757,13 @@ struct CONTROL
 	float Ra_670, clapeyron670, transT670, width670;
 	float Ra_410, clapeyron410, transT410, width410;
 #ifdef USE_GGRD
-   struct ggrd_master ggrd;
+  struct ggrd_master ggrd;
   int ggrd_slab_slice;
   float ggrd_slab_theta_bound[4];
   struct ggrd_gt ggrd_ss_grd[4];
-
+  int ggrd_mat_limit_prefactor,ggrd_mat_is_3d;
+  char ggrd_mat_depth_file[1000];
 #endif
-
 
 	int adi_heating, visc_heating;
 	int composition;
@@ -988,7 +988,9 @@ struct All_variables
   float *VIn3[MAX_LEVELS],*EVIn3[MAX_LEVELS];
   unsigned char *avmode[MAX_LEVELS];
 #endif
-
+#ifdef USE_GGRD
+  float *VIP;			/* viscosity prefactor */
+#endif
 
 	int *surf_node, *surf_element;
 	int *mat;					/* properties of mat */

@@ -123,6 +123,7 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 
 	if(E->parallel.me == 0)
 		fprintf(stderr, "ok7a\n");
+
 	construct_mat_group(E);
 
 	(E->problem_boundary_conds) (E);
@@ -266,6 +267,10 @@ void allocate_common_vars(struct All_variables *E)
 		E->LMD[i] = (struct LM *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct LM));
 
 		E->EVI[i] = (float *)malloc((E->lmesh.NEL[i] + 2) * vpoints[E->mesh.nsd] * sizeof(float));
+#ifdef USE_GGRD
+		if(i==E->mesh.levmax)
+		  E->VIP = (float *)malloc((E->lmesh.NEL[i] + 2) * sizeof(float));
+#endif
 
 		E->TW[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
 		E->VI[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
@@ -818,10 +823,12 @@ void read_initial_settings(struct All_variables *E)
 	input_int("obs_minlongk", &(E->slice.minlong), "1,1", m);
 
 	input_int("solution_cycles_out",&(E->monitor.solution_cycles_out),"5",m);
-
 #ifdef USE_GGRD
 	/* ggrd control */
 	ggrd_init_master(&(E->control.ggrd));
+
+	input_string("ggrd_time_hist_file",E->control.ggrd.time_hist.file,"",m); 
+
 	input_boolean("ggrd_tinit",&(E->control.ggrd.use_temp),"off", m);
 	input_double("ggrd_tinit_scale",&(E->control.ggrd.temp.scale),"1.0", m);
 	input_boolean("ggrd_scale_with_prem",&(E->control.ggrd.temp.scale_with_prem),"off", m);
@@ -840,6 +847,22 @@ void read_initial_settings(struct All_variables *E)
 	  myerror("too many slab slices",E);
 	input_float_vector("slab_theta_bound",E->control.ggrd_slab_slice,(E->control.ggrd_slab_theta_bound), m);
 	
+	/* 
+	   
+	ggrd_mat_control=2
+	ggrd_mat_file="weak.grd"
+
+	read in time-constant prefactors from weak.grd netcdf file that apply to top two E->mat layers
+
+	i.e.  ggrd_mat_control > 0 --> assign to layers with ilayer <=   ggrd_mat_control
+	      ggrd_mat_control < 0 --> assign to layers with ilayer ==  -ggrd_mat_control
+
+	*/
+	input_int("ggrd_mat_control",&(E->control.ggrd.mat_control),"0",m); 
+	input_boolean("ggrd_mat_limit_prefactor",&(E->control.ggrd_mat_limit_prefactor),"on",m); /* limit prefactor to with 1e+/-5 */
+	input_string("ggrd_mat_file",E->control.ggrd.mat_file,"",m); /* file to read prefactors from */
+	input_string("ggrd_mat_depth_file",
+		     E->control.ggrd_mat_depth_file,"_i_do_not_exist_",m); 
 #endif
 
 	E->control.transT670 = 1500;

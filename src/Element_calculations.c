@@ -167,7 +167,10 @@ void get_elt_k(struct All_variables *E, int el, double elt_k[24 * 24], int lev, 
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
     if(E->viscosity.allow_anisotropic_viscosity){
       /* allow for a possibly anisotropic viscosity, only used if switched on */
-      get_constitutive(D[k],lev,off,rtf[1][k],rtf[2][k],(E->control.Rsphere),E);
+      get_constitutive(D[k],rtf[1][k],rtf[2][k],(E->control.Rsphere),
+		       E->EVIn1[lev][off], E->EVIn2[lev][off], E->EVIn3[lev][off],
+		       E->EVI2[lev][off],E->avmode[lev][off],
+		       E);
     }
 #endif
   }
@@ -994,7 +997,9 @@ void get_elt_g(struct All_variables *E, int el, higher_precision elt_del[24][1],
     weight = 1./(2.*vpts);
     for(i=1;i <= vpts;i++){
       off = (el-1)*vpts+i;
-      get_constitutive(Dtmp,lev,off,rtf2[1][i],rtf2[2][i],(E->control.Rsphere),E);
+      get_constitutive(Dtmp,rtf2[1][i],rtf2[2][i],(E->control.Rsphere),
+		       E->EVIn1[lev][off], E->EVIn2[lev][off], E->EVIn3[lev][off],
+		       E->EVI2[lev][off],E->avmode[lev][off],E);
       for(j=0;j<6;j++)
 	for(k=0;k<6;k++)
 	  Duse[j][k] += Dtmp[j][k]*weight;

@@ -7,7 +7,7 @@
 #define CITCOM_ANIVISC_ALIGN_WITH_ISA 1
 #define CITCOM_ANIVISC_MIXED_ALIGN 2
 
-void get_constitutive(double [6][6], int, int, double, double, int, struct All_variables *);
+void get_constitutive(double [6][6], double, double, int, float,float,float,float,int,struct All_variables *);
 void get_constitutive_ti_viscosity(double [6][6], double, double, double [3], int, double, double);
 void get_constitutive_orthotropic_viscosity(double [6][6], double, double [3], int, double, double);
 void get_constitutive_isotropic(double [6][6]);

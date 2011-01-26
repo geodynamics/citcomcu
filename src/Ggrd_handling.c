@@ -134,7 +134,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.temp.gfile, 
 					  char_dummy,"",E->control.ggrd_ss_grd,
 					  (E->parallel.me==0),
-					  FALSE))
+					  FALSE,FALSE))
 	      myerror("grdtrack x-z init error",E);
 	  }else{		/* several slab slices */
 	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
@@ -142,7 +142,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
 					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
 					    (E->parallel.me==0),
-					    FALSE))
+					    FALSE,FALSE))
 		myerror("grdtrack x-z init error",E);
 	    }
 	  }
@@ -150,7 +150,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.temp.gfile, 
 					E->control.ggrd.temp.dfile,"",
 					E->control.ggrd.temp.d,(E->parallel.me==0),
-					FALSE))
+					FALSE,FALSE))
 	    myerror("grdtrack 3-D init error",E);
 	}
 
@@ -387,7 +387,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.comp.gfile, 
 					  char_dummy,"",E->control.ggrd_ss_grd,
 					  (E->parallel.me==0),
-					  FALSE))
+					  FALSE,FALSE))
 	      myerror("grdtrack x-z init error",E);
 	  }else{		/* several slab slices */
 	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
@@ -395,7 +395,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
 					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
 					    (E->parallel.me==0),
-					    FALSE))
+					    FALSE,FALSE))
 		myerror("grdtrack x-z init error",E);
 	    }
 	  }
@@ -405,7 +405,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 					E->control.ggrd.comp.dfile,"",
 					E->control.ggrd.comp.d,
 					/* (E->parallel.me==0)*/
-					FALSE,FALSE))
+					FALSE,FALSE,FALSE))
 	    myerror("grdtrack init error",E);
 	}
 	if(E->parallel.me <  E->parallel.nproc-1){
@@ -537,6 +537,265 @@ int in_slab_slice(float coord, int slice, struct All_variables *E)
   }
 }
 
+
+/*
+
+
+read in material, i.e. viscosity prefactor from ggrd file, this will
+get assigned for all nodes if their 
+
+layer <=  E->control.ggrd.mat_control for  E->control.ggrd.mat_control > 0
+
+or 
+
+layer ==  -E->control.ggrd.mat_control for  E->control.ggrd.mat_control < 0
+
+
+the grd model can be 2D (a layer in itself), or 3D (a model with
+several layers)
+
+*/
+void ggrd_read_mat_from_file(struct All_variables *E)
+{
+  MPI_Status mpi_stat;
+  int mpi_rc,timedep,interpolate;
+  int mpi_inmsg, mpi_success_message = 1;
+  int el,i,j,k,inode,i1,i2,elxlz,elxlylz,ind;
+  int llayer,nox,noy,noz,level,lselect,idim,elx,ely,elz;
+  char gmt_string[10],char_dummy;
+  double indbl,indbl2,age,f1,f2,vip,xloc[4];
+  float rout[4];
+  char tfilename[1000];
+  static ggrd_boolean shift_to_pos_lon = FALSE;
+  const int dims=E->mesh.nsd;
+  const int ends = enodes[dims];
+  FILE *in;
+
+  nox=E->mesh.nox;noy=E->mesh.noy;noz=E->mesh.noz;
+  elx=E->lmesh.elx;elz=E->lmesh.elz;ely=E->lmesh.ely;
+  elxlz = elx * elz;
+  elxlylz = elxlz * ely;
+
+  /*
+     if we have not initialized the time history structure, do it now
+  */
+  if(!E->control.ggrd.time_hist.init){
+    /*
+       init times, if available
+    */
+    ggrd_init_thist_from_file(&E->control.ggrd.time_hist,
+			      E->control.ggrd.time_hist.file,TRUE,(E->parallel.me == 0));
+    E->control.ggrd.time_hist.init = 1;
+  }
+  /* time dependent? */
+  timedep = (E->control.ggrd.time_hist.nvtimes > 1)?(1):(0);
+  if(!E->control.ggrd.mat_control_init){
+    sprintf(gmt_string,"");
+    /*
+
+    initialization steps
+
+    */
+    if(E->parallel.me > 0)	/* wait for previous processor */
+      mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1),
+			0,  MPI_COMM_WORLD, &mpi_stat);
+    /*
+       read in the material file(s)
+    */
+    E->control.ggrd.mat = (struct  ggrd_gt *)calloc(E->control.ggrd.time_hist.nvtimes,sizeof(struct ggrd_gt));
+    /* 
+       is this 3D?
+    */
+    if((in = fopen(E->control.ggrd_mat_depth_file,"r"))!=NULL) /* expect 3D setup */
+      E->control.ggrd_mat_is_3d = TRUE;
+    else
+      E->control.ggrd_mat_is_3d = FALSE;
+
+    if(E->parallel.me==0)
+      if(E->control.ggrd.mat_control > 0)
+	fprintf(stderr,"ggrd_read_mat_from_file: initializing, assigning to all above %g km, input is %s, %s\n",
+		E->monitor.length_scale/1000*E->viscosity.zbase_layer[E->control.ggrd.mat_control-1],
+		"regional",(E->control.ggrd_mat_is_3d)?("3D"):("single layer"));
+      else
+	fprintf(stderr,"ggrd_read_mat_from_file: initializing, assigning to single layer at %g km, input is %s, %s\n",
+		E->monitor.length_scale/1000*E->viscosity.zbase_layer[-E->control.ggrd.mat_control-1],
+		"regional",(E->control.ggrd_mat_is_3d)?("3D"):("single layer"));
+
+    for(i=0;i < E->control.ggrd.time_hist.nvtimes;i++){
+      if(!timedep)		/* constant */
+	sprintf(tfilename,"%s",E->control.ggrd.mat_file);
+      else{
+	if(E->control.ggrd_mat_is_3d)
+	  sprintf(tfilename,"%s/%i/weak",E->control.ggrd.mat_file,i+1);
+	else
+	  sprintf(tfilename,"%s/%i/weak.grd",E->control.ggrd.mat_file,i+1);
+      }
+      if(ggrd_grdtrack_init_general(E->control.ggrd_mat_is_3d,tfilename,E->control.ggrd_mat_depth_file,
+				    gmt_string,(E->control.ggrd.mat+i),(E->parallel.me == 0),FALSE,FALSE))
+	myerror("ggrd init error",E);
+    }
+    if(E->parallel.me <  E->parallel.nproc-1){ /* tell the next proc to go ahead */
+      mpi_rc = MPI_Send(&mpi_success_message, 1,
+			MPI_INT, (E->parallel.me+1), 0, MPI_COMM_WORLD);
+    }else{
+      fprintf(stderr,"ggrd_read_mat_from_file: last processor done with ggrd mat init\n");
+      fprintf(stderr,"ggrd_read_mat_from_file: WARNING: assuming a regular grid geometry\n");
+    }
+
+    /* end init */
+  }
+  if(timedep || (!E->control.ggrd.mat_control_init)){
+    age =  E->monitor.elapsed_time*E->monitor.time_scale_ma;
+    if(E->parallel.me == 0)
+      fprintf(stderr,"ggrd_read_mat_from_file: assigning at age %g\n",age);
+    if(timedep){
+      ggrd_interpol_time(age,&E->control.ggrd.time_hist,&i1,&i2,&f1,&f2,
+			 E->control.ggrd.time_hist.vstage_transition);
+      interpolate = 1;
+    }else{
+      interpolate = 0;
+      i1 = 0;
+    }
+    /*
+       loop through all elements and assign
+    */
+    for (j=1;j <= elz;j++)  {	/* this assumes a regular grid sorted as in (1)!!! */
+      if(((E->control.ggrd.mat_control > 0) && (E->mat[j] <=  E->control.ggrd.mat_control )) || 
+	 ((E->control.ggrd.mat_control < 0) && (E->mat[j] == -E->control.ggrd.mat_control ))){
+	/*
+	  lithosphere or asthenosphere
+	  */
+	for (k=1;k <= ely;k++){
+	  for (i=1;i <= elx;i++)   {
+	    /* eq.(1) */
+	    el = j + (i-1) * elz + (k-1)*elxlz;
+	    /*
+	      find average horizontal coordinate
+	    */
+	    if(E->control.CART3D){ /* cartesian */
+	      rout[0]=rout[1]=rout[2]=0.0;
+	      for(inode=1;inode <= ends;inode++){
+		ind = E->ien[el].node[inode];
+		rout[0] += E->X[1][ind];
+		rout[1] += E->X[2][ind];
+		rout[2] += E->X[3][ind];
+	      }
+	      rout[0]/=ends;rout[1]/=ends;rout[2]/=ends;
+	      if(E->control.ggrd_mat_is_3d){
+		if(!ggrd_grdtrack_interpolate_xyz((double)rout[0],(double)rout[1],(double)rout[2],
+						  (E->control.ggrd.mat+i1),&indbl,
+						  FALSE)){
+		  fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at x: %g y: %g z: %g\n",rout[0],rout[1],rout[2]);
+		  parallel_process_termination();
+		}
+	      }else{
+		if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],(E->control.ggrd.mat+i1),&indbl,
+						 FALSE)){
+		  fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at x: %g y: %g\n",rout[0],rout[1]);
+		  parallel_process_termination();
+		}
+	      }
+	      if(interpolate){
+		if(E->control.ggrd_mat_is_3d){
+		  if(!ggrd_grdtrack_interpolate_xyz((double)rout[0],(double)rout[1],(double)rout[2],
+						    (E->control.ggrd.mat+i2),&indbl2,
+						    FALSE)){
+		    fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at x: %g y: %g z: %g\n",
+			    rout[0],rout[1],rout[2]);
+		    parallel_process_termination();
+		  }
+		}else{
+		  if(!ggrd_grdtrack_interpolate_xy((double)rout[0],(double)rout[1],(E->control.ggrd.mat+i2),&indbl2,FALSE)){
+		    fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at x: %g y: %g\n",
+			    rout[0],rout[1]);
+		    parallel_process_termination();
+		  }
+		}
+	      }
+	    }else{		/* spherical */
+	      xloc[1] = xloc[2] = xloc[3] = 0.0;
+	      for(inode=1;inode <= ends;inode++){
+		ind = E->ien[el].node[inode];
+		xloc[1] += E->SX[1][ind];xloc[2] += E->SX[2][ind];xloc[3] += E->SX[3][ind];
+	      }
+	      xloc[1]/=ends;xloc[2]/=ends;xloc[3]/=ends;
+	      xyz2rtp(xloc[1],xloc[2],xloc[3],rout);
+	      /* 
+		 material 
+	      */
+	      if(E->control.ggrd_mat_is_3d){
+		if(!ggrd_grdtrack_interpolate_rtp((double)rout[0],(double)rout[1],(double)rout[2],
+						  (E->control.ggrd.mat+i1),&indbl,
+						  FALSE,shift_to_pos_lon)){
+		  fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g depth: %g\n",
+			  rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0);
+		  parallel_process_termination();
+		}
+	      }else{
+		if(!ggrd_grdtrack_interpolate_tp((double)rout[1],(double)rout[2],(E->control.ggrd.mat+i1),&indbl,
+						 FALSE,shift_to_pos_lon)){
+		  fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g\n",
+			  rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+		  parallel_process_termination();
+		}
+	      }
+	      if(interpolate){
+		if(E->control.ggrd_mat_is_3d){
+		  if(!ggrd_grdtrack_interpolate_rtp((double)rout[0],(double)rout[1],(double)rout[2],
+						    (E->control.ggrd.mat+i2),&indbl2,
+						    FALSE,shift_to_pos_lon)){
+		    fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g depth: %g\n",
+			    rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0);
+		    parallel_process_termination();
+		  }
+		}else{
+		  if(!ggrd_grdtrack_interpolate_tp((double)rout[1],(double)rout[2],
+						   (E->control.ggrd.mat+i2),&indbl2,
+						   FALSE,shift_to_pos_lon)){
+		    fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g\n",
+			    rout[2]*180/M_PI,90-rout[1]*180/M_PI);
+		    parallel_process_termination();
+		  }
+		}
+	      }
+	    } /* end spherical */
+	    
+	    if(interpolate){
+	      /* average smoothly between the two tectonic stages */
+	      vip = exp((f1*log(indbl)+f2*log(indbl2)));
+	    }else{
+	      vip = indbl;
+	    }
+	    if(E->control.ggrd_mat_limit_prefactor){
+	      /* limit the input scaling? */
+	      if(vip < 1e-5)
+		vip = 1e-5;
+	      if(vip > 1e5)
+		vip = 1e5;
+	    }
+	    //fprintf(stderr,"lon %11g lat %11g depth %11g vip %11g\n",rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0,vip);
+	    E->VIP[el] = vip;
+	  }
+	}
+      }else{
+	/* outside the lithosphere */
+	for (k=1;k <= ely;k++){
+	  for (i=1;i <= elx;i++)   {
+	    el = j + (i-1) * elz + (k-1)*elxlz;
+	    /* no scaling else */
+	    E->VIP[el] = 1.0;
+	  }
+	}
+      }
+    }	/* end elz loop */
+  } /* end assignment loop */
+  if((!timedep) && (!E->control.ggrd.mat_control_init)){			/* forget the grid */
+    ggrd_grdtrack_free_gstruc(E->control.ggrd.mat);
+  }
+  E->control.ggrd.mat_control_init = 1;
+} /* end mat control */
+
+
 /* 
 
 solve a eigenproblem for a symmetric [3][3] matrix (which will not be
@@ -654,7 +913,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
   /* viscosity factor */
   sprintf(tfilename,"%s/vis2.grd",E->viscosity.anisotropic_init_dir);
   if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
-				vis2_grd,(E->parallel.me == 0),FALSE))
+				vis2_grd,(E->parallel.me == 0),FALSE,FALSE))
     myerror("ggrd init error",E);
   /* n_r */
   if(E->control.CART3D)
@@ -663,7 +922,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
     sprintf(tfilename,"%s/nr.grd",E->viscosity.anisotropic_init_dir);
 
   if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
-				nr_grd,(E->parallel.me == 0),FALSE))
+				nr_grd,(E->parallel.me == 0),FALSE,FALSE))
     myerror("ggrd init error",E);
   if(E->control.CART3D)
     /* n_theta */
@@ -672,7 +931,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
     sprintf(tfilename,"%s/nt.grd",E->viscosity.anisotropic_init_dir);
 
   if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
-				ntheta_grd,(E->parallel.me == 0),FALSE))
+				ntheta_grd,(E->parallel.me == 0),FALSE,FALSE))
     myerror("ggrd init error",E);
   if(E->control.CART3D)
   /* n_phi */
@@ -681,7 +940,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
     sprintf(tfilename,"%s/np.grd",E->viscosity.anisotropic_init_dir);
 
   if(ggrd_grdtrack_init_general(FALSE,tfilename,"",gmt_string,
-				nphi_grd,(E->parallel.me == 0),FALSE))
+				nphi_grd,(E->parallel.me == 0),FALSE,FALSE))
     myerror("ggrd init error",E);
 
   /* done */

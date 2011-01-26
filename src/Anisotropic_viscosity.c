@@ -22,9 +22,23 @@ void calc_cbase_at_tp_d(double , double , double *);
 #define CITCOM_DELTA(i,j) ((i==j)?(1.0):(0.0))
 void ggrd_read_anivisc_from_file(struct All_variables *);
 
-void get_constitutive(double D[6][6], int lev, 
-		      int off, double theta, double phi, 
+/* 
+
+output: D[6][6]
+
+input: n[3] director
+       vis2: anisotropy factor
+       avmode: anisotropy mode
+       convert_to_spherical: 1/0 depending on geometry
+       theta, phi : coordinates for conversion
+       
+       
+ */
+void get_constitutive(double D[6][6],double theta, double phi, 
 		      int convert_to_spherical,
+		      float nx,float ny,float nz,
+		      float vis2,
+		      int avmode,
 		      struct All_variables *E)
 {
   double n[3];
@@ -39,24 +53,19 @@ void get_constitutive(double D[6][6], int lev,
       /* 
 	 allow for a possibly anisotropic viscosity 
       */
-      n[0] =  E->EVIn1[lev][off];
-      n[1] =  E->EVIn2[lev][off];
-      n[2] =  E->EVIn3[lev][off]; /* Cartesian directors */
-      if(E->avmode[lev][off] == CITCOM_ANIVISC_ORTHO_MODE){ 
+      n[0] =  nx;n[1] =  ny;n[2] =  nz; /* Cartesian directors */
+      if(avmode == CITCOM_ANIVISC_ORTHO_MODE){ 
 	/* 
 	   orthotropic 
 	*/
-	get_constitutive_orthotropic_viscosity(D,E->EVI2[lev][off],
-					       n,convert_to_spherical,theta,phi); 
-      }else if(E->avmode[lev][off] == CITCOM_ANIVISC_TI_MODE){
+	get_constitutive_orthotropic_viscosity(D,vis2,n,convert_to_spherical,theta,phi); 
+      }else if(avmode == CITCOM_ANIVISC_TI_MODE){
 	/* 
 	   transversely isotropic 
 	*/
-	get_constitutive_ti_viscosity(D,E->EVI2[lev][off],0.,
-				      n,convert_to_spherical,
-				      theta,phi); 
+	get_constitutive_ti_viscosity(D,vis2,0.,n,convert_to_spherical,theta,phi); 
       }
-      //if(E->EVI2[lev][off] != 0) print_6x6_mat(stderr,D); 
+      //if(vis2 != 0) print_6x6_mat(stderr,D); 
     }
   }else{
     get_constitutive_isotropic(D);
@@ -244,10 +253,10 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
     /* initialize anisotropic viscosity at element level, nodes will
        get assigned later */
     switch(E->viscosity.anisotropic_init){
+    case 0:			/* isotropic */
     case 3:			/* first init for vel */
     case 4:			/* ISA */
     case 5:			/* same for mixed alignment */
-    case 0:			/* isotropic */
       if(E->parallel.me == 0)fprintf(stderr,"set_anisotropic_viscosity_at_element_level: initializing isotropic viscosity\n");
       for(i=E->mesh.levmin;i <= E->mesh.levmax;i++){
 	nel  = E->lmesh.NEL[i];

@@ -399,9 +399,11 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 				}
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
 			if(E->viscosity.allow_anisotropic_viscosity){ /* general anisotropic */
-      
 			  l1 = (e-1)*vpts+i;
-			  get_constitutive(D,E->mesh.levmax,l1,rtf[1][i],rtf[2][i],(E->control.Rsphere),E);
+			  get_constitutive(D,rtf[1][i],rtf[2][i],(E->control.Rsphere),
+					   E->EVIn1[E->mesh.levmax][l1],E->EVIn2[E->mesh.levmax][l1], 
+					   E->EVIn3[E->mesh.levmax][l1],E->EVI2[E->mesh.levmax][l1],
+					   E->avmode[E->mesh.levmax][l1],E);
 			  eps[0] = Vxx[i];
 			  eps[1] = Vyy[i];
 			  eps[2] = Vzz[i];
