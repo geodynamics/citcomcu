@@ -108,7 +108,8 @@ void output_velo_related_gzdir(E, file_number)
   /* make a directory */
   if(E->parallel.me == 0){
     fprintf(stderr,"Output_gzdir: output directory");
-    sprintf(output_file,"if [ ! -s %s/%d ];then mkdir -p %s/%d;fi 2> /dev/null",
+    //sprintf(output_file,"if [ ! -s %s/%d ];then mkdir -p %s/%d;fi 2> /dev/null",
+    sprintf(output_file,"if [ ! -s %s/%d/ ];then mkdir -p %s/%d/;fi ",
 	    E->control.data_file2,file_number,E->control.data_file2,file_number);
     fprintf(stderr," %s...",output_file);
     system(output_file);
