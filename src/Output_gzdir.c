@@ -87,9 +87,6 @@ void output_velo_related_gzdir(E, file_number)
   static int been_here = 0;
   float vs;
   static int vtk_base_init = 0;	/* for spherical */
-  const int vtk_pressure_out = 1,
-    vtk_vgm_out = 1,
-    vtk_viscosity_out = 1;
   int vtk_comp_out;
 
   const int dims = E->mesh.nsd;
@@ -121,14 +118,8 @@ void output_velo_related_gzdir(E, file_number)
 
   if(been_here == 0){
     /* 
-       switch off composition, if not needed
-    */
-    if(!E->control.composition)
-      vtk_comp_out = 0;
-
-    /* 
        
-    initial nodeal coordinate output 
+    initial nodal coordinate output 
     
     */
     if(E->control.COMPRESS){
@@ -332,7 +323,7 @@ void output_velo_related_gzdir(E, file_number)
 	  }
 	}
 	gzclose(gzout);
-	if(vtk_pressure_out){
+	if(E->control.vtk_pressure_out){
 	  /* 
 	     pressure at nodes 
 	  */
@@ -345,7 +336,7 @@ void output_velo_related_gzdir(E, file_number)
 	    gzprintf(gzout,"%.6e\n",E->NP[i]);
 	  gzclose(gzout);
 	}
-	if(vtk_vgm_out){
+	if(E->control.vtk_vgm_out){
 	  /* 
 	     
 	     print velocity gradient matrix  and ISA
@@ -432,7 +423,7 @@ void output_velo_related_gzdir(E, file_number)
 	  gzclose(gzout);
 	}
 	
-	if(vtk_viscosity_out){
+	if(E->control.vtk_viscosity_out){
 	  /* 
 	     
 	     viscosity output

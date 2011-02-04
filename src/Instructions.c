@@ -776,6 +776,12 @@ void read_initial_settings(struct All_variables *E)
 #ifdef USE_GZDIR
 	input_boolean("gzdir",&(E->control.gzdir),"on",m);
 #endif
+	/* control of VTK type of gzdir output */
+	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"on",m);
+	input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
+	input_boolean("vtk_viscosity_out",&(E->control.vtk_viscosity_out),"on",m);
+
+
 	input_string("use_scratch", tmp_string, "local", m);
 	if(strcmp(tmp_string, "local") == 0)
 		strcpy(E->control.data_file2, E->control.data_file);

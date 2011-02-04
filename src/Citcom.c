@@ -94,9 +94,11 @@ int main(int argc, char **argv)
 		fprintf(E.fp, "Initialization overhead = %f\n", initial_time);
 		initial_time = CPU_time0();
 	}
-
+	//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
 	general_stokes_solver(&E);
+	//if(E.parallel.me == 0)fprintf(stderr,"processing temp\n");
 	process_temp_field(&E, E.monitor.solution_cycles);
+	//if(E.parallel.me == 0)fprintf(stderr,"processing vel\n");
 	process_new_velocity(&E, E.monitor.solution_cycles);
 
 	if(E.control.stokes)
@@ -113,18 +115,22 @@ int main(int argc, char **argv)
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
 			E.control.print_convergence = 1;
-		// if(E.parallel.me == 0)fprintf(stderr,"processing buoyancy\n");
+		//if(E.parallel.me == 0)fprintf(stderr,"processing buoyancy\n");
 		 /**/ report(&E, "Update buoyancy for further `timesteps'");
 		(E.next_buoyancy_field) (&E);
 		//if(E.parallel.me == 0)fprintf(stderr,"processing temp\n");
 		 /**/ report(&E, "Process results of buoyancy update");
 		process_temp_field(&E, E.monitor.solution_cycles);
-		//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
 
+		//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
+		
 		general_stokes_solver(&E);
 	
-		if(E.control.composition)
-			(E.next_buoyancy_field) (&E);	/* correct with R-G */
+		if(E.control.composition){
+		  //if(E.parallel.me == 0)fprintf(stderr,"composition, update buoyancy with R-G\n");
+		  (E.next_buoyancy_field) (&E);	/* correct with R-G */
+		}
+		//if(E.parallel.me == 0)fprintf(stderr,"processing new velocity\n");
 		 /**/ report(&E, "Process results of velocity solver");
 		process_new_velocity(&E, E.monitor.solution_cycles);
 

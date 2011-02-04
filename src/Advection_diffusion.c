@@ -143,6 +143,7 @@ void PG_timestep_particle(struct All_variables *E)
 
 	if(on_off == 0)
 	{
+	  //if(E->parallel.me == 0)fprintf(stderr,"PGp: std advect\n");
 		E->advection.timesteps++;
 		std_timestep(E);
 		E->advection.total_timesteps++;
@@ -150,10 +151,12 @@ void PG_timestep_particle(struct All_variables *E)
 
 	if(on_off == 1)
 	{
+	  //if(E->parallel.me == 0)fprintf(stderr,"PGp: RK\n");
 		Runge_Kutta(E, E->C, E->V, on_off);
 	}
 	else if(on_off == 0)
 	{
+	  //if(E->parallel.me == 0)fprintf(stderr,"PGp: main\n");
 		for(i = 1; i <= E->lmesh.nno; i++)
 		{
 			T1[i] = E->T[i];
@@ -178,10 +181,12 @@ void PG_timestep_particle(struct All_variables *E)
 
 			if(E->advection.ADVECTION)
 			{
+			  //if(E->parallel.me == 0)fprintf(stderr,"PGp: advect predict\n");
 				predictor(E, E->T, E->Tdot);
 
 				for(psc_pass = 0; psc_pass < E->advection.temp_iterations; psc_pass++)
 				{
+				  //if(E->parallel.me == 0)fprintf(stderr,"PGp: advect correct\n");
 					pg_solver(E, E->T, E->Tdot, DTdot, E->V, E->convection.heat_sources, 1.0, 1, E->TB, E->node);
 					corrector(E, E->T, E->Tdot, DTdot);
 				}
@@ -200,7 +205,7 @@ void PG_timestep_particle(struct All_variables *E)
 				E->advection.dt_reduced *= 0.5;
 				E->advection.last_sub_iterations++;
 			}
-
+			//if(E->parallel.me == 0)fprintf(stderr,"PGp: main iter %i\n",E->advection.last_sub_iterations);
 		} while(iredo == 1 && E->advection.last_sub_iterations <= 5);
 
 
@@ -208,13 +213,13 @@ void PG_timestep_particle(struct All_variables *E)
 
 		temperatures_conform_bcs(E);
 		E->advection.last_sub_iterations = count;
-
-
+		
+		//if(E->parallel.me == 0)fprintf(stderr,"PGp: Euler %i\n",on_off);
 		Euler(E, E->C, E->V, on_off);
-	
+		//if(E->parallel.me == 0)fprintf(stderr,"PGp: Euler done\n");
 		E->monitor.elapsed_time += E->advection.timestep;
 	}							/* end for on_off==0  */
-
+	//if(E->parallel.me == 0)fprintf(stderr,"PGp: thermal\n");
 	thermal_buoyancy(E);
 	if(E->monitor.solution_cycles < E->advection.max_timesteps)
 		E->control.keep_going = 1;

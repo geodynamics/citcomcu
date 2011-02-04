@@ -524,9 +524,9 @@ void get_C_from_markers(struct All_variables *E, float *C)
 		}
 		E->CE[el] = temp3;
 	}
-
+	if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange\n");
 	exchange_node_f20(E, C, E->mesh.levmax);
-
+	if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange done\n");
 	for(node = 1; node <= nno; node++)
 	{
 		C[node] = C[node] * E->Mass[node];

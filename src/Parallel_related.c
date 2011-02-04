@@ -1181,7 +1181,7 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 		}
 		been_here++;
 	}
-
+	//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok1 \n");
 	for(i = 1; i <= E->mesh.nsd; i++)
 	{
 		idb = 0;
@@ -1210,13 +1210,14 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 					MPI_Irecv(R[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_FLOAT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 				}
 			}					/* for k */
-
+		//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok2 \n");
 		MPI_Waitall(idb, request, status);
 
-		for(k = 1; k <= 2; k++)
+		for(k = 1; k <= 2; k++){
 			if(E->parallel.NUM_PASS[levmax].bound[i][k])
 			{
 				target_proc = E->parallel.PROCESSOR[lev].pass[i][k];
+				//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: t %3i i am %3i \n",target_proc,E->parallel.me);
 				if(target_proc != E->parallel.me)
 				{
 					for(j = 1; j <= E->parallel.NUM_NODE[lev].pass[i][k]; j++)
@@ -1230,8 +1231,10 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 					for(j = 1; j <= E->parallel.NUM_NODE[lev].pass[i][k]; j++)
 						U[E->parallel.EXCHANGE_NODE[lev][j].pass[i][k]] += S[kk][j - 1];
 				}
+				//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok\n");
 			}					/* for k */
-
+		}
+		//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok3 \n");
 	}							/* for dim */
 
 	return;
