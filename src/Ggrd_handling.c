@@ -86,8 +86,8 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   /* top and bottom temperatures for initial assign (only use if
      temperatures are set, else defaults */
-  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 0.0;
-  top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 1.0;
+  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 1.0;
+  top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 0.0;
 
   for(i=1;i<=E->lmesh.nno;i++) {
     /* init as zeros */
