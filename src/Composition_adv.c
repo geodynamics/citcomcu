@@ -399,8 +399,8 @@ void prepare_transfer_arrays(struct All_variables *E)
 	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	{
 		k1 = k2 = k3 = 0;
-		if((E->parallel.me==0) && (E->monitor.solution_cycles>199))
-		  //fprintf(stderr,"ta %i %i %i - %i %i - %i %i %i \n",neighbor, E->parallel.no_neighbors,E->parallel.traces_transfer_number[neighbor],E->parallel.traces_transfer_number[neighbor]*6,E->parallel.traces_transfer_number[neighbor]*2,E->advection.markers / 10 ,(E->advection.markers / 10 + 1) * E->mesh.nsd * 2  ,(E->advection.markers / 10 + 1) *2);
+		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))
+		//fprintf(stderr,"ta %i %i %i - %i %i - %i %i %i \n",neighbor, E->parallel.no_neighbors,E->parallel.traces_transfer_number[neighbor],E->parallel.traces_transfer_number[neighbor]*6,E->parallel.traces_transfer_number[neighbor]*2,E->advection.markers / 10 ,(E->advection.markers / 10 + 1) * E->mesh.nsd * 2  ,(E->advection.markers / 10 + 1) *2);
 		for(j = 0; j < E->parallel.traces_transfer_number[neighbor]; j++)
 		{
 			part = E->parallel.traces_transfer_index[neighbor][j];
@@ -524,9 +524,9 @@ void get_C_from_markers(struct All_variables *E, float *C)
 		}
 		E->CE[el] = temp3;
 	}
-	if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange\n");
+	//if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange\n");
 	exchange_node_f20(E, C, E->mesh.levmax);
-	if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange done\n");
+	//if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange done\n");
 	for(node = 1; node <= nno; node++)
 	{
 		C[node] = C[node] * E->Mass[node];

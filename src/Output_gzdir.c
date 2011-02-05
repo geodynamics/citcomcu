@@ -633,7 +633,7 @@ void output_velo_related_gzdir(E, file_number)
       }
     }
 
-  if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
+  //if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
   parallel_process_sync();
 
   return;
