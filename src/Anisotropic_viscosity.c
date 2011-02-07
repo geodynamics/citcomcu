@@ -67,16 +67,23 @@ void get_constitutive(double D[6][6],double theta, double phi,
 	 allow for a possibly anisotropic viscosity 
       */
       n[0] =  nx;n[1] =  ny;n[2] =  nz; /* Cartesian directors */
-      if(avmode == CITCOM_ANIVISC_ORTHO_MODE){ 
+      switch(avmode){
+      case  CITCOM_ANIVISC_ORTHO_MODE:
 	/* 
 	   orthotropic 
 	*/
 	get_constitutive_orthotropic_viscosity(D,vis2,n,convert_to_spherical,theta,phi); 
-      }else if(avmode == CITCOM_ANIVISC_TI_MODE){
+	break;
+      case CITCOM_ANIVISC_TI_MODE:
 	/* 
 	   transversely isotropic 
 	*/
 	get_constitutive_ti_viscosity(D,vis2,0.,n,convert_to_spherical,theta,phi); 
+	break;
+      default:
+	fprintf(stderr,"avmode %i\n",avmode);
+	myerror_s("get_constitutive: error, avmode undefined",E);
+	break;
       }
       //if(vis2 != 0) print_6x6_mat(stderr,D); 
     }
@@ -262,7 +269,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
 #ifdef CitcomS_global_defs_h	/* CitcomS */
   mgmin = E->mesh.gridmin;
   mgmax = E->mesh.gridmax;
-#else  /* CU */
+#else  /* Citcom CU */
   mgmin = E->mesh.levmin;
   mgmax = E->mesh.levmax;
 #endif
@@ -310,6 +317,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
 	}
       }
 #endif
+      /* isotropic init end */
       break;
     case 1:
       /* 
@@ -340,15 +348,16 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E, int ini
 	      E->EVI2[i][m][off] = vis2;E->EVIn1[i][m][off] = n[0]; E->EVIn2[i][m][off] = n[1];E->EVIn3[i][m][off] = n[2];
 	      E->avmode[i][m][off] = (unsigned char)E->viscosity.allow_anisotropic_viscosity;
 #else
-	      E->EVI2[i][off] = vis2;E->EVIn1[i][off] = n[0]; E->EVIn2[i][off] = n[1];E->EVIn3[i][off] = n[2];
+	      E->EVI2[i][off] = vis2;   E->EVIn1[i][off] = n[0];    E->EVIn2[i][off] = n[1];   E->EVIn3[i][off] = n[2];
 	      E->avmode[i][off] = (unsigned char)E->viscosity.allow_anisotropic_viscosity;
 #endif
 	    }
 	  }
-#ifdef CitcomS_global_defs_h	/* CitcomS */
+#ifdef CitcomS_global_defs_h	/* CitcomS m loop*/
 	}
 #endif
-      }
+      }	/* mg loop */
+      /* end random init */
       break;
     case 2:			/* from file */
 #ifndef USE_GGRD	
