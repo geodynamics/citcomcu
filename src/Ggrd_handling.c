@@ -163,7 +163,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
 			    (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
 	}else{
-	  fprintf(stderr,"convection_initial_temperature: last processor done with grd init\n");
+	  fprintf(stderr,"convection_initial_temperature: last processor done with temp grd init\n");
 	}
 	/* 
 	       
@@ -415,7 +415,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
 			    (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
 	}else{
-	  fprintf(stderr,"convection_initial_temperature: last processor done with grd init\n");
+	  fprintf(stderr,"convection_initial_temperature: last processor done comp with grd init\n");
 	}
 	for(i=1;i<=noy;i++)  
 	  for(j=1;j<=nox;j++) 
