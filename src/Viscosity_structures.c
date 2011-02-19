@@ -73,7 +73,6 @@ void viscosity_parameters(struct All_variables *E)
 		E->viscosity.T[i] = 0.0;
 		E->viscosity.Z[i] = 0.0;
 		E->viscosity.E[i] = 0.0;
-		E->viscosity.T0[i] = 0.0;
 
 		
 		/* 
@@ -145,7 +144,6 @@ void viscosity_parameters(struct All_variables *E)
 	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T),m);
 	input_float_vector("viscZ", E->viscosity.num_mat, (E->viscosity.Z),m);
 	input_float_vector("viscE", E->viscosity.num_mat, (E->viscosity.E),m);
-	input_float_vector("viscT0", E->viscosity.num_mat, (E->viscosity.T0),m);
 	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0),m);	/* redundant */
 	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0),m);
 
