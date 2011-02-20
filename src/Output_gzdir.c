@@ -94,7 +94,7 @@ void output_velo_related_gzdir(E, file_number)
   const int nno = E->mesh.nno;
   const int lev = E->mesh.levmax;
   const int ppts = ppoints[dims];
-
+  float *e2,*e2n;
   gzFile gzout;
 
   if(E->control.composition)
@@ -335,6 +335,24 @@ void output_velo_related_gzdir(E, file_number)
 	  for(i=1;i<=E->lmesh.nno;i++)          
 	    gzprintf(gzout,"%.6e\n",E->NP[i]);
 	  gzclose(gzout);
+	}
+	if(E->control.vtk_e2_out){
+	  /* 
+	     second invariant 
+	  */
+	  e2n = (float *)malloc((E->lmesh.nno + 10) * sizeof(float));
+	  e2 = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
+	  strain_rate_2_inv(E, e2, 1); /* compute strain rate for every element */
+	  e2_to_nodes(E, e2,e2n, E->mesh.levmax); /* project to nodes */
+	  sprintf(output_file,"%s/%d/e2inv.%d.%d.gz",E->control.data_file2,
+		  file_number, E->parallel.me,file_number);
+	  gzout = safe_gzopen(output_file,"w");
+	  gzprintf(gzout,"%d %d %13.6e\n",file_number,E->lmesh.nno,E->monitor.elapsed_time);
+	  gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	  for(i=1;i<=E->lmesh.nno;i++)          
+	    gzprintf(gzout,"%.6e\n",e2n[i]);
+	  gzclose(gzout);
+	  free(e2n);free(e2);
 	}
 	if(E->control.vtk_vgm_out){
 	  /* 

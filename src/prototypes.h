@@ -207,6 +207,7 @@ void dlogical_mesh_to_real(struct All_variables *, double *, int);
 void flogical_mesh_to_real(struct All_variables *, float *, int);
 void p_to_nodes(struct All_variables *, double *, float *, int);
 void p_to_centres(struct All_variables *, float *, double *, int);
+void e2_to_nodes(struct All_variables *, float *, float *, int );
 void v_to_intpts(struct All_variables *, float *, float *, int);
 void v_to_nodes(struct All_variables *, float *, float *, int);
 void visc_to_intpts(struct All_variables *, float *, float *, int);

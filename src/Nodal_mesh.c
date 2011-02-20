@@ -416,6 +416,23 @@ void p_to_nodes(struct All_variables *E, double *P, float *PN, int lev)
 
 	return;
 }
+void e2_to_nodes(struct All_variables *E, float *e2, float *e2n, int lev)
+{
+  int element, node, j;
+  
+  for(node = 1; node <= E->lmesh.NNO[lev]; node++)
+    e2n[node] = 0.0;
+  for(element = 1; element <= E->lmesh.NEL[lev]; element++){
+    for(j = 1; j <= enodes[E->mesh.nsd]; j++){
+      node = E->IEN[lev][element].node[j];
+      e2n[node] += e2[element] * E->TW[lev][node];
+    }
+  }
+  
+  exchange_node_f20(E, e2n, lev);
+  
+  return;
+}
 
 
 void p_to_centres(struct All_variables *E, float *PN, double *P, int lev)

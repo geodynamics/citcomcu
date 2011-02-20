@@ -821,7 +821,7 @@ struct CONTROL
 	int total_iteration_cycles;
 	int total_v_solver_calls;
 
-  int gzdir,vtk_pressure_out,vtk_vgm_out,vtk_viscosity_out;
+  int gzdir,vtk_pressure_out,vtk_vgm_out,vtk_viscosity_out,vtk_e2_out;
   
 	int record_every;
 	int record_all_until;

@@ -778,6 +778,7 @@ void read_initial_settings(struct All_variables *E)
 #endif
 	/* control of VTK type of gzdir output */
 	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"on",m);
+	input_boolean("vtk_e2_out",&(E->control.vtk_e2_out),"off",m);
 	input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
 	input_boolean("vtk_viscosity_out",&(E->control.vtk_viscosity_out),"on",m);
 
