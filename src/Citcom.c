@@ -110,29 +110,37 @@ int main(int argc, char **argv)
 
 	while(E.control.keep_going && (Emergency_stop == 0))
 	{
-	  //if(E.parallel.me == 0)fprintf(stderr,"processing heating\n");
+	  
+	  
 		process_heating(&E);
+		if(E.parallel.me==0)fprintf(stderr,"process heating done\n");
+		
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
 			E.control.print_convergence = 1;
-		//if(E.parallel.me == 0)fprintf(stderr,"processing buoyancy\n");
 		 /**/ report(&E, "Update buoyancy for further `timesteps'");
 		(E.next_buoyancy_field) (&E);
-		//if(E.parallel.me == 0)fprintf(stderr,"processing temp\n");
+		if(E.parallel.me==0)fprintf(stderr,"buoyancy field done\n");
+
 		 /**/ report(&E, "Process results of buoyancy update");
 		process_temp_field(&E, E.monitor.solution_cycles);
+  		if(E.parallel.me==0)fprintf(stderr,"temp field done\n");
 
-		//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
-		
-		general_stokes_solver(&E);
-	
-		if(E.control.composition){
-		  //if(E.parallel.me == 0)fprintf(stderr,"composition, update buoyancy with R-G\n");
-		  (E.next_buoyancy_field) (&E);	/* correct with R-G */
+		if(E.monitor.solution_cycles == E.control.freeze_surface_at_step){ /* for testing purposes */
+		  freeze_surface(&E);
 		}
-		//if(E.parallel.me == 0)fprintf(stderr,"processing new velocity\n");
+
+		general_stokes_solver(&E);
+		if(E.parallel.me==0)fprintf(stderr,"stokes solver done\n");
+
+		if(E.control.composition){
+		  (E.next_buoyancy_field) (&E);	/* correct with R-G */
+		  if(E.parallel.me==0)fprintf(stderr,"next buoyancy composition done\n");
+		}
 		 /**/ report(&E, "Process results of velocity solver");
 		process_new_velocity(&E, E.monitor.solution_cycles);
+		if(E.parallel.me==0)fprintf(stderr,"process new velocity done\n");
+
 
 		if(E.monitor.T_interior > E.monitor.T_interior_max)
 		{

@@ -107,7 +107,8 @@ SGIOPTIM=-O -fsingle
 LinuxFLAGS=
 LinuxLDFLAGS=
 #LinuxOPTIM=-g
-LinuxOPTIM=-O2
+#LinuxOPTIM=-O2
+LinuxOPTIM=-O2 -Wall -Wextra -pedantic -std=c99 -Wunused-function -D_GNU_SOURCE
 
 ####################################
 #PARAGON 
@@ -145,8 +146,11 @@ CFILES= Advection_diffusion.c\
 	Global_operations.c\
 	Stokes_flow_Incomp.c\
 	Instructions.c\
+	io.c \
 	Nodal_mesh.c\
 	Output.c\
+	output_ascii.c \
+	output_vtk.c \
 	Pan_problem_misc_functions.c\
 	Parallel_related.c\
 	Parsing.c\
@@ -241,9 +245,18 @@ Global_operations.o: $(HEADER) Global_operations.c
 Instructions.o: $(HEADER) Instructions.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Instructions.c
 	
+io.o: $(HEADER) io.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  io.c
+
 Nodal_mesh.o: $(HEADER) Nodal_mesh.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Nodal_mesh.c
 
+output_ascii.o: $(HEADER) output_ascii.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  output_ascii.c
+	
+output_vtk.o: $(HEADER) output_vtk.c
+	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  output_vtk.c
+	
 Output.o: $(HEADER) Output.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Output.c
 	

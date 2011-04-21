@@ -93,10 +93,12 @@ struct VISC_OPT
 
 	int SDEPV;
 	float sdepv_misfit;
+  int sdepv_rheology;
 	float sdepv_iter_damp;
 	int sdepv_normalize;
 	float sdepv_expt[CITCOM_CU_VISC_MAXLAYER];
 	float sdepv_trns[CITCOM_CU_VISC_MAXLAYER];
+  int sdepv_start_from_newtonian;
 
 	int TDEPV;
 	int TDEPV_AVE;
@@ -139,6 +141,8 @@ struct VISC_OPT
 
 
   int CDEPV;			/* composition dependent viscosity */
+  int cdepv_absolute;		/* make the composition an absolute viscosity,
+				   not a prefactor */
   float pre_comp[CITCOM_CU_VISC_MAXLAYER]; /* prefactors */
 
 

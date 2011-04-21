@@ -312,7 +312,6 @@ void project_scalar_e(struct All_variables *E, int start_lev, float *AU, float *
 	//float average, w;
 	float average;
 
-	//static int been_here = 0;
 
 	const int sl_minus = start_lev - 1;
 	const int nels_minus = E->lmesh.NEL[start_lev - 1];

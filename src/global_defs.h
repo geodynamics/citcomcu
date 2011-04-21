@@ -750,7 +750,7 @@ struct CONTROL
 	int CONMAN;
 	int stokes;
 
-
+  int freeze_surface_at_step;
 
   int check_t_irange,check_c_irange;
 

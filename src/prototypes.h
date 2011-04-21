@@ -40,6 +40,7 @@ void f_times_ft(double [3][3], double [3][3]);
 void drex_eigen(double [3][3], double [3][3], int *);
 void malmul_scaled_id(double [3][3], double [3][3], double, double);
 /* Boundary_conditions.c */
+void freeze_surface(struct All_variables *);
 void velocity_boundary_conditions(struct All_variables *);
 void temperature_boundary_conditions(struct All_variables *);
 void velocity_refl_vert_bc(struct All_variables *);
@@ -361,6 +362,7 @@ void apply_viscosity_smoother(struct All_variables *, float *, float *);
 void visc_from_mat(struct All_variables *, float *, float *);
 void visc_from_T(struct All_variables *, float *, float *, int);
 void visc_from_S(struct All_variables *, float *, float *, int);
+void visc_from_S2(struct All_variables *, float *, float *, int);
 void strain_rate_2_inv(struct All_variables *, float *, int);
 double second_invariant_from_3x3(double [3][3]);
 void calc_vgm_matrix(struct All_variables *, double *, double *);

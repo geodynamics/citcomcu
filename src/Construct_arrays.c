@@ -144,8 +144,6 @@ void construct_id(struct All_variables *E)
 	int elx, ely, elz;
 
 	const int dims = E->mesh.nsd;
-	//const int dofs = E->mesh.dof;
-	//const int ends = enodes[dims];
 
 	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
 	{
@@ -165,7 +163,7 @@ void construct_id(struct All_variables *E)
 				eqn_count += 1;
 			}
 		}
-
+	
 		E->lmesh.NEQ[lev] = eqn_count;
 
 		j1 = 1;
@@ -192,10 +190,10 @@ void construct_id(struct All_variables *E)
 						E->parallel.IDD[lev][E->ID[lev][node].doff[doff]] = 1;
 				}
 
+
 	}
 
 	E->lmesh.neq = E->lmesh.NEQ[E->mesh.levmax];	/*  Total NUMBER of independent variables  */
-
 
 	lev = E->mesh.levmax;
 	if(E->control.verbose)
@@ -282,7 +280,7 @@ void construct_lm(struct All_variables *E)
 void construct_node_maps(struct All_variables *E)
 {
 	//float initial_time;
-
+  static int been_here = 0;
 	//int el, n, nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke, dims2;
 	int nn, lev, i, j, k, ja, jj, ii, kk, ia, is, ie, js, je, ks, ke;
 	//int doff, nox, noy, noz, noxz, node1, eqn1, loc1, count, found, element;
@@ -342,15 +340,18 @@ void construct_node_maps(struct All_variables *E)
 								}
 							}
 				}
+		if(!been_here){	/* allow having this routine called more than once */
+		  E->Eqn_k1[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
+		  E->Eqn_k2[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
+		  if(dims == 3)
+		    E->Eqn_k3[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
 
-		E->Eqn_k1[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
-		E->Eqn_k2[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
-		if(dims == 3)
-			E->Eqn_k3[lev] = (higher_precision *) malloc((matrix + 5) * sizeof(higher_precision));
+		}
 
 		E->mesh.matrix_size[lev] = matrix + 1;
 	}							/* end for level and m */
 
+	been_here = 1;
 	return;
 }
 
@@ -364,7 +365,6 @@ void construct_node_ks(struct All_variables *E)
 	int neq, nno, nel;
 
 	double elt_K[24 * 24];
-	//static int been_here = 0;
 	double w1, w2, w3, ww1, ww2, ww3;
 
 	//higher_precision *B1, *B2, *B3;
@@ -846,7 +846,8 @@ void construct_stiffness_B_matrix(struct All_variables *E)
 				E->elt_k[i] = (struct EK *)malloc((E->lmesh.NEL[i] + 1) * sizeof(struct EK));
 			}
 	}
-	if(been_here0 == 0 || (E->viscosity.update_allowed && E->monitor.solution_cycles % E->control.KERNEL == 0))
+	if((been_here0 == 0) || (E->viscosity.update_allowed && E->monitor.solution_cycles % E->control.KERNEL == 0) ||
+	   (E->monitor.solution_cycles == E->control.freeze_surface_at_step) )
 	{
 		/* do the following for the 1st time or update_allowed is true */
 
@@ -857,8 +858,10 @@ void construct_stiffness_B_matrix(struct All_variables *E)
 
 		if(E->control.NMULTIGRID || E->control.NASSEMBLE)
 		{
-			if(been_here == 0)
+		  if((been_here == 0)||(E->monitor.solution_cycles == E->control.freeze_surface_at_step) )
 			{					/* node_maps only built once */
+			  if((E->parallel.me==0) && (E->monitor.solution_cycles == E->control.freeze_surface_at_step))
+			    fprintf(stderr,"reconstructing node maps\n");
 				construct_node_maps(E);
 				been_here = 1;
 			}

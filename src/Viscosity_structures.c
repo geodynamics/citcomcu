@@ -60,7 +60,7 @@ void viscosity_parameters(struct All_variables *E)
 	int m = E->parallel.me ;
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
-	E->viscosity.SDEPV = E->viscosity.TDEPV = E->viscosity.BDEPV = 
+	E->viscosity.SDEPV = 	 	  E->viscosity.TDEPV = E->viscosity.BDEPV = 
 	  E->viscosity.CDEPV = 0;
 	E->viscosity.EXPX = 0;
 	E->viscosity.SMOOTH = 0;
@@ -149,8 +149,14 @@ void viscosity_parameters(struct All_variables *E)
 
 	input_boolean("TDEPV", &(E->viscosity.TDEPV), "on",m);
 	input_boolean("SDEPV", &(E->viscosity.SDEPV), "off",m);
+	input_int("sdepv_rheology", &(E->viscosity.sdepv_rheology), "1",m); /* type of stress dependence */
+
+	input_boolean("sdepv_start_from_newtonian", &(E->viscosity.sdepv_start_from_newtonian), "off",m);
+
+
 	input_boolean("BDEPV",&(E->viscosity.BDEPV),"off",m);
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
+	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	/* make comp dep viscosity absolute  */
 
 	/* plasticity offset viscosity */
 	input_float("plasticity_viscosity_offset", &(E->viscosity.plasticity_viscosity_offset),"0.0",m);
@@ -330,6 +336,7 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 	if(E->viscosity.CDEPV)
 	  visc_from_C(E, visc, evisc, propogate);
 
+	/* two different kinds of implementations of powerlaw  */
 	if(E->viscosity.SDEPV)
 		visc_from_S(E, visc, evisc, propogate);
 
@@ -693,15 +700,33 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
 	}
 	else
 		strain_rate_2_inv(E, eedot, 1);
-
-	for(e = 1; e <= nel; e++)
-	{
+	if((!E->viscosity.sdepv_start_from_newtonian)||(visits)){
+	  switch(E->viscosity.sdepv_rheology){
+	  case 1:		/* old default, i think the factors
+				   don't make sense, leave in for
+				   backward compatibility  */
+	    for(e = 1; e <= nel; e++)
+	      {
 		exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
 		scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
 		for(jj = 1; jj <= vpts; jj++)
-			EEta[(e - 1) * vpts + jj] = two * EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
-	}
+		  EEta[(e - 1) * vpts + jj] = two * EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
+	      }
+	    break;
+	  case 2:		/* composite rheology, different from
+				   above by the missing two up front*/
+	    for(e = 1; e <= nel; e++){
+		exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
+		scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
+		for(jj = 1; jj <= vpts; jj++)
+		  EEta[(e - 1) * vpts + jj] = EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
+	      }
 
+	    break;
+	  default:
+	    myerror("stress dependent rheology mode undefined",E);
+	  }
+	}
 
 	visits++;
 
@@ -1409,8 +1434,37 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
     /* log of the material viscosities */
     logv[0] = log(E->viscosity.pre_comp[0]);
     logv[1] = log(E->viscosity.pre_comp[1]);
+    if((E->parallel.me==0)&&(E->viscosity.cdepv_absolute)){
+      fprintf(stderr,"WARNING: using cdepv for absolute viscosity\n");
+    }
   }
-  for(i = 1; i <= nel; i++)
+  if(E->viscosity.cdepv_absolute){
+    /* 
+       
+    override all other viscosities (this is exact same as below but
+    for the viscosity assignment (repeated here to avoid if statments)
+    */
+    for(i = 1; i <= nel; i++){
+      for(kk = 1; kk <= ends; kk++){
+	CC[kk] = E->C[E->ien[i].node[kk]];
+	if(E->control.check_c_irange){
+	  if(CC[kk] < 0)CC[kk]=0.0;if(CC[kk] > 1)CC[kk]=1.0;
+	}
+      }
+      for(jj = 1; jj <= vpts; jj++){
+	cc_loc = 0.0;
+	for(kk = 1; kk <= ends; kk++)
+	  cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
+	vmean = exp(cc_loc  * logv[1] + (1.0-cc_loc) * logv[0]);
+	EEta[ (i-1)*vpts + jj ] = vmean;
+      } /* end jj loop */
+    }
+  }else{
+    /* 
+       regular mode, multiply with any previous viscosity
+
+    */
+    for(i = 1; i <= nel; i++)
     {
       /* determine composition of each of the nodes of the element */
       for(kk = 1; kk <= ends; kk++){
@@ -1432,6 +1486,7 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 	  EEta[ (i-1)*vpts + jj ] *= vmean;
 	} /* end jj loop */
     }
+  }
   visited++;
 }
 

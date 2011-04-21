@@ -1009,9 +1009,6 @@ void exchange_markers(struct All_variables *E)
 	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
 	int target_proc, kk, k, idb;
 
-	//static int been_here = 0;
-	//static int mid_recv, sizeofk;
-	//const int levmax = E->mesh.levmax;
 
 	MPI_Status status[100];
 	MPI_Request request[100];

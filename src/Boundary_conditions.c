@@ -121,6 +121,30 @@ void velocity_boundary_conditions(struct All_variables *E)
 	return;
 }
 
+
+
+void freeze_surface(struct All_variables *E)
+{
+
+  int lev,top;
+  if(E->parallel.me == 0)
+    fprintf(stderr,"WARNING: freezing surface boundary condition at time step %i\n",
+	    E->monitor.solution_cycles);
+  /* no slip on top */
+  E->mesh.topvbc = 1;E->control.VBXtopval=E->control.VBYtopval=E->control.plate_vel=0.0;
+  velocity_boundary_conditions(E);  
+
+  check_bc_consistency(E);
+  construct_id(E);
+  //construct_lm(E);
+  //construct_sub_element(E);
+  parallel_shuffle_ele_and_id(E);
+  parallel_communication_routs(E);
+  //construct_shape_functions(E);
+  //mass_matrix(E);
+  velocities_conform_bcs(E, E->U);
+ 
+}
 /* ========================================== */
 
 void temperature_boundary_conditions(struct All_variables *E)

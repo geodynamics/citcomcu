@@ -165,6 +165,7 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 }
 
 
+
 /* ===================================
    Functions which set up details 
    common to all problems follow ...
@@ -808,6 +809,8 @@ void read_initial_settings(struct All_variables *E)
 	input_boolean("regular_grid", &(E->control.ORTHOZ), "off", m);
 
 	input_int("stokes_flow_only", &(E->control.stokes), "0", m);
+
+	input_int("freeze_surface_at_step",&(E->control.freeze_surface_at_step),"-9999999",m);
 
 	input_boolean("node_assemble", &(E->control.NASSEMBLE), "off", m);
 	/* general mesh structure */
