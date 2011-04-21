@@ -111,7 +111,7 @@ void general_stokes_solver(struct All_variables *E)
       get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
     
     construct_stiffness_B_matrix(E);
-    if(E->parallel.me==0)fprintf(stderr,"calling solver\n");
+    //if(E->parallel.me==0)fprintf(stderr,"calling solver\n");
 	
     solve_constrained_flow_iterative(E);
     
@@ -146,7 +146,7 @@ void general_stokes_solver(struct All_variables *E)
   if(iterate){			/* free the delta_U array */
     free((void *)delta_U);
   }
-  if(E->parallel.me==0)fprintf(stderr,"stokes solver done\n");
+  //if(E->parallel.me==0)fprintf(stderr,"stokes solver done\n");
   return;
 }
 

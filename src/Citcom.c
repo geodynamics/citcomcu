@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	  
 	  
 		process_heating(&E);
-		if(E.parallel.me==0)fprintf(stderr,"process heating done\n");
+		//if(E.parallel.me==0)fprintf(stderr,"process heating done\n");
 		
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
@@ -131,15 +131,15 @@ int main(int argc, char **argv)
 		}
 
 		general_stokes_solver(&E);
-		if(E.parallel.me==0)fprintf(stderr,"stokes solver done\n");
+		//if(E.parallel.me==0)fprintf(stderr,"stokes solver done\n");
 
 		if(E.control.composition){
 		  (E.next_buoyancy_field) (&E);	/* correct with R-G */
-		  if(E.parallel.me==0)fprintf(stderr,"next buoyancy composition done\n");
+		  //if(E.parallel.me==0)fprintf(stderr,"next buoyancy composition done\n");
 		}
 		 /**/ report(&E, "Process results of velocity solver");
 		process_new_velocity(&E, E.monitor.solution_cycles);
-		if(E.parallel.me==0)fprintf(stderr,"process new velocity done\n");
+		//if(E.parallel.me==0)fprintf(stderr,"process new velocity done\n");
 
 
 		if(E.monitor.T_interior > E.monitor.T_interior_max)
