@@ -405,7 +405,7 @@ void prepare_transfer_arrays(struct All_variables *E)
 		{
 			part = E->parallel.traces_transfer_index[neighbor][j];
 			if((part > E->advection.markers)||(part<1)){fprintf(stderr,"pta: out of bounds %i %i\n",part,E->advection.markers);}
-			if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"%i %i %i\n",neighbor,j,part);
+			//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"%i %i %i\n",neighbor,j,part);
 			E->PVV[neighbor][k1++] = E->VO[1][part];
 			E->PVV[neighbor][k1++] = E->VO[2][part];
 			E->PVV[neighbor][k1++] = E->VO[3][part];
