@@ -163,10 +163,10 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 			E->parallel.traces_transfer_index[neighbor] = (int *)malloc((markers + 1) * sizeof(int));
 			E->RVV[neighbor] = (float *)malloc(asize * sizeof(int));
 			E->RXX[neighbor] = (double *)malloc(asize * sizeof(double));
-			E->RINS[neighbor] = (int *)malloc((markers + 1) * 2 * sizeof(int));
+			E->RINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 			E->PVV[neighbor] = (float *)malloc(asize  * sizeof(int));
 			E->PXX[neighbor] = (double *)malloc(asize * sizeof(double));
-			E->PINS[neighbor] = (int *)malloc((markers + 1) * 2 * sizeof(int));
+			E->PINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 		}
 		E->traces_leave_index = (int *)malloc((markers + 1) * sizeof(int));
 		been++;
@@ -266,11 +266,12 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 
 void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
-	int i, j;
+  int i, j,k;
 	int ii, jj, kk;
 	int nsd2, neighbor, no_trans1;
-
+	int rioff;
 	nsd2 = E->mesh.nsd * 2;
+	rioff = 2 + E->tracers_add_flavors;
 
 	ii = 0;
 	for(i = 1; i <= E->advection.markers; i++)
@@ -314,8 +315,10 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->XMCpred[1][ii] = E->RXX[neighbor][j * nsd2 + 3];
 				E->XMCpred[2][ii] = E->RXX[neighbor][j * nsd2 + 4];
 				E->XMCpred[3][ii] = E->RXX[neighbor][j * nsd2 + 5];
-				E->C12[ii] = E->RINS[neighbor][j * 2];
-				E->CElement[ii] = E->RINS[neighbor][j * 2 + 1];
+				E->C12[ii] =      E->RINS[neighbor][j * rioff];
+				E->CElement[ii] = E->RINS[neighbor][j * rioff + 1];
+				for(k=0;k < E->tracers_add_flavors;k++)
+				  E->tflavors[ii*E->tracers_add_flavors+k] = E->RINS[neighbor][j * rioff + 2 + k];
 				E->traces_leave[ii] = 0;
 			}
 		}
@@ -341,8 +344,10 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->XMCpred[1][ii] = E->RXX[neighbor][j * nsd2 + 3];
 				E->XMCpred[2][ii] = E->RXX[neighbor][j * nsd2 + 4];
 				E->XMCpred[3][ii] = E->RXX[neighbor][j * nsd2 + 5];
-				E->C12[ii] = E->RINS[neighbor][j * 2];
-				E->CElement[ii] = E->RINS[neighbor][j * 2 + 1];
+				E->C12[ii] =      E->RINS[neighbor][j * rioff];
+				E->CElement[ii] = E->RINS[neighbor][j * rioff + 1];
+				for(k=0;k < E->tracers_add_flavors;k++)
+				  E->tflavors[ii*E->tracers_add_flavors+k] = E->RINS[neighbor][j * rioff + 2 + k];
 				E->traces_leave[ii] = 0;
 			}
 		}
@@ -372,8 +377,11 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 					E->XMCpred[1][ii] = E->XMCpred[1][i];
 					E->XMCpred[2][ii] = E->XMCpred[2][i];
 					E->XMCpred[3][ii] = E->XMCpred[3][i];
-					E->C12[ii] = E->C12[i];
+					E->C12[ii]      = E->C12[i];
 					E->CElement[ii] = E->CElement[i];
+					for(k=0;k < E->tracers_add_flavors;k++)
+					  E->tflavors[ii*E->tracers_add_flavors+k] = E->tflavors[i*E->tracers_add_flavors+k];
+			
 					E->traces_leave[ii] = 0;
 				}
 			}
@@ -394,7 +402,7 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 
 void prepare_transfer_arrays(struct All_variables *E)
 {
-	int j, part, neighbor, k1, k2, k3;
+  int j, part, neighbor, k1, k2, k3,k;
 	//if(E->parallel.me==0)fprintf(stderr,"ta 1 ok\n");
 	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	{
@@ -422,6 +430,9 @@ void prepare_transfer_arrays(struct All_variables *E)
 
 			E->PINS[neighbor][k3++] = E->C12[part];
 			E->PINS[neighbor][k3++] = E->CElement[part];
+			for(k=0;k < E->tracers_add_flavors;k++)
+			  E->PINS[neighbor][k3++] = E->tflavors[part*E->tracers_add_flavors+k];
+
 		}
 		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"ta inner loop ok\n");
 	}

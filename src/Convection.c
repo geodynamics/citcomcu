@@ -52,7 +52,8 @@ void set_convection_defaults(struct All_variables *E)
 {
 
   input_int("composition", &(E->control.composition), "0", E->parallel.me);
-
+  input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
+  
 	if(E->control.composition)
 		E->next_buoyancy_field = PG_timestep_particle;
 	else
@@ -183,9 +184,13 @@ void convection_initial_fields(struct All_variables *E)
 			E->Vpred[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
 			E->XMCpred[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
 			E->XMC[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
-			E->C12 = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
-			E->traces_leave = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
-			E->CElement = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			if(i==1){ /* those should only get allocated once */
+			  E->C12 = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  E->traces_leave = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  E->CElement = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  if(E->tracers_add_flavors)
+			    E->tflavors = (int *)(int *)malloc((E->advection.markers_uplimit + 1) * E->tracers_add_flavors * sizeof(int));
+			}
 		}
 	}
 

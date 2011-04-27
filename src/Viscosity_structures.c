@@ -153,6 +153,7 @@ void viscosity_parameters(struct All_variables *E)
 
 	input_boolean("sdepv_start_from_newtonian", &(E->viscosity.sdepv_start_from_newtonian), "off",m);
 
+	input_int("max_sdep_visc_iter",&(E->monitor.max_sdep_visc_iter),"50",m); /* max number of powerlaw iterations */
 
 	input_boolean("BDEPV",&(E->viscosity.BDEPV),"off",m);
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
@@ -1443,6 +1444,9 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
        
     override all other viscosities (this is exact same as below but
     for the viscosity assignment (repeated here to avoid if statments)
+    
+    will make compositional viscosity an on/off kind of thing
+    
     */
     for(i = 1; i <= nel; i++){
       for(kk = 1; kk <= ends; kk++){
@@ -1455,8 +1459,8 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 	cc_loc = 0.0;
 	for(kk = 1; kk <= ends; kk++)
 	  cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
-	vmean = exp(cc_loc  * logv[1] + (1.0-cc_loc) * logv[0]);
-	EEta[ (i-1)*vpts + jj ] = vmean;
+	/* mean between background viscosity and second material viscosity */
+	EEta[ (i-1)*vpts + jj ]= exp(cc_loc  * logv[1] + (1.0-cc_loc) * log(EEta[ (i-1)*vpts + jj ]));
       } /* end jj loop */
     }
   }else{
@@ -1481,7 +1485,7 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 	  for(kk = 1; kk <= ends; kk++){/* the vpt takes care of averaging */
 	    cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
 	  }
-	  /* geometric mean of viscosity */
+	  /* geometric mean of compositional viscosity prefactors */
 	  vmean = exp(cc_loc  * logv[1] + (1.0-cc_loc) * logv[0]);
 	  EEta[ (i-1)*vpts + jj ] *= vmean;
 	} /* end jj loop */

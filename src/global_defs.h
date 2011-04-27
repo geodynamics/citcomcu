@@ -650,7 +650,7 @@ struct MONITOR
 
   int solution_cycles,solution_cycles_out;
   int visc_iter_count;
-
+  int max_sdep_visc_iter;
 	float time_scale,time_scale_ma;
 	float length_scale;
         float viscosity_scale;
@@ -941,10 +941,13 @@ struct All_variables
 	float *Vpred[4];
 	double *XMC[4];
 	double *XMCpred[4];
-	int *C12;
+	int *C12;		/* this shold be unsigned short */
 	int *traces_leave;
 	int *traces_leave_index;
 	int *CElement;
+
+  int *tflavors;		/* this should also be unsigned short */
+  int tracers_add_flavors;
 
 	int *RG[4];
 	double *XRG[4];

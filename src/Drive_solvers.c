@@ -142,7 +142,7 @@ void general_stokes_solver(struct All_variables *E)
     /* end for stress type iterations  */
   } while(iterate && 
 	  (dUdot_mag > E->viscosity.sdepv_misfit) && 
-	  (E->monitor.visc_iter_count < 50) );
+	  (E->monitor.visc_iter_count < E->monitor.max_sdep_visc_iter) );
   if(iterate){			/* free the delta_U array */
     free((void *)delta_U);
   }
