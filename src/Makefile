@@ -146,11 +146,8 @@ CFILES= Advection_diffusion.c\
 	Global_operations.c\
 	Stokes_flow_Incomp.c\
 	Instructions.c\
-	io.c \
 	Nodal_mesh.c\
 	Output.c\
-	output_ascii.c \
-	output_vtk.c \
 	Pan_problem_misc_functions.c\
 	Parallel_related.c\
 	Parsing.c\
