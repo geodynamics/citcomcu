@@ -156,6 +156,8 @@ void viscosity_parameters(struct All_variables *E)
 	input_int("max_sdep_visc_iter",&(E->monitor.max_sdep_visc_iter),"50",m); /* max number of powerlaw iterations */
 
 	input_boolean("BDEPV",&(E->viscosity.BDEPV),"off",m);
+	input_int("pdepv_for_flavor",&(E->viscosity.pdepv_for_flavor),"0",m); /* byerlee only for certain flavor */
+
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
 	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	/* make comp dep viscosity absolute  */
 
@@ -337,7 +339,6 @@ void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, 
 	if(E->viscosity.CDEPV)
 	  visc_from_C(E, visc, evisc, propogate);
 
-	/* two different kinds of implementations of powerlaw  */
 	if(E->viscosity.SDEPV)
 		visc_from_S(E, visc, evisc, propogate);
 
@@ -1230,9 +1231,10 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
   static int visited = 0;
   float scale,stress_magnitude,depth,exponent1,eta_old,eta_old2,eta_new;
   float *eedot;
-  float zzz,zz[9];
+  float zzz,zz[9],wmax,weight;
+  int point_flavor,tfn[9];
   float tau,tau2,ettby,ettnew;
-  int m,l,z,jj,kk,i;
+  int m,l,z,jj,kk,i,node,tepoints,epoints,npc,tnpc;
   static float ndz_to_m;
 #ifdef DEBUG
   FILE *out;
@@ -1240,9 +1242,11 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
   const int vpts = vpoints[E->mesh.nsd];
   const int nel = E->lmesh.nel;
   const int ends = enodes[E->mesh.nsd];
+  epoints = nel * vpts;
   
   eedot = (float *) safe_malloc((2+nel)*sizeof(float));
- 
+  
+
 #ifdef DEBUG
   out=fopen("tmp.visc","w");
 #endif
@@ -1269,6 +1273,11 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	      E->viscosity.plasticity_trans,
 	      E->viscosity.plasticity_viscosity_offset);
       fprintf(stderr,"\tpsrw: %i\n",E->viscosity.psrw);
+
+      if(E->viscosity.pdepv_for_flavor){
+	if((E->tracers_add_flavors < 1)  || (E->control.composition == 0))
+	  myerror("Byerlee is to apply only to certain flavor, but no flavor is set",E);
+      }
     }
     /* 
        get strain rates for all elements 
@@ -1282,38 +1291,55 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
     else
       strain_rate_2_inv(E,eedot,1);
   }
+  
   if(E->viscosity.psrw){
     /* strain-rate weakening */
+    npc=0;
     for(i=1;i <= nel;i++)   {	
       l = E->mat[i] - 1;	/* material of element */
       for(kk=1;kk <= ends;kk++){/* loop through integration points*/
+	node = E->ien[i].node[kk];
 	if(E->control.Rsphere)
-	  zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
+	  zz[kk] = (1.0 - E->SX[3][node]); 
 	else
-	  zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
+	  zz[kk] = (1.0 - E->X[3][node]); 
 	if(E->viscosity.plasticity_dimensional)
 	  zz[kk] *= ndz_to_m;	/* scale to meters */
+	if(E->viscosity.pdepv_for_flavor)
+	  tfn[kk]= E->CF[0][node];
       }
       for(jj=1;jj <= vpts;jj++) { 
-	zzz = 0.0;
+	zzz = wmax = 0.0;
 	for(kk=1;kk <= ends;kk++)   {
-	  zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	  weight = E->N.vpt[GNVINDEX(kk,jj)];
+	  zzz += zz[kk] * weight;
+	  if(E->viscosity.pdepv_for_flavor){
+	    if(weight > wmax){
+	      wmax = weight;
+	      point_flavor = tfn[kk]; /* use the most important nodal flavor */
+	    }
+	  }
 	}
-	if(E->viscosity.plasticity_dimensional){
-	  tau = (E->viscosity.abyerlee[l] * zzz + 
-		 E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
-	  tau /= E->monitor.tau_scale;
-	}else{
-	  tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
-	  tau = min(tau,  E->viscosity.lbyerlee[l]);
-	}
-	if((visited > 1) && (tau < 1e15)){
-	  tau2 = tau * tau;
-	  eta_old = EEta[ (i-1)*vpts + jj ] ;
-	  eta_old2 = eta_old * eta_old;
-	  eta_new = (tau2 * eta_old)/(tau2 + 2.0 * eta_old2 * eedot[i]);
-	  EEta[ (i-1)*vpts + jj ] = ettnew;
-	  //if(E->parallel.me==0)fprintf(stderr,"tau: %11.4e eII: %11.4e eta_old: %11.4e eta_new: %11.4e\n",tau, eedot[i],eta_old,eta_new);
+	if((E->viscosity.pdepv_for_flavor==0)||(point_flavor == E->viscosity.pdepv_for_flavor)){
+	  npc++;
+	  /* plasticity applies */
+	  if(E->viscosity.plasticity_dimensional){
+	    tau = (E->viscosity.abyerlee[l] * zzz + 
+		   E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+	    tau /= E->monitor.tau_scale;
+	  }else{
+	    tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
+	    tau = min(tau,  E->viscosity.lbyerlee[l]);
+	  }
+	  if((visited > 1) && (tau < 1e15)){
+	    tau2 = tau * tau;
+	    eta_old = EEta[ (i-1)*vpts + jj ] ;
+	    eta_old2 = eta_old * eta_old;
+	    eta_new = (tau2 * eta_old)/(tau2 + 2.0 * eta_old2 * eedot[i]);
+	    EEta[ (i-1)*vpts + jj ] = ettnew;
+	    //if(E->parallel.me==0)fprintf(stderr,"tau: %11.4e eII: %11.4e eta_old: %11.4e eta_new: %11.4e\n",tau, eedot[i],eta_old,eta_new);
+	  }
+	  
 	}
       }
     }
@@ -1321,93 +1347,118 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 
     /* regular plasticity */
 
-    
+    npc=0;
     for(i=1;i <= nel;i++)   {	
       /* 
 	 loop through all elements 
       */
       l = E->mat[i] - 1;	/* material of element */
       for(kk=1;kk <= ends;kk++){/* loop through integration points*/
+	node = E->ien[i].node[kk];
 	/* depth in meters */
 	if(E->control.Rsphere)
-	  zz[kk] = (1.0 - E->SX[3][E->ien[i].node[kk]]); 
+	  zz[kk] = (1.0 - E->SX[3][node]); 
 	else
-	  zz[kk] = (1.0 - E->X[3][E->ien[i].node[kk]]); 
+	  zz[kk] = (1.0 -  E->X[3][node]); 
 	if(E->viscosity.plasticity_dimensional)
 	  zz[kk] *= ndz_to_m;	/* scale to meters */
+	if(E->viscosity.pdepv_for_flavor) /* nodal flavors */
+	  tfn[kk]= E->CF[0][node];
       }
       for(jj=1;jj <= vpts;jj++) { 
 	/* loop over nodes in element */
-	zzz = 0.0;
-	for(kk=1;kk <= ends;kk++)   {
+	zzz = wmax = 0.0;
+	for(kk=1;kk <= ends;kk++)   { /* add the nodal contribution */
 	  /* 
 	     depth  [m] 
 	  */
-	  zzz += zz[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	  weight = E->N.vpt[GNVINDEX(kk,jj)];
+	  zzz += zz[kk] * weight;
+	  if(E->viscosity.pdepv_for_flavor){
+	    if(weight > wmax){
+	      wmax = weight;
+	      point_flavor = tfn[kk]; /* use the most important nodal flavor */
+	    }
+	  }
 	}
-	if(E->viscosity.plasticity_dimensional){
-	  /* byerlee type */
-	  
+	if((E->viscosity.pdepv_for_flavor==0)||(point_flavor == E->viscosity.pdepv_for_flavor)){
+	  npc++;
 	  /* 
-	     yield stress in [Pa] 
+	     apply plasticity for this integration point if
+	     pdepv_for_flavor is zero, or if the flavor matches
+
 	  */
-	  tau=(E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+
+	  if(E->viscosity.plasticity_dimensional){
+	    /* byerlee type */
+	    
+	    /* 
+	       yield stress in [Pa] 
+	    */
+	    tau=(E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l]) * E->viscosity.lbyerlee[l];
+	    /* 
+	       scaled stress 
+	    */
+	    tau /= E->monitor.tau_scale;
+	  }else{
+	    tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
+	    tau = min(tau,  E->viscosity.lbyerlee[l]);
+	  }
 	  /* 
-	     scaled stress 
+	     
+	  `byerlee viscosity' : tau = 2 eps eta, this is non-dim
+	  plus some offset as in Stein et al. 
+	  
 	  */
-	  tau /= E->monitor.tau_scale;
-	}else{
+	  ettby = tau/(2.0 * (eedot[i]+1e-7)) + E->viscosity.plasticity_viscosity_offset;
+	  /* 
+	     
+	  decide on the plasticity transition
 	  
-	  tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
 	  
-	  tau = min(tau,  E->viscosity.lbyerlee[l]);
-	}
-	/* 
-	   
-	`byerlee viscosity' : tau = 2 eps eta, this is non-dim
-	plus some offset as in Stein et al. 
+	  */
+	  if(E->viscosity.plasticity_trans){
+	    /* 
+	       eta = 1./(1./eta(k)+1./ettby)  
+	    */
+	    
+	    ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
+	    //fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+	  }else{
+	    /* 
+	       min(\eta_p, \eta_visc )
+	    */
+	    ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
+	    //fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
+	  }
 	
-	*/
-	ettby = tau/(2.0 * (eedot[i]+1e-7)) + E->viscosity.plasticity_viscosity_offset;
-	/* 
-	   
-	decide on the plasticity transition
-	
-	
-	*/
-	if(E->viscosity.plasticity_trans){
-	  /* 
-	     eta = 1./(1./eta(k)+1./ettby)  
-	  */
-	  
-	  ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
-	  //fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
-	}else{
-	  /* 
-	     min(\eta_p, \eta_visc )
-	  */
-	  ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
-	  //fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
-	}
 #ifdef DEBUG
-	/* output format 
-	   
-	z[km] tau[MPa] eps[s^-1] eta_b[Pas] eta_T[Pas] eta_c[Pas]
+	  /* output format 
+	     
+	  z[km] tau[MPa] eps[s^-1] eta_b[Pas] eta_T[Pas] eta_c[Pas]
 	
-	*/
-	if(visited)
-	  fprintf(out,"%10.2f %17.4e %17.4e %17.4e %17.4e %17.4e\n", 
-		  zzz/1e3,tau*E->monitor.tau_scale/1e6, 
-		  eedot[i]/E->monitor.time_scale, 
-		  ettby*E->data.ref_viscosity, 
-		  EEta[ (i-1)*vpts + jj ]*E->data.ref_viscosity, 
-		  ettnew*E->data.ref_viscosity); 
+	  */
+	  if(visited)
+	    fprintf(out,"%10.2f %17.4e %17.4e %17.4e %17.4e %17.4e\n", 
+		    zzz/1e3,tau*E->monitor.tau_scale/1e6, 
+		    eedot[i]/E->monitor.time_scale, 
+		    ettby*E->data.ref_viscosity, 
+		    EEta[ (i-1)*vpts + jj ]*E->data.ref_viscosity, 
+		    ettnew*E->data.ref_viscosity); 
 #endif
-	//      if(visited)
-	//	fprintf(stderr,"%11.4e %11.4e %11.4e %11.4e\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
-	EEta[ (i-1)*vpts + jj ] = ettnew;
-      }
+	  //      if(visited)
+	  //	fprintf(stderr,"%11.4e %11.4e %11.4e %11.4e\n",ettnew,EEta[ (i-1)*vpts + jj ] ,ettby,eedot[i]);
+	  EEta[ (i-1)*vpts + jj ] = ettnew;
+	} /* plasticity applies, for this flavor branch */
+      }	/* end integration point loop */
     } /* end regular plasticity */
+  }
+  if(E->viscosity.pdepv_for_flavor){
+    MPI_Allreduce(&epoints,&tepoints,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&npc,&tnpc,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+    if(E->parallel.me==0)fprintf(stderr,"applied plasticity for flavor %i to %10i out of %10i integration points (%5.2f%%)\n",
+				 E->viscosity.pdepv_for_flavor,tnpc,tepoints,(float)tnpc/(float)tepoints*100);
+
   }
 #ifdef DEBUG
   fclose(out);

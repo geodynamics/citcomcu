@@ -1238,6 +1238,82 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 
 	return;
 }
+void exchange_node_int(struct All_variables *E, int *U, int lev)
+{
+  int target_proc, kk, i, j, k, idb;
+  static int *S[27], *R[27];
+  
+  static int been_here = 0;
+  static int sizeofk;
+  const int levmax = E->mesh.levmax;
+  
+  MPI_Status status[100];
+  MPI_Request request[100];
+  
+  if(been_here == 0){
+      sizeofk = 0;
+      for(i = 1; i <= E->mesh.nsd; i++)
+	for(k = 1; k <= 2; k++){
+	    if(E->parallel.NUM_PASS[levmax].bound[i][k])
+	      sizeofk = max(sizeofk, (1 + E->parallel.NUM_NODE[levmax].pass[i][k]) * sizeof(int));
+	}
+      for(k = 1; k <= 2; k++){
+	S[k] = (int *)malloc(sizeofk);
+	R[k] = (int *)malloc(sizeofk);
+      }
+      been_here++;
+  }
+  for(i = 1; i <= E->mesh.nsd; i++)
+    {
+      idb = 0;
+      for(k = 1; k <= 2; k++)
+	if(E->parallel.NUM_PASS[levmax].bound[i][k])
+	  {
+	    for(j = 1; j <= E->parallel.NUM_NODE[lev].pass[i][k]; j++)
+	      S[k][j - 1] = U[E->parallel.EXCHANGE_NODE[lev][j].pass[i][k]];
+	    
+	    target_proc = E->parallel.PROCESSOR[lev].pass[i][k];
+	    if(target_proc != E->parallel.me)
+	      {
+		idb++;
+		MPI_Isend(S[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
+	      }
+	  }					/* for k */
+      for(k = 1; k <= 2; k++)
+	if(E->parallel.NUM_PASS[levmax].bound[i][k])
+	  {
+	    
+	    target_proc = E->parallel.PROCESSOR[lev].pass[i][k];
+	    if(target_proc != E->parallel.me)
+	      {
+		idb++;
+		MPI_Irecv(R[k], E->parallel.NUM_NODE[lev].pass[i][k], MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
+	      }
+	  }					/* for k */
+      MPI_Waitall(idb, request, status);
+      
+      for(k = 1; k <= 2; k++){
+	if(E->parallel.NUM_PASS[levmax].bound[i][k])
+	  {
+	    target_proc = E->parallel.PROCESSOR[lev].pass[i][k];
+	    if(target_proc != E->parallel.me)
+	      {
+		for(j = 1; j <= E->parallel.NUM_NODE[lev].pass[i][k]; j++)
+		  U[E->parallel.EXCHANGE_NODE[lev][j].pass[i][k]] += R[k][j - 1];
+	      }
+	    else
+	      {
+		kk = 1;
+		if(k == 1)
+		  kk = 2;
+		for(j = 1; j <= E->parallel.NUM_NODE[lev].pass[i][k]; j++)
+		  U[E->parallel.EXCHANGE_NODE[lev][j].pass[i][k]] += S[kk][j - 1];
+	      }
+	  }					/* for k */
+      }
+    }							/* for dim */
+  return;
+}
 
 /* ==========================   */
 

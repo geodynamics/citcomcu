@@ -93,8 +93,13 @@ void Runge_Kutta(struct All_variables *E, float *C, float *V[4], int on_off)
 
 	transfer_markers_processors(E, on_off);
 
+	/* assign element numbers to markers */
 	element_markers(E, on_off);
+
+	/* get nodal values from markers */
 	get_C_from_markers(E, C);
+	if(E->tracers_add_flavors)
+	  get_CF_from_markers(E,E->CF);
 
 	E->advection.markers_g = -1;
 	if(E->advection.timesteps % 10 == 0)
@@ -136,7 +141,12 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 	transfer_markers_processors(E, on_off);
 	/*   predicted compositional field at t+dt  */
 	element_markers(E, on_off);
+	/* update nodal values */
 	get_C_from_markers(E, C);
+	if(E->tracers_add_flavors)
+	  get_CF_from_markers(E,E->CF);
+
+
 	return;
 }
 
@@ -318,7 +328,7 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->C12[ii] =      E->RINS[neighbor][j * rioff];
 				E->CElement[ii] = E->RINS[neighbor][j * rioff + 1];
 				for(k=0;k < E->tracers_add_flavors;k++)
-				  E->tflavors[ii*E->tracers_add_flavors+k] = E->RINS[neighbor][j * rioff + 2 + k];
+				  E->tflavors[ii][k] = E->RINS[neighbor][j * rioff + 2 + k];
 				E->traces_leave[ii] = 0;
 			}
 		}
@@ -347,7 +357,7 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->C12[ii] =      E->RINS[neighbor][j * rioff];
 				E->CElement[ii] = E->RINS[neighbor][j * rioff + 1];
 				for(k=0;k < E->tracers_add_flavors;k++)
-				  E->tflavors[ii*E->tracers_add_flavors+k] = E->RINS[neighbor][j * rioff + 2 + k];
+				  E->tflavors[ii][k] = E->RINS[neighbor][j * rioff + 2 + k];
 				E->traces_leave[ii] = 0;
 			}
 		}
@@ -380,8 +390,7 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 					E->C12[ii]      = E->C12[i];
 					E->CElement[ii] = E->CElement[i];
 					for(k=0;k < E->tracers_add_flavors;k++)
-					  E->tflavors[ii*E->tracers_add_flavors+k] = E->tflavors[i*E->tracers_add_flavors+k];
-			
+					  E->tflavors[ii][k] = E->tflavors[i][k];
 					E->traces_leave[ii] = 0;
 				}
 			}
@@ -431,7 +440,7 @@ void prepare_transfer_arrays(struct All_variables *E)
 			E->PINS[neighbor][k3++] = E->C12[part];
 			E->PINS[neighbor][k3++] = E->CElement[part];
 			for(k=0;k < E->tracers_add_flavors;k++)
-			  E->PINS[neighbor][k3++] = E->tflavors[part*E->tracers_add_flavors+k];
+			  E->PINS[neighbor][k3++] = E->tflavors[part][k];
 
 		}
 		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"ta inner loop ok\n");
@@ -545,6 +554,104 @@ void get_C_from_markers(struct All_variables *E, float *C)
 
 	return;
 }
+/* 
+
+obtain nodal flavor from markers
+
+*/
+void get_CF_from_markers(struct All_variables *E, int **CF)
+{
+  int el, itracer, imark, jnode, node,k,i,j;
+  float *dmin,dist;
+  static int method = 0,been_here = 0;
+  float temp3, temp1, temp0;
+  static int *element[3];
+
+  const int nno = E->lmesh.nno;
+  const int nel = E->lmesh.nel;
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
+  const int lev = E->mesh.levmax;
+  const int nno1 = nno + 1;
+
+  if(!been_here){
+    /* decide on method */
+    for(i=-1,k=0;k < E->tracers_add_flavors;k++)
+      if(E->tmaxflavor[k] > i)
+	i = E->tmaxflavor[k];
+    if(i > 1)			/* any of the flavors is more than one */
+      method = 0;
+    else{
+      method = 1;		/* for counting entries */
+      element[0] = (int *)malloc((nel + 1) * sizeof(int));
+      element[1] = (int *)malloc((nel + 1) * sizeof(int));
+    }
+    if(E->parallel.me==0)
+      if(method == 0)
+	fprintf(stderr,"get_CF_from_markers: using closest tracer method\n");
+      else
+	fprintf(stderr,"get_CF_from_markers: using mean flavor method for range 0..1\n");
+    been_here = 1;
+  }
+  dmin = (float *)malloc((nno1) * sizeof(float));
+  switch(method){
+  case 0:			
+    /* determine nodal flavor based on the closest tracer */
+    for(k=0;k < nno1;k++)
+      dmin[k] = 1e10;
+    for(itracer=0;itracer < E->advection.markers;itracer++){
+      el = E->CElement[itracer] ;
+      for(jnode = 1; jnode <= ends; jnode++){	/* loop through the nodes within this element */
+	node = E->ien[el].node[jnode];
+	dist = (float) distance_to_node(E->XMC[1][itracer],E->XMC[2][itracer],E->XMC[3][itracer],E,node);
+	if(dmin[node] > dist){
+	  dmin[node] = dist;
+	  for(k=0;k < E->tracers_add_flavors;k++)
+	    CF[k][node] = E->tflavors[itracer][k];
+	}
+      }
+    }
+    break;
+  case 1:		
+    /* 
+       mean flavor method : compute based on the mean flavor of each element
+    */
+    for(k=0;k < E->tracers_add_flavors;k++){
+      for(el = 1; el <= nel; el++){
+	element[0][el] = element[1][el] = 0;
+      }
+      for(i = 1; i <= nno; i++){
+	dmin[i] = 0.0;
+      }
+      for(imark = 1; imark <= E->advection.markers; imark++){
+	element[E->tflavors[imark][k]][E->CElement[imark]]++;
+      }
+      for(el = 1; el <= nel; el++){
+	temp0 = element[0][el];
+	temp1 = element[1][el];
+	if(element[0][el] || element[1][el])
+	  temp3 = temp1 / (temp0 + temp1);	/* mean elemental CF */
+	else
+	  temp3 = 0;		/* no tracers */
+	for(j = 1; j <= ends; j++){
+	  node = E->ien[el].node[j];
+	  dmin[node] += E->TWW[lev][el].node[j] * temp3;
+	}
+      }
+      exchange_node_f20(E, dmin, E->mesh.levmax);
+      for(node = 1; node <= nno; node++){
+	CF[k][node] = (int) (dmin[node] * E->Mass[node] +.5);
+      }
+    }
+    break;			/*  */
+  default:
+    myerror("method for flavor interpolation undefined",E);
+    break;
+  }
+  free(dmin);
+}
+
+
 
 /* ================================================ */
 void element_markers(struct All_variables *E, int con)

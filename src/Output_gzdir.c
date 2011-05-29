@@ -490,6 +490,22 @@ void output_velo_related_gzdir(E, file_number)
 	  for(i=1;i<=E->lmesh.nno;i++)           
 	    gzprintf(gzout,"%12.4e\n",E->C[i]);
 	  gzclose(gzout);
+
+
+
+	  if(E->tracers_add_flavors){
+	    sprintf(output_file,"%s/%d/cf.%d.%d.gz",
+		    E->control.data_file2,file_number, E->parallel.me,file_number);
+	    gzout=safe_gzopen(output_file,"w");
+	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	    for(i=1;i <= E->lmesh.nno;i++) {
+	      for(j=0;j < E->tracers_add_flavors;j++)
+		gzprintf(gzout,"%3i ",E->CF[j][i]);
+	      gzprintf(gzout,"\n");
+	    }
+	    gzclose(gzout);
+	  }
+
 	}
 	/* 
 	   end vtk out 

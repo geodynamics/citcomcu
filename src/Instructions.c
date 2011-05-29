@@ -848,13 +848,19 @@ void read_initial_settings(struct All_variables *E)
 	/* comp */
 	input_boolean("ggrd_cinit",&(E->control.ggrd.use_comp),"off", m);
 	input_double("ggrd_cinit_scale",&(E->control.ggrd.comp.scale),"1.0", m);
+
 	input_string("ggrd_cinit_gfile",E->control.ggrd.comp.gfile,"", m);
 	input_string("ggrd_cinit_dfile",E->control.ggrd.comp.dfile,"", m);
+
+	input_string("ggrd_cflavor_init_gfile",E->control.ggrd_flavor_gfile,"", m);
+	input_string("ggrd_cflavor_init_dfile",E->control.ggrd_flavor_dfile,"", m);
+	
+
 	input_double("ggrd_cinit_offset",&(E->control.ggrd.comp.offset),"0.0", m);
 	/* slab slice handling */
 	input_int("slab_slice",&(E->control.ggrd_slab_slice),"0", m);
 	if(E->control.ggrd_slab_slice > 3)
-	  myerror("too many slab slices",E);
+	  myerror("too many slab slices, only four allowed",E);
 	input_float_vector("slab_theta_bound",E->control.ggrd_slab_slice,(E->control.ggrd_slab_theta_bound), m);
 	
 	/* 
@@ -1038,8 +1044,8 @@ void read_initial_settings(struct All_variables *E)
 	E->monitor.tau_scale = (E->data.ref_viscosity/E->monitor.time_scale); /* scaling stress */
 
 
-
 	(E->problem_settings) (E);
+
 	viscosity_parameters(E);
 	return;
 }

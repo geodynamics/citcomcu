@@ -762,7 +762,7 @@ struct CONTROL
   float ggrd_slab_theta_bound[4];
   struct ggrd_gt ggrd_ss_grd[4];
   int ggrd_mat_limit_prefactor,ggrd_mat_is_3d;
-  char ggrd_mat_depth_file[1000];
+  char ggrd_mat_depth_file[1000],ggrd_flavor_gfile[1000],ggrd_flavor_dfile[1000];
 #endif
 
 	int adi_heating, visc_heating;
@@ -946,8 +946,9 @@ struct All_variables
 	int *traces_leave_index;
 	int *CElement;
 
-  int *tflavors;		/* this should also be unsigned short */
+  int **tflavors;		/* this should also be unsigned short */
   int tracers_add_flavors;
+  int *tmaxflavor;
 
 	int *RG[4];
 	double *XRG[4];
@@ -978,6 +979,7 @@ struct All_variables
 	float *Vi, *EVi;
 	float *diffusivity, *expansivity;
 	float *T, *C, *CE, *buoyancy;
+  int **CF;			/* tracer flavors */
 	float *Tdot;
 	float *VI[MAX_LEVELS];		/* viscosity has to soak down to all levels */
 	float *EVI[MAX_LEVELS];		/* element viscosity has to soak down to all levels */

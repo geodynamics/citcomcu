@@ -170,6 +170,8 @@ int in_slab_slice(float, int, struct All_variables *);
 void ggrd_read_mat_from_file(struct All_variables *);
 void ggrd_solve_eigen3x3(double [3][3], double [3], double [3][3], struct All_variables *);
 void ggrd_read_anivisc_from_file(struct All_variables *);
+void ggrd_deal_with_composition_input(struct All_variables *, int );
+
 /* Global_operations.c */
 void return_horiz_sum(struct All_variables *, float *, float *, int);
 void return_horiz_ave(struct All_variables *, float *, float *);
@@ -373,3 +375,8 @@ void calc_strain_rate_matrix(struct All_variables *, double *);
 int layers(struct All_variables *, float);
 int weak_zones(struct All_variables *, int, float);
 float boundary_thickness(struct All_variables *, float *);
+double distance_to_node(double , double , double ,struct All_variables *, int );
+void assign_flavor_to_tracer_based_on_node(struct All_variables *, int , int );
+void exchange_node_int(struct All_variables *, int *, int );
+void get_CF_from_markers(struct All_variables *, int **);
+void assign_flavor_to_tracer_from_grd(struct All_variables *);

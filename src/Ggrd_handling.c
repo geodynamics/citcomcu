@@ -137,7 +137,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 					  FALSE,FALSE))
 	      myerror("grdtrack x-z init error",E);
 	  }else{		/* several slab slices */
-	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
+	    for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
 	      sprintf(pfile,"%s.%i.grd",E->control.ggrd.temp.gfile,slice+1);
 	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
 					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
@@ -194,7 +194,7 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 		for(slice=hit=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
 		  if(E->control.Rsphere) {
 		    if(in_slab_slice(E->SX[1][node],slice,E)){
-		      /* spherical interpolation */
+		      /* spherical interpolation for a slice ! */
 		      ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
 						   (double)E->SX[1][node],
 						   (E->control.ggrd_ss_grd+slice),&tadd,
@@ -376,97 +376,16 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
       if(E->control.ggrd.use_comp){ /* read composition init from grid */
 	if(!E->control.composition)
 	  myerror("comp grd init but no composition control set!?",E);
-	if(E->parallel.me==0)  
-	  fprintf(stderr,"convection_initial_temperature: using GMT grd files for composition\n");
-	if(E->parallel.me > 0){
-	  mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
-			    MPI_COMM_WORLD, &mpi_stat);
-	}
-	if(E->control.ggrd_slab_slice){ 
-	  if(E->control.ggrd_slab_slice == 1){
-	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.comp.gfile, 
-					  char_dummy,"",E->control.ggrd_ss_grd,
-					  (E->parallel.me==0),
-					  FALSE,FALSE))
-	      myerror("grdtrack x-z init error",E);
-	  }else{		/* several slab slices */
-	    for(slice=0;slice<E->control.ggrd_slab_slice;slice++){
-	      sprintf(pfile,"%s.%i.grd",E->control.ggrd.comp.gfile,slice+1);
-	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
-					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
-					    (E->parallel.me==0),
-					    FALSE,FALSE))
-		myerror("grdtrack x-z init error",E);
-	    }
-	  }
-	}else{
-	  /* 3-D  */
-	  if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.comp.gfile, 
-					E->control.ggrd.comp.dfile,"",
-					E->control.ggrd.comp.d,
-					/* (E->parallel.me==0)*/
-					FALSE,FALSE,FALSE))
-	    myerror("grdtrack init error",E);
-	}
-	if(E->parallel.me <  E->parallel.nproc-1){
-	  /* 
-	     tell the next processor to go ahead 
-	  */
-	  mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
-			    (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
-	}else{
-	  fprintf(stderr,"convection_initial_temperature: last processor done comp with grd init\n");
-	}
-	for(i=1;i<=noy;i++)  
-	  for(j=1;j<=nox;j++) 
-	    for(k=1;k<=noz;k++)  {
-	      node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
-	      if(E->control.ggrd_slab_slice){
-		/* slab */
-		for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
-		  if(E->control.Rsphere) {
-		    if(in_slab_slice(E->SX[1][node],slice,E)){
-		      /* spherical interpolation */
-		      ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
-						   (double)E->SX[1][node],
-						   (E->control.ggrd_ss_grd+slice),&tadd,
-						   FALSE);
-		      hit = 1;
-		    }
-		  }else{		/* cartesian interpolation */
-		    if(in_slab_slice(E->X[2][node],slice,E)){
 
-		      ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
-						   (double)E->X[3][node],
-						   (E->control.ggrd_ss_grd+slice),&tadd,
-						   FALSE);
-		      hit  = 1 ;
-		    }
-		  }
-		} /* end slice loop */
-		if(!hit)
-		  tadd = 0;
-		/* end slab slice */
-	      }else{
-		/* 3-D */
-		if(E->control.Rsphere) /* spherical interpolation */
-		  ggrd_grdtrack_interpolate_rtp((double)E->SX[3][node],
-						(double)E->SX[1][node],
-						(double)E->SX[2][node],
-						E->control.ggrd.comp.d,&tadd,
-						FALSE,FALSE);
-		else		/* cartesian interpolation */
-		  ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],
-						(double)E->X[2][node],
-						(double)E->X[3][node],
-						E->control.ggrd.comp.d,&tadd,
-						FALSE);
-	      }
-	      E->C[node] =  E->control.ggrd.comp.offset + tadd *  
-		E->control.ggrd.comp.scale;
-	    }
-	/* free the structure, not needed anymore */
-	ggrd_grdtrack_free_gstruc(E->control.ggrd.comp.d);
+	ggrd_deal_with_composition_input(E, 1);	/* compositional (density) */
+	
+	/* flavors are dealt with based on markers, and then assigned
+	   to nodes */
+
+	//if(E->tracers_add_flavors) /* flavors */
+	  //ggrd_deal_with_composition_input(E, 0);
+
+
       }	/* end grid cinit */
       /* 
 	 
@@ -511,6 +430,257 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 
   return;
 } 
+
+/* 
+
+assign composition or flavors to nodes from grd files
+
+
+*/
+void ggrd_deal_with_composition_input(struct All_variables *E, int assign_composition)
+{
+  MPI_Status mpi_stat;
+  int mpi_rc, mpi_tag=1;  
+  int mpi_inmsg, mpi_success_message = 1;
+  char ingfile[1000],indfile[1000],pfile[1000];
+  int use_nearneighbor,i,j,nox, noy, noz,slice,node,hit,k;
+  char *char_dummy="";
+  double tadd;
+  int *tmaxflavor;
+
+
+  noy = E->lmesh.noy;
+  noz = E->lmesh.noz;
+  nox = E->lmesh.nox;
+
+  if(E->parallel.me == 0){
+    if(assign_composition)
+      fprintf(stderr,"ggrd_deal_with_composition_input: using GMT grd files for composition\n");
+    else{
+      fprintf(stderr,"grd_deal_with_composition_input: using GMT grd files for flavors\n");
+     
+    }
+  }
+  /* filenames */
+  if(assign_composition){	
+    /* composition */
+    use_nearneighbor = FALSE;
+    strncpy(ingfile,E->control.ggrd.comp.gfile,1000);
+    strncpy(indfile,E->control.ggrd.comp.dfile,1000);
+  }else{			
+    /* flavor */
+    use_nearneighbor = TRUE;
+    tmaxflavor = (int *)calloc(E->tracers_add_flavors,sizeof(int));
+    strncpy(ingfile,E->control.ggrd_flavor_gfile,1000);
+    strncpy(indfile,E->control.ggrd_flavor_dfile,1000);
+    if(E->tracers_add_flavors != 1)
+	myerror("ggrd_deal_with_composition_input: only set up for one flavor",E);
+
+  }
+  if(E->parallel.me > 0){
+    mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
+		      MPI_COMM_WORLD, &mpi_stat);
+  }
+  if(E->control.ggrd_slab_slice){ 
+    if(E->control.ggrd_slab_slice == 1){
+      if(ggrd_grdtrack_init_general(FALSE,ingfile, char_dummy,"",E->control.ggrd_ss_grd,(E->parallel.me==0),
+				    FALSE,use_nearneighbor))
+	myerror("grdtrack x-z init error",E);
+    }else{		/* several slab slices */
+      for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
+	sprintf(pfile,"%s.%i.grd",ingfile,slice+1);
+	if(ggrd_grdtrack_init_general(FALSE,pfile, char_dummy,"",(E->control.ggrd_ss_grd+slice),(E->parallel.me==0),
+				      FALSE,use_nearneighbor))
+	  myerror("grdtrack x-z init error",E);
+      }
+    }
+  }else{
+    /* 3-D  */
+    if(ggrd_grdtrack_init_general(TRUE,ingfile,indfile,"",E->control.ggrd.comp.d,FALSE,FALSE,use_nearneighbor))
+      myerror("grdtrack init error",E);
+  }
+  if(E->parallel.me <  E->parallel.nproc-1){
+    /* 
+       tell the next processor to go ahead 
+    */
+    mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
+		      (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
+  }else{
+    fprintf(stderr,"ggrd_deal_with_composition_input: last processor done comp with grd init\n");
+  }
+  for(i=1;i<=noy;i++) {
+    for(j=1;j<=nox;j++){
+      for(k=1;k<=noz;k++)  {
+	node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
+	if(E->control.ggrd_slab_slice){
+	  /* slab */
+	  for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+	    if(E->control.Rsphere) {
+	      if(in_slab_slice(E->SX[1][node],slice,E)){
+		/* spherical interpolation for a slice */
+		ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
+					     (double)E->SX[1][node],
+					     (E->control.ggrd_ss_grd+slice),&tadd,
+					     FALSE);
+		hit = 1;
+	      }
+	    }else{		/* cartesian interpolation */
+	      if(in_slab_slice(E->X[2][node],slice,E)){
+		
+		ggrd_grdtrack_interpolate_xy((double)E->X[1][node],(double)E->X[3][node],
+					     (E->control.ggrd_ss_grd+slice),&tadd,
+					     FALSE);
+		hit  = 1 ;
+	      }
+	    }
+	  } /* end slice loop */
+	  if(!hit)
+	    tadd = 0;
+	  /* end slab slice */
+	}else{
+	  /* 3-D */
+	  if(E->control.Rsphere) /* spherical interpolation */
+	    ggrd_grdtrack_interpolate_rtp((double)E->SX[3][node],(double)E->SX[1][node],(double)E->SX[2][node],
+					  E->control.ggrd.comp.d,&tadd,
+					  FALSE,FALSE);
+	  else		/* cartesian interpolation */
+	    ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],(double)E->X[2][node],(double)E->X[3][node],
+					  E->control.ggrd.comp.d,&tadd,
+					  FALSE);
+	}
+	if(assign_composition){
+	  E->C[node] =  E->control.ggrd.comp.offset + tadd *  E->control.ggrd.comp.scale;
+	}else{			/* flavor */
+	  
+	  E->CF[0][node] = (int)(tadd+.5);
+	  if(E->CF[0][node] < 0)
+	    E->CF[0][node]=0;
+	  if(tmaxflavor[0] < E->CF[0][node])	/* maximum flavor count */
+	    tmaxflavor[0] =  E->CF[0][node];
+	}
+      }
+    }
+  }
+  if(!assign_composition){
+    MPI_Allreduce(tmaxflavor,E->tmaxflavor,E->tracers_add_flavors,
+		  MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    if(E->parallel.me == 0)
+      fprintf(stderr,"ggrd_deal_with_composition_input: assigned maximum flavor %i\n",
+	      E->tmaxflavor[0]);
+    free(tmaxflavor);
+  }
+  
+
+  /* free the structure, not needed anymore */
+  ggrd_grdtrack_free_gstruc(E->control.ggrd.comp.d);
+}
+
+
+/* 
+
+assign composition or flavors to nodes from grd files
+
+
+*/
+void assign_flavor_to_tracer_from_grd(struct All_variables *E)
+{
+  MPI_Status mpi_stat;
+  int mpi_rc, mpi_tag=1;  
+  int mpi_inmsg, mpi_success_message = 1;
+  char pfile[1000];
+  int use_nearneighbor = TRUE,i,j,slice,hit,k;
+  char *char_dummy="";
+  double tadd;
+  struct ggrd_gt grd[4];
+  int *tmaxflavor;
+  tmaxflavor = (int *)calloc(E->tracers_add_flavors,sizeof(int));
+  if(E->parallel.me == 0)
+    fprintf(stderr,"assign_flavor_to_tracer_from_grd: using GMT grd files for flavors\n");
+  
+  if(E->parallel.me > 0){
+    mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
+		      MPI_COMM_WORLD, &mpi_stat);
+  }
+  if(E->control.ggrd_slab_slice){ 
+    if(E->control.ggrd_slab_slice == 1){
+      if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd_flavor_gfile, char_dummy,"",
+				    grd,(E->parallel.me==0),FALSE,use_nearneighbor))
+	myerror("grdtrack x-z init error",E);
+    }else{		/* several slab slices */
+      for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
+	sprintf(pfile,"%s.%i.grd",E->control.ggrd_flavor_gfile,slice+1);
+	if(ggrd_grdtrack_init_general(FALSE,pfile, char_dummy,"",(grd+slice),(E->parallel.me==0),
+				      FALSE,use_nearneighbor))
+	  myerror("grdtrack x-z init error",E);
+      }
+    }
+  }else{
+    /* 3-D  */
+    if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd_flavor_gfile,E->control.ggrd_flavor_dfile,"",
+				  grd,FALSE,FALSE,use_nearneighbor))
+      myerror("grdtrack init error",E);
+  }
+  if(E->parallel.me <  E->parallel.nproc-1){
+    /* 
+       tell the next processor to go ahead 
+    */
+    mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
+		      (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
+  }else{
+    fprintf(stderr,"ggrd_deal_with_composition_input: last processor done comp with grd init\n");
+  }
+  for(i=0;i < E->advection.markers;i++) {
+    if(E->control.ggrd_slab_slice){
+      /* slab */
+      for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+	if(E->control.Rsphere) {
+	  if(in_slab_slice(E->XMC[1][i],slice,E)){
+	    /* spherical interpolation for a slice */
+	    ggrd_grdtrack_interpolate_xy((double)E->XMC[2][i]* ONEEIGHTYOVERPI,(double)E->XMC[1][i],
+					 (grd+slice),&tadd,
+					 FALSE);
+	    hit = 1;
+	  }
+	}else{		/* cartesian interpolation */
+	  if(in_slab_slice(E->XMC[2][i],slice,E)){
+	    ggrd_grdtrack_interpolate_xy((double)E->XMC[1][i],(double)E->XMC[3][i],
+					 (grd+slice),&tadd,FALSE);
+	    hit  = 1 ;
+	  }
+	}
+      } /* end slice loop */
+      if(!hit)
+	tadd = 0;
+      /* end slab slice */
+    }else{
+      /* 3-D */
+      if(E->control.Rsphere) /* spherical interpolation */
+	ggrd_grdtrack_interpolate_rtp((double)E->XMC[3][i],(double)E->XMC[1][i],(double)E->XMC[2][i],
+				      grd,&tadd,FALSE,FALSE);
+      else		/* cartesian interpolation */
+	ggrd_grdtrack_interpolate_xyz((double)E->XMC[1][i],(double)E->XMC[2][i],(double)E->XMC[3][i],
+				      grd,&tadd,FALSE);
+    }
+
+    /* assign to tracer */
+    E->tflavors[i][0] = (int)(tadd+.5);
+    if(tmaxflavor[0] < E->tflavors[i][0])	/* maximum flavor count */
+      tmaxflavor[0] =  E->tflavors[i][0];
+  } /* end tracer loop */
+  
+  MPI_Allreduce(tmaxflavor,E->tmaxflavor,E->tracers_add_flavors,
+		MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  if(E->parallel.me == 0){
+    fprintf(stderr,"ggrd_deal_with_composition_input: assigned maximum flavor %i\n",
+	    E->tmaxflavor[0]);
+
+  }
+  free(tmaxflavor);
+
+}
+
+
+
 int in_slab_slice(float coord, int slice, struct All_variables *E)
 {
   if((slice < 0)||(slice > E->control.ggrd_slab_slice-1))

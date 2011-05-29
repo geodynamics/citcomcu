@@ -1015,3 +1015,36 @@ void remove_trace_3x3(double a[3][3])
   a[1][1] -= trace;
   a[2][2] -= trace;
 }
+/* 
+
+compute the distance between the location x1,x2,x3 and the ndoe lnode
+where those coordinates are theta,phi,r for spherical and x,y,z for Cartesian
+
+   still need to test this properly
+
+*/
+double distance_to_node(double x1, double x2, double x3,struct All_variables *E, int lnode)
+{
+  double tmp1,tmp2,tmp3,dr;
+  if(E->control.Rsphere){
+    tmp1 = (E->SX[1][lnode] - x1)/2.0;
+    tmp1 = sin(tmp1);
+    tmp1 = tmp1 * tmp1;
+    tmp2 = (x2-E->SX[2][lnode])/2.0;
+    tmp2 = sin(tmp2);
+    tmp2 = tmp2 * tmp2;
+    tmp3  = tmp1;
+    tmp3 += sin(x1) * sin(E->SX[1][lnode]) * tmp2;
+    tmp3 = sqrt(tmp3);
+
+    tmp3 = 2.0*asin(tmp3);	/* horizontal distance */
+    dr = E->SX[3][lnode]-x3; /* vertical distance */
+    return sqrt(tmp3*tmp3 + dr*dr);
+  }else{
+    tmp1 = x1 - E->X[1][lnode];tmp2  = tmp1*tmp1;
+    tmp1 = x2 - E->X[2][lnode];tmp2 += tmp1*tmp1;
+    tmp1 = x3 - E->X[3][lnode];tmp2 += tmp1*tmp1;
+    return sqrt(tmp2);
+  }
+
+}
