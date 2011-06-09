@@ -43,10 +43,6 @@ DEFINES = -DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
 #	Operating System Variables
 ###################################################################
 
-#CC=/usr/local/mpich/bin/mpicc
-#CC=/opt/mpich/bin/mpicc
-#CC=/usr/lib/cmplrs/cc/gemc_cc
-#CC=$(HOME)/usr/local/mpich/bin/mpicc
 CC=mpicc
 F77=mpif77
 CPP=
@@ -60,69 +56,9 @@ OBJFLAG=-c
 FOBJFLAG=-c
 
 
-###################################
-# Choose your machine from here.
-###################################
-
-####################################
-# Dec Alpha, OSF 1
-AXPFLAGS= -unsigned  -non_shared  \
-	-math_library=fast -prefix=all -reentrancy=none -assume=noaccuracy_sensitive \
-	-unsigned_char -extern=strict_refdef -trapuv #  -D_INTRINSICS 
-AXPLDFLAGS= -unsigned -assume=noaccuracy_sensitive -non_shared -D_INTRINSICS 
-AXPOPTIM= -O -Ublas -float -Olimit 1000 # -cord  -feedback citcom.feedback
-####################################
-
-####################################
-# CRAY Unicos systems
-CRAYFLAGS=
-CRAYLDFLAGS=
-CRAYOPTIM=
-####################################
-
-####################################
-#IBM AIX systems
-AIXFLAGS= -D__aix__
-AIXLDFLAGS=
-AIXOPTIM= -O2 -qarch=pwr -qopt=pwr -Ublas
-####################################
-
-####################################
-# SUNOS systems
-SUNFLAGS= -D__sunos__ -Dconst=""
-SUNLDFLAGS=
-SUNOPTIM=-O -fsingle
-####################################
-
-####################################
-# Solaris systems
-SOLARISFLAGS= -D__solaris -Dconst="" -I/opt/mpi/include
-SOLARISLDFLAGS=-fast -lsocket -lnsl -lthread
-SOLARISOPTIM=-fast -xO4 -dalign -xtarget=ultra -xarch=v8plus -fsingle
-####################################
-
-####################################
-#HP running HPUX
-HPUXFLAGS=-Dconst=""
-HPUXLDFLAGS=
-HPUXOPTIM=+O3 +Onolimit +Odataprefetch
-#HPUXOPTIM=+O4 +Onolimit +Odataprefetch +Ofastaccess
-#HPUXOPTIM3=+O3 +Onolimit +Odataprefetch
-####################################
-
-####################################
-# SGI with IRIX 
-SGIFLAGS=
-SGILDFLAGS=
-SGIOPTIM=-O -fsingle
-####################################
-
-#LinuxFLAGS=-I/usr/local/mpi/include
-#LinuxFLAGS=-I/opt/mpi/include
-#LinuxFLAGS=-I$(HOME)/usr/include
 LinuxFLAGS=
 LinuxLDFLAGS=
-#LinuxOPTIM=-g
+#LinuxOPTIM=-g -O0 -Werror $(DEFINES)
 #LinuxOPTIM=-O3 -mtune=core2 -Werror $(DEFINES)
 LinuxOPTIM=-O2 -Werror $(DEFINES)
 
@@ -205,7 +141,7 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 default: citcom.mpi 
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
+	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi -nofor_main \
 	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:

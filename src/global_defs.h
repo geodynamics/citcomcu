@@ -92,6 +92,11 @@ void *Malloc1();
 #define MAX_F    10
 #define MAX_S    30
 
+#define MAX_NEIGHBORS 27
+
+//#define CU_MPI_MSG_LIM 100
+#define CU_MPI_MSG_LIM 1000
+
 /* Macros */
 
 #define max(A,B) (((A) > (B)) ? (A) : (B))
@@ -494,11 +499,11 @@ struct Parallel
 
 	int me_sph;
 	int no_neighbors;
-	int neighbors[27];
+	int neighbors[MAX_NEIGHBORS];
 	int *neighbors_rev;
-	int traces_receive_number[27];
-	int traces_transfer_number[27];
-	int *traces_transfer_index[27];
+	int traces_receive_number[MAX_NEIGHBORS];
+	int traces_transfer_number[MAX_NEIGHBORS];
+	int *traces_transfer_index[MAX_NEIGHBORS];
 };
 
 struct MESH_DATA
@@ -933,9 +938,10 @@ struct All_variables
 	int *Node_eqn[MAX_LEVELS];
 	int *Node_k_id[MAX_LEVELS];
 
-	float *RVV[27], *PVV[27];
-	double *RXX[27], *PXX[27];
-	int *RINS[27], *PINS[27];
+  
+	float *RVV[MAX_NEIGHBORS], *PVV[MAX_NEIGHBORS];
+	double *RXX[MAX_NEIGHBORS], *PXX[MAX_NEIGHBORS];
+	int *RINS[MAX_NEIGHBORS], *PINS[MAX_NEIGHBORS];
 
 	float *VO[4];
 	float *Vpred[4];

@@ -139,6 +139,7 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 		}
 	}
 	transfer_markers_processors(E, on_off);
+
 	/*   predicted compositional field at t+dt  */
 	element_markers(E, on_off);
 	/* update nodal values */
@@ -168,15 +169,19 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	{
 		markers = E->advection.markers / 10;
 		asize = (markers + 1) * E->mesh.nsd * 2;
+		if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
+		  myerror("error, number of neighbors out of bounds",E);
 		for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 		{
 			E->parallel.traces_transfer_index[neighbor] = (int *)malloc((markers + 1) * sizeof(int));
+
 			E->RVV[neighbor] = (float *)malloc(asize * sizeof(int));
 			E->RXX[neighbor] = (double *)malloc(asize * sizeof(double));
 			E->RINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 			E->PVV[neighbor] = (float *)malloc(asize  * sizeof(int));
 			E->PXX[neighbor] = (double *)malloc(asize * sizeof(double));
 			E->PINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
+
 		}
 		E->traces_leave_index = (int *)malloc((markers + 1) * sizeof(int));
 		been++;
@@ -249,7 +254,11 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	{
 		no_transferred += E->parallel.traces_transfer_number[neighbor];
 	}
+
+	/* this is the bad routine!!! */
 	prepare_transfer_arrays(E);
+	
+
 	exchange_number_rec_markers(E);
 
 	no_received = 0;
@@ -270,6 +279,7 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	exchange_markers(E);
 
 	unify_markers_array(E, no_transferred, no_received);
+
 
 	return;
 }
@@ -412,17 +422,26 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 void prepare_transfer_arrays(struct All_variables *E)
 {
   int j, part, neighbor, k1, k2, k3,k;
-	//if(E->parallel.me==0)fprintf(stderr,"ta 1 ok\n");
+  static int asize, markers,bsize,been_here = 0;
+  if(!been_here){
+    markers = E->advection.markers / 10;
+    asize = (markers + 1) * E->mesh.nsd * 2;
+    bsize = (markers + 1) * (2 + E->tracers_add_flavors);
+    been_here = 1;
+  }
+  parallel_process_sync();
+
+  //if(E->parallel.me==0)fprintf(stderr,"ta 1 ok\n");
 	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	{
 		k1 = k2 = k3 = 0;
-		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))
-		//fprintf(stderr,"ta %i %i %i - %i %i - %i %i %i \n",neighbor, E->parallel.no_neighbors,E->parallel.traces_transfer_number[neighbor],E->parallel.traces_transfer_number[neighbor]*6,E->parallel.traces_transfer_number[neighbor]*2,E->advection.markers / 10 ,(E->advection.markers / 10 + 1) * E->mesh.nsd * 2  ,(E->advection.markers / 10 + 1) *2);
 		for(j = 0; j < E->parallel.traces_transfer_number[neighbor]; j++)
 		{
 			part = E->parallel.traces_transfer_index[neighbor][j];
-			if((part > E->advection.markers)||(part<1)){fprintf(stderr,"pta: out of bounds %i %i\n",part,E->advection.markers);}
-			//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"%i %i %i\n",neighbor,j,part);
+			//if((part > E->advection.markers)||(part<1)){fprintf(stderr,"pta: out of bounds %i %i\n",part,E->advection.markers);myerror("pta out of bounds",E);}
+			//if(E->monitor.solution_cycles>199)fprintf(stderr,"%i --- %i/%i %i/%i %i\n",E->parallel.me,neighbor,E->parallel.no_neighbors,j,E->parallel.traces_transfer_number[neighbor],part);
+			
+			//if(k1+6 >= asize){fprintf(stderr,"k1 %i asize %i out of bounds\n",k1,asize);myerror("exit",E);};
 			E->PVV[neighbor][k1++] = E->VO[1][part];
 			E->PVV[neighbor][k1++] = E->VO[2][part];
 			E->PVV[neighbor][k1++] = E->VO[3][part];
@@ -430,6 +449,8 @@ void prepare_transfer_arrays(struct All_variables *E)
 			E->PVV[neighbor][k1++] = E->Vpred[2][part];
 			E->PVV[neighbor][k1++] = E->Vpred[3][part];
 
+
+			//if(k2+6 >= asize){fprintf(stderr,"k2 %i asize %i out of bounds\n",k2,asize);myerror("exit",E);};
 			E->PXX[neighbor][k2++] = E->XMC[1][part];
 			E->PXX[neighbor][k2++] = E->XMC[2][part];
 			E->PXX[neighbor][k2++] = E->XMC[3][part];
@@ -437,13 +458,14 @@ void prepare_transfer_arrays(struct All_variables *E)
 			E->PXX[neighbor][k2++] = E->XMCpred[2][part];
 			E->PXX[neighbor][k2++] = E->XMCpred[3][part];
 
+
+			//if(k3+2+E->tracers_add_flavors >= bsize){fprintf(stderr,"k3 %i bsize %i out of bounds\n",k3,bsize);myerror("exit",E);};
 			E->PINS[neighbor][k3++] = E->C12[part];
 			E->PINS[neighbor][k3++] = E->CElement[part];
 			for(k=0;k < E->tracers_add_flavors;k++)
 			  E->PINS[neighbor][k3++] = E->tflavors[part][k];
 
 		}
-		//if((E->parallel.me==0) && (E->monitor.solution_cycles>199))fprintf(stderr,"ta inner loop ok\n");
 	}
 	//if(E->parallel.me==0)fprintf(stderr,"ta 2 ok\n");
 	return;
@@ -544,9 +566,9 @@ void get_C_from_markers(struct All_variables *E, float *C)
 		}
 		E->CE[el] = temp3;
 	}
-	//if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange\n");
+
 	exchange_node_f20(E, C, E->mesh.levmax);
-	//if(E->parallel.me==0)fprintf(stderr,"gcfm: exchange done\n");
+
 	for(node = 1; node <= nno; node++)
 	{
 		C[node] = C[node] * E->Mass[node];

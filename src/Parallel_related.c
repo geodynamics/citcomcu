@@ -959,8 +959,8 @@ void exchange_number_rec_markers(struct All_variables *E)
 
 	static int been_here = 0;
 
-	MPI_Status status[100];
-	MPI_Request request[100];
+	MPI_Status status[CU_MPI_MSG_LIM];
+	MPI_Request request[CU_MPI_MSG_LIM];
 
 	if(been_here == 0)
 	{
@@ -1010,8 +1010,8 @@ void exchange_markers(struct All_variables *E)
 	int target_proc, kk, k, idb;
 	int rioff;
 
-	MPI_Status status[100];
-	MPI_Request request[100];
+	MPI_Status status[CU_MPI_MSG_LIM];
+	MPI_Request request[CU_MPI_MSG_LIM];
 
 	rioff = 2 + E->tracers_add_flavors;
 
@@ -1071,8 +1071,8 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 	static int sizeofk;
 	const int levmax = E->mesh.levmax;
 
-	MPI_Status status[100];
-	MPI_Request request[100];
+	MPI_Status status[CU_MPI_MSG_LIM];
+	MPI_Request request[CU_MPI_MSG_LIM];
 
 	if(been_here == 0)
 	{
@@ -1160,8 +1160,8 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 	static int sizeofk;
 	const int levmax = E->mesh.levmax;
 
-	MPI_Status status[100];
-	MPI_Request request[100];
+	MPI_Status status[CU_MPI_MSG_LIM];
+	MPI_Request request[CU_MPI_MSG_LIM];
 
 	if(been_here == 0)
 	{
@@ -1247,8 +1247,8 @@ void exchange_node_int(struct All_variables *E, int *U, int lev)
   static int sizeofk;
   const int levmax = E->mesh.levmax;
   
-  MPI_Status status[100];
-  MPI_Request request[100];
+  MPI_Status status[CU_MPI_MSG_LIM];
+  MPI_Request request[CU_MPI_MSG_LIM];
   
   if(been_here == 0){
       sizeofk = 0;

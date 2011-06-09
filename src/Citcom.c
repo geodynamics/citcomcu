@@ -55,9 +55,9 @@ int main(int argc, char **argv)
 {
 	struct All_variables E;
 	double time, initial_time, start_time;
+	int debug_steps = 0;
 
 	srand48((long int)-1);
-/*	parallel_process_initialization(&E,argc,argv); */
 
 	E.parallel.me = 0;
 	E.parallel.nproc = 1;
@@ -94,11 +94,11 @@ int main(int argc, char **argv)
 		fprintf(E.fp, "Initialization overhead = %f\n", initial_time);
 		initial_time = CPU_time0();
 	}
-	//if(E.parallel.me == 0)fprintf(stderr,"solving stokes\n");
+	if(debug_steps && (E.parallel.me==0))fprintf(stderr,"solving stokes\n");
 	general_stokes_solver(&E);
-	//if(E.parallel.me == 0)fprintf(stderr,"processing temp\n");
+	if(debug_steps && (E.parallel.me==0))fprintf(stderr,"processing temp\n");
 	process_temp_field(&E, E.monitor.solution_cycles);
-	//if(E.parallel.me == 0)fprintf(stderr,"processing vel\n");
+	if(debug_steps && (E.parallel.me==0))fprintf(stderr,"processing vel\n");
 	process_new_velocity(&E, E.monitor.solution_cycles);
 
 	if(E.control.stokes)
@@ -113,33 +113,33 @@ int main(int argc, char **argv)
 	  
 	  
 		process_heating(&E);
-		//if(E.parallel.me==0)fprintf(stderr,"process heating done\n");
+		if(debug_steps && (E.parallel.me==0))fprintf(stderr,"process heating done\n");
 		
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
 			E.control.print_convergence = 1;
 		 /**/ report(&E, "Update buoyancy for further `timesteps'");
 		(E.next_buoyancy_field) (&E);
-		if(E.parallel.me==0)fprintf(stderr,"buoyancy field done\n");
+		if(debug_steps && (E.parallel.me==0))fprintf(stderr,"buoyancy field done\n");
 
 		 /**/ report(&E, "Process results of buoyancy update");
 		process_temp_field(&E, E.monitor.solution_cycles);
-  		if(E.parallel.me==0)fprintf(stderr,"temp field done\n");
+  		if(debug_steps && (E.parallel.me==0))fprintf(stderr,"temp field done\n");
 
 		if(E.monitor.solution_cycles == E.control.freeze_surface_at_step){ /* for testing purposes */
 		  freeze_surface(&E);
 		}
 
 		general_stokes_solver(&E);
-		//if(E.parallel.me==0)fprintf(stderr,"stokes solver done\n");
+		if(debug_steps && (E.parallel.me==0))fprintf(stderr,"stokes solver done\n");
 
 		if(E.control.composition){
 		  (E.next_buoyancy_field) (&E);	/* correct with R-G */
-		  //if(E.parallel.me==0)fprintf(stderr,"next buoyancy composition done\n");
+		  if(debug_steps && (E.parallel.me==0))fprintf(stderr,"next buoyancy composition done\n");
 		}
 		 /**/ report(&E, "Process results of velocity solver");
 		process_new_velocity(&E, E.monitor.solution_cycles);
-		//if(E.parallel.me==0)fprintf(stderr,"process new velocity done\n");
+		if(debug_steps && (E.parallel.me==0))fprintf(stderr,"process new velocity done\n");
 
 
 		if(E.monitor.T_interior > E.monitor.T_interior_max)
@@ -150,7 +150,9 @@ int main(int argc, char **argv)
 		}
 		if(E.parallel.me == 0)
 		{
-			fprintf(E.fp, "CPU total = %g & CPU = %g for step %d time = %.4e dt = %.4e  maxT = %.4e sub_iteration%d markers=%d\n", CPU_time0() - start_time, CPU_time0() - time, E.monitor.solution_cycles, E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, E.advection.last_sub_iterations, E.advection.markers_g);
+			fprintf(E.fp, "CPU total = %g & CPU = %g for step %d time = %.4e dt = %.4e  maxT = %.4e sub_iteration%d markers=%d\n", 
+				CPU_time0() - start_time, CPU_time0() - time, E.monitor.solution_cycles, 
+				E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, E.advection.last_sub_iterations, E.advection.markers_g);
 			time = CPU_time0();
 		}
 
