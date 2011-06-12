@@ -143,7 +143,9 @@ struct VISC_OPT
   int CDEPV;			/* composition dependent viscosity */
   int cdepv_absolute;		/* make the composition an absolute viscosity,
 				   not a prefactor */
-  float pre_comp[CITCOM_CU_VISC_MAXLAYER]; /* prefactors */
+  float pre_comp[CITCOM_CU_VISC_MAXLAYER*2]; /* prefactors */
+  int layer_pre_comp;
+
   int pdepv_for_flavor;
 
 

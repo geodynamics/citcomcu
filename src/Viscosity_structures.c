@@ -96,7 +96,7 @@ void viscosity_parameters(struct All_variables *E)
 		}
 		
 		/* comp dep visc */
-		E->viscosity.pre_comp[i] = 1.0;
+		E->viscosity.pre_comp[i*2] = E->viscosity.pre_comp[i*2+1] = 1.0;
 
 
 		E->viscosity.zbase_layer[i] = -999; /* not assigned by default */
@@ -231,10 +231,22 @@ void viscosity_parameters(struct All_variables *E)
 	}
 #endif
 
-
-
-	/* composition factors */
-	input_float_vector("pre_comp",2,(E->viscosity.pre_comp),m);
+	input_boolean("layer_pre_comp",&(E->viscosity.layer_pre_comp),"off",m);	/* use
+										   different
+										   prefactors
+										   for
+										   all
+										   layers? */
+	if(E->viscosity.layer_pre_comp){
+	  if(m==0)fprintf(stderr,"expecting compositional pre factors for %i layers, i.e. %i values\n",
+			  E->viscosity.num_mat,E->viscosity.num_mat*2);
+	  /* read in factors for each layer */
+	  input_float_vector("pre_comp", E->viscosity.num_mat*2,(E->viscosity.pre_comp),m);	
+	}else{
+	  /* composition factors, by default only two are read in, and
+	     those apply everywhere */
+	  input_float_vector("pre_comp",2,(E->viscosity.pre_comp),m);
+	}
 
 
 
@@ -1476,21 +1488,30 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 {
   float comp,comp_fac,CC[9],tcomp;
   double vmean,cc_loc;
-  int m,l,z,jj,kk,i;
+  int m,l,l2,z,jj,kk,i,j;
   static int visited = 0;
-  static double logv[2];
+  static double logv[CITCOM_CU_VISC_MAXLAYER*2];
   const int vpts = vpoints[E->mesh.nsd];
   const int nel = E->lmesh.nel;
   const int ends = enodes[E->mesh.nsd];
   if(!visited){
     /* log of the material viscosities */
-    logv[0] = log(E->viscosity.pre_comp[0]);
-    logv[1] = log(E->viscosity.pre_comp[1]);
+    if(E->viscosity.layer_pre_comp){
+      for(i=0;i < E->viscosity.num_mat;i++){
+	if(E->parallel.me == 0)
+	  fprintf(stderr,"compositional factors layer %3i: %11g %11g\n",i+1,
+		  E->viscosity.pre_comp[i*2],E->viscosity.pre_comp[i*2+1]);
+	for(j=0;j<2;j++)
+	  logv[i*2+j]   = log(E->viscosity.pre_comp[i*2+j]);
+      }
+    }else{			/* only two values needed */
+      logv[0] = log(E->viscosity.pre_comp[0]);logv[1] = log(E->viscosity.pre_comp[1]);
+    }
     if((E->parallel.me==0)&&(E->viscosity.cdepv_absolute)){
       fprintf(stderr,"WARNING: using cdepv for absolute viscosity\n");
     }
   }
-  if(E->viscosity.cdepv_absolute){
+  if(E->viscosity.cdepv_absolute){ /* this is OFF by default */
     /* 
        
     override all other viscosities (this is exact same as below but
@@ -1500,6 +1521,8 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
     
     */
     for(i = 1; i <= nel; i++){
+      l = (E->viscosity.layer_pre_comp)?(E->mat[i] - 1):(0);
+      l2 = 2*l;
       for(kk = 1; kk <= ends; kk++){
 	CC[kk] = E->C[E->ien[i].node[kk]];
 	if(E->control.check_c_irange){
@@ -1511,7 +1534,7 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 	for(kk = 1; kk <= ends; kk++)
 	  cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
 	/* mean between background viscosity and second material viscosity */
-	EEta[ (i-1)*vpts + jj ]= exp(cc_loc  * logv[1] + (1.0-cc_loc) * log(EEta[ (i-1)*vpts + jj ]));
+	EEta[ (i-1)*vpts + jj ]= exp(cc_loc  * logv[l2+1] + (1.0-cc_loc) * log(EEta[ (i-1)*vpts + jj ]));
       } /* end jj loop */
     }
   }else{
@@ -1519,8 +1542,9 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
        regular mode, multiply with any previous viscosity
 
     */
-    for(i = 1; i <= nel; i++)
-    {
+    for(i = 1; i <= nel; i++){
+      l = (E->viscosity.layer_pre_comp)?(E->mat[i] - 1):(0);
+      l2 = l*2;
       /* determine composition of each of the nodes of the element */
       for(kk = 1; kk <= ends; kk++){
 	CC[kk] = E->C[E->ien[i].node[kk]];
@@ -1529,15 +1553,14 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 	  if(CC[kk] > 1)CC[kk]=1.0;
 	}
       }
-      for(jj = 1; jj <= vpts; jj++)
-	{
+      for(jj = 1; jj <= vpts; jj++){
 	  /* compute mean composition  */
 	  cc_loc = 0.0;
 	  for(kk = 1; kk <= ends; kk++){/* the vpt takes care of averaging */
 	    cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
 	  }
 	  /* geometric mean of compositional viscosity prefactors */
-	  vmean = exp(cc_loc  * logv[1] + (1.0-cc_loc) * logv[0]);
+	  vmean = exp(cc_loc  * logv[l2+1] + (1.0-cc_loc) * logv[l2]);
 	  EEta[ (i-1)*vpts + jj ] *= vmean;
 	} /* end jj loop */
     }
