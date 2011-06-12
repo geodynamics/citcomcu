@@ -39,9 +39,10 @@ void isacalc(double [3][3], double *, double [3], struct All_variables *, int *)
 void f_times_ft(double [3][3], double [3][3]);
 void drex_eigen(double [3][3], double [3][3], int *);
 void malmul_scaled_id(double [3][3], double [3][3], double, double);
+void myerror_s(char *, struct All_variables *);
 /* Boundary_conditions.c */
-void freeze_surface(struct All_variables *);
 void velocity_boundary_conditions(struct All_variables *);
+void freeze_surface(struct All_variables *);
 void temperature_boundary_conditions(struct All_variables *);
 void velocity_refl_vert_bc(struct All_variables *);
 void temperature_refl_vert_bc(struct All_variables *);
@@ -63,6 +64,7 @@ void unify_markers_array(struct All_variables *, int, int);
 void prepare_transfer_arrays(struct All_variables *);
 int locate_processor(struct All_variables *, double, double, double);
 void get_C_from_markers(struct All_variables *, float *);
+void get_CF_from_markers(struct All_variables *, int **);
 void element_markers(struct All_variables *, int);
 void velocity_markers(struct All_variables *, float *[4], int);
 int get_element(struct All_variables *, double, double, double, double [4]);
@@ -97,6 +99,7 @@ void convection_initial_temperature(struct All_variables *);
 void process_restart_tc(struct All_variables *);
 void convection_initial_markers1(struct All_variables *);
 void convection_initial_markers(struct All_variables *, int);
+void assign_flavor_to_tracer_based_on_node(struct All_variables *, int, int);
 void setup_plume_problem(struct All_variables *);
 void PG_process(struct All_variables *, int);
 /* Drive_solvers.c */
@@ -107,7 +110,6 @@ void assemble_forces(struct All_variables *, int);
 void get_elt_k(struct All_variables *, int, double [24 * 24], int, int);
 void get_ba(struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [9][4][9][7]);
 void get_ba_p(struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [9][4][9][7]);
-void get_vgm_p(double [4][9], struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [3][3], double [3]);
 void assemble_del2_u(struct All_variables *, double *, double *, int, int);
 void e_assemble_del2_u(struct All_variables *, double *, double *, int, int);
 void n_assemble_del2_u(struct All_variables *, double *, double *, int, int);
@@ -166,12 +168,14 @@ void set_2pt5dc_defaults(struct All_variables *);
 void set_3ds_defaults(struct All_variables *);
 void set_3dc_defaults(struct All_variables *);
 /* Ggrd_handling.c */
-int in_slab_slice(float, int, struct All_variables *);
+void convection_initial_temperature_and_comp_ggrd(struct All_variables *);
+void assign_flavor_to_tracer_from_grd(struct All_variables *);
+void ggrd_deal_with_composition_input(struct All_variables *, int);
+void assign_flavor_to_tracer_from_grd(struct All_variables *);
+int in_slab_slice(float, int, struct All_variables *,float *,int);
 void ggrd_read_mat_from_file(struct All_variables *);
 void ggrd_solve_eigen3x3(double [3][3], double [3], double [3][3], struct All_variables *);
 void ggrd_read_anivisc_from_file(struct All_variables *);
-void ggrd_deal_with_composition_input(struct All_variables *, int );
-
 /* Global_operations.c */
 void return_horiz_sum(struct All_variables *, float *, float *, int);
 void return_horiz_ave(struct All_variables *, float *, float *);
@@ -203,14 +207,20 @@ void record(struct All_variables *, char *);
 void common_initial_fields(struct All_variables *);
 void initial_pressure(struct All_variables *);
 void initial_velocity(struct All_variables *);
+/* io.c */
+_Bool io_directory_create(const char *);
+_Bool io_directory_exists(const char *);
+void io_error(void);
+_Bool io_results(struct All_variables *);
+_Bool io_setup_path(struct All_variables *);
 /* Nodal_mesh.c */
 void node_locations(struct All_variables *);
 void pre_interpolation(struct All_variables *);
 void dlogical_mesh_to_real(struct All_variables *, double *, int);
 void flogical_mesh_to_real(struct All_variables *, float *, int);
 void p_to_nodes(struct All_variables *, double *, float *, int);
+void e2_to_nodes(struct All_variables *, float *, float *, int);
 void p_to_centres(struct All_variables *, float *, double *, int);
-void e2_to_nodes(struct All_variables *, float *, float *, int );
 void v_to_intpts(struct All_variables *, float *, float *, int);
 void v_to_nodes(struct All_variables *, float *, float *, int);
 void visc_to_intpts(struct All_variables *, float *, float *, int);
@@ -219,6 +229,8 @@ void visc_from_ele_to_gint(struct All_variables *, float *, float *, int);
 void visc_from_gint_to_ele(struct All_variables *, float *, float *, int);
 void visc_from_gint_to_nodes(struct All_variables *, float *, float *, int);
 void visc_from_nodes_to_gint(struct All_variables *, float *, float *, int);
+/* output_ascii.c */
+_Bool output_ascii(struct All_variables *);
 /* Output.c */
 void output_velo_related_binary(struct All_variables *, int);
 void output_temp(struct All_variables *, int);
@@ -227,6 +239,8 @@ void print_field_spectral_regular(struct All_variables *, float *, float *, floa
 /* Output_gzdir.c */
 void output_velo_related_gzdir(struct All_variables *, int);
 void process_restart_tc_gzdir(struct All_variables *);
+/* output_vtk.c */
+_Bool output_vtk(struct All_variables *);
 /* Pan_problem_misc_functions.c */
 int get_process_identifier(void);
 void unique_copy_file(struct All_variables *, char *, char *);
@@ -261,6 +275,7 @@ void cross_product(double [3], double [3], double [3]);
 void matmul_3x3(double [3][3], double [3][3], double [3][3]);
 void assign_to_3x3(double [3][3], double);
 void remove_trace_3x3(double [3][3]);
+double distance_to_node(double, double, double, struct All_variables *, int);
 /* Parallel_related.c */
 void parallel_process_termination(void);
 void parallel_domain_decomp1(struct All_variables *);
@@ -276,6 +291,7 @@ void exchange_number_rec_markers(struct All_variables *);
 void exchange_markers(struct All_variables *);
 void exchange_id_d20(struct All_variables *, double *, int);
 void exchange_node_f20(struct All_variables *, float *, int);
+void exchange_node_int(struct All_variables *, int *, int);
 double CPU_time0(void);
 void parallel_process_sync(void);
 /* Parsing.c */
@@ -294,14 +310,11 @@ int input_float_vector(char *, int, float *, int);
 int input_double_vector(char *, int, double *, int);
 int interpret_control_string(char *, int *, double *, double *, double *);
 /* Phase_change.c */
-void phase_change(struct All_variables *, float *, float *, float *, float *);
 /* Process_buoyancy.c */
-void process_temp_field(struct All_variables *, int);
 void heat_flux(struct All_variables *);
 void heat_flux1(struct All_variables *);
 void plume_buoyancy_flux(struct All_variables *);
 /* Process_velocity.c */
-void process_new_velocity(struct All_variables *, int);
 void get_surface_velo(struct All_variables *, float *);
 void get_ele_visc(struct All_variables *, float *);
 void get_surf_stress(struct All_variables *, float *, float *, float *, float *, float *, float *);
@@ -309,11 +322,9 @@ void averages(struct All_variables *);
 /* Profiling.c */
 float CPU_time(void);
 /* Shape_functions.c */
-void construct_shape_functions(struct All_variables *);
 double lpoly(int, double);
 double lpolydash(int, double);
 /* Size_does_matter.c */
-void twiddle_thumbs(struct All_variables *, int);
 void get_global_shape_fn(struct All_variables *, int, int, double [4][9], int, int);
 void form_rtf_bc(int, double [4], double [4][9], double [4][4]);
 void get_rtf(struct All_variables *, int, int, double [4][9], int);
@@ -322,7 +333,6 @@ void get_global_1d_shape_fn(struct All_variables *, int, struct Shape_function1 
 void get_global_1d_shape_fn1(struct All_variables *, int, struct Shape_function1 *, struct Shape_function1_dA *, int);
 void mass_matrix(struct All_variables *);
 /* Solver_conj_grad.c */
-void set_cg_defaults(struct All_variables *);
 void cg_allocate_vars(struct All_variables *);
 void assemble_forces_iterative(struct All_variables *);
 /* Solver_multigrid.c */
@@ -339,7 +349,6 @@ void un_inject_vector(struct All_variables *, int, double *, double *);
 void inject_scalar(struct All_variables *, int, float *, float *);
 void inject_scalar_e(struct All_variables *, int, float *, float *);
 /* Sphere_harmonics.c */
-void set_sphere_harmonics(struct All_variables *);
 void sphere_harmonics_layer(struct All_variables *, float **, float *, float *, int, char *);
 void sphere_interpolate(struct All_variables *, float **, float *);
 void sphere_expansion(struct All_variables *, float *, float *, float *);
@@ -364,10 +373,10 @@ void apply_viscosity_smoother(struct All_variables *, float *, float *);
 void visc_from_mat(struct All_variables *, float *, float *);
 void visc_from_T(struct All_variables *, float *, float *, int);
 void visc_from_S(struct All_variables *, float *, float *, int);
-void visc_from_S2(struct All_variables *, float *, float *, int);
 void strain_rate_2_inv(struct All_variables *, float *, int);
 double second_invariant_from_3x3(double [3][3]);
 void calc_vgm_matrix(struct All_variables *, double *, double *);
+void get_vgm_p(double [4][9], struct Shape_function *, struct Shape_function_dx *, struct CC *, struct CCX *, double [4][9], int, int, int, int, double [3][3], double [3]);
 void calc_strain_from_vgm(double [3][3], double [3][3]);
 void calc_strain_from_vgm9(double *, double [3][3]);
 void calc_rot_from_vgm(double [3][3], double [3][3]);
@@ -375,8 +384,3 @@ void calc_strain_rate_matrix(struct All_variables *, double *);
 int layers(struct All_variables *, float);
 int weak_zones(struct All_variables *, int, float);
 float boundary_thickness(struct All_variables *, float *);
-double distance_to_node(double , double , double ,struct All_variables *, int );
-void assign_flavor_to_tracer_based_on_node(struct All_variables *, int , int );
-void exchange_node_int(struct All_variables *, int *, int );
-void get_CF_from_markers(struct All_variables *, int **);
-void assign_flavor_to_tracer_from_grd(struct All_variables *);

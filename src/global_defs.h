@@ -94,8 +94,10 @@ void *Malloc1();
 
 #define MAX_NEIGHBORS 27
 
-//#define CU_MPI_MSG_LIM 100
-#define CU_MPI_MSG_LIM 1000
+#define GGRD_MAX_NR_SLICE 5
+
+#define CU_MPI_MSG_LIM 100	/* this increase wasn't necessary */
+//#define CU_MPI_MSG_LIM 1000
 
 /* Macros */
 
@@ -763,8 +765,10 @@ struct CONTROL
 	float Ra_410, clapeyron410, transT410, width410;
 #ifdef USE_GGRD
   struct ggrd_master ggrd;
-  int ggrd_slab_slice;
-  float ggrd_slab_theta_bound[4];
+
+  int ggrd_t_slab_slice,ggrd_c_slab_slice;
+  float ggrd_t_slab_theta_bound[GGRD_MAX_NR_SLICE],ggrd_c_slab_theta_bound[GGRD_MAX_NR_SLICE];
+
   struct ggrd_gt ggrd_ss_grd[4];
   int ggrd_mat_limit_prefactor,ggrd_mat_is_3d;
   char ggrd_mat_depth_file[1000],ggrd_flavor_gfile[1000],ggrd_flavor_dfile[1000];
@@ -1063,11 +1067,14 @@ struct All_variables
  could also use 
   cproto -DCITCOM_ALLOW_ANISOTROPIC_VISC -DUSE_GGRD -q -p -I. -f2 *.c > prototypes.h
 
- */
+  cproto -DCITCOM_ALLOW_ANISOTROPIC_VISC -DUSE_GGRD -q -p -I. -I$HOME/progs/src/hc-svn/ -I$GMTHOME/include/ -f2 *.c > prototypes.h
+
+
+ */ 
 void twiddle_thumbs(struct All_variables *, int ); /* somehow, cproto
 						      does not pick up
 						      these functions?! */
-void convection_initial_temperature_ggrd(struct All_variables *);
+void convection_initial_temperature_and_comp_ggrd(struct All_variables *);
 void set_2dc_defaults(struct All_variables *);
 void remove_horiz_ave(struct All_variables *, float *, float *, int );
 void output_velo_related_gzdir(struct All_variables *, int);

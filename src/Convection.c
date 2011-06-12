@@ -206,7 +206,7 @@ void convection_initial_fields(struct All_variables *E)
 
 	report(E, "convection, initial temperature");
 #ifdef USE_GGRD
-	convection_initial_temperature_ggrd(E);
+	convection_initial_temperature_and_comp_ggrd(E);
 #else
 	convection_initial_temperature(E);
 #endif

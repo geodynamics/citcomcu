@@ -49,7 +49,7 @@
    Initialization of fields .....
    =============================== */
 
-void convection_initial_temperature_ggrd(struct All_variables *E)
+void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 {
   int ll, mm, i, j, k, p, node, ii,slice,hit;
   double temp, temp1, temp2, temp3, base, radius, radius2;
@@ -90,216 +90,218 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
   top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 0.0;
 
   for(i=1;i<=E->lmesh.nno;i++) {
-    /* init as zeros */
+    /* 
+       init both composition and temperature as zeros 
+    */
     E->T[i] = E->C[i] = 0.0;
   }
-  if(!E->control.restart)
-    {				/* 
-
-				regular init
-
-				*/
-
-      if(E->control.ggrd.use_temp){ /* read T init from grid */
-	if(E->parallel.me==0)  
-	  fprintf(stderr,"convection_initial_temperature: using GMT grd files for temperatures\n");
-	/* 
+  if(!E->control.restart){
+    /* 
+       
+    regular init
+    
+    */
+    
+    if(E->control.ggrd.use_temp){ /* read T init from grid */
+      if(E->parallel.me==0)  
+	fprintf(stderr,"convection_initial_temperature: using GMT grd files for temperatures\n");
+      /* 
 	       
-	read in tempeatures/density from GMT grd files
+      read in tempeatures/density from GMT grd files
 	    
 	    
-	*/
-	if(E->parallel.me > 0){
-	  /* 
-	     wait for the previous processor 
-	  */
-	  mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
-			    MPI_COMM_WORLD, &mpi_stat);
-	}
-	if(E->parallel.me == 0)
-	  fprintf(stderr,"Init: initializing PREM and ggrd files\n");
-	if(E->control.ggrd.temp.scale_with_prem){
-	  if(!E->control.Rsphere)
-	    myerror("cannot use PREM with Cartesian setting",E);
-	  /* initialize PREM */
-	  if(prem_read_model(PREM_MODEL_FILE,&E->control.ggrd.temp.prem, 
-			     (E->parallel.me==0)))
-	    myerror("prem initialization",E);
-	}
+      */
+      if(E->parallel.me > 0){
 	/* 
-	   initialize the GMT grid files 
+	   wait for the previous processor 
 	*/
-	if(E->control.ggrd_slab_slice){ /* only a few slices of x - depth */
-	  if(E->control.ggrd_slab_slice == 1){
-	    if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.temp.gfile, 
-					  char_dummy,"",E->control.ggrd_ss_grd,
+	mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
+			  MPI_COMM_WORLD, &mpi_stat);
+      }
+      if(E->parallel.me == 0)
+	fprintf(stderr,"Init: initializing PREM and ggrd files\n");
+      if(E->control.ggrd.temp.scale_with_prem){
+	if(!E->control.Rsphere)
+	  myerror("cannot use PREM with Cartesian setting",E);
+	/* initialize PREM */
+	if(prem_read_model(PREM_MODEL_FILE,&E->control.ggrd.temp.prem, 
+			   (E->parallel.me==0)))
+	  myerror("prem initialization",E);
+      }
+      /* 
+	 initialize the GMT grid files for temperatures
+      */
+      if(E->control.ggrd_t_slab_slice){ /* only a few slices of x - depth */
+	if(E->control.ggrd_t_slab_slice == 1){
+	  if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd.temp.gfile, 
+					char_dummy,"",E->control.ggrd_ss_grd,
+					(E->parallel.me==0),
+					FALSE,FALSE))
+	    myerror("grdtrack x-z init error",E);
+	}else{		/* read several slab slices */
+	  for(slice=0;slice < E->control.ggrd_t_slab_slice;slice++){
+	    sprintf(pfile,"%s.%i.grd",E->control.ggrd.temp.gfile,slice+1);
+	    if(ggrd_grdtrack_init_general(FALSE,pfile, 
+					  char_dummy,"",(E->control.ggrd_ss_grd+slice),
 					  (E->parallel.me==0),
 					  FALSE,FALSE))
 	      myerror("grdtrack x-z init error",E);
-	  }else{		/* several slab slices */
-	    for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
-	      sprintf(pfile,"%s.%i.grd",E->control.ggrd.temp.gfile,slice+1);
-	      if(ggrd_grdtrack_init_general(FALSE,pfile, 
-					    char_dummy,"",(E->control.ggrd_ss_grd+slice),
-					    (E->parallel.me==0),
-					    FALSE,FALSE))
-		myerror("grdtrack x-z init error",E);
-	    }
 	  }
-	}else{			/* 3-D */
-	  if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.temp.gfile, 
-					E->control.ggrd.temp.dfile,"",
-					E->control.ggrd.temp.d,(E->parallel.me==0),
-					FALSE,FALSE))
-	    myerror("grdtrack 3-D init error",E);
 	}
+      }else{			/* 3-D */
+	if(ggrd_grdtrack_init_general(TRUE,E->control.ggrd.temp.gfile, 
+				      E->control.ggrd.temp.dfile,"",
+				      E->control.ggrd.temp.d,(E->parallel.me==0),
+				      FALSE,FALSE))
+	  myerror("grdtrack 3-D init error",E);
+      }
 
 
 	
-	if(E->parallel.me <  E->parallel.nproc-1){
-	  /* 
-	     tell the next processor to go ahead 
-	  */
-	  mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
-			    (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
-	}else{
-	  fprintf(stderr,"convection_initial_temperature: last processor done with temp grd init\n");
-	}
+      if(E->parallel.me <  E->parallel.nproc-1){
 	/* 
-	       
-	end MPI synchornization  part
-	    
-	*/	
-	/* 
-	       
-	interpolate densities to temperature given PREM variations
-	    
+	   tell the next processor to go ahead 
 	*/
+	mpi_rc = MPI_Send(&mpi_success_message, 1, MPI_INT, 
+			  (E->parallel.me+1), mpi_tag, MPI_COMM_WORLD);
+      }else{
+	fprintf(stderr,"convection_initial_temperature: last processor done with temp grd init\n");
+      }
+      /* 
+	       
+      end MPI synchornization  part
+	    
+      */	
+      /* 
+	       
+      interpolate densities to temperature given PREM variations
+	    
+      */
 
-      	tmean = (top_t + bot_t)/2.0 +  E->control.ggrd.temp.offset;
-	if(E->parallel.me == 0)
-	  fprintf(stderr,"tinit: top: %g bot: %g mean: %g scale: %g PREM %i\n",
-		  top_t,bot_t,tmean,E->control.ggrd.temp.scale,
-		  E->control.ggrd.temp.scale_with_prem);
-	for(i=1;i<=noy;i++)  
-	  for(j=1;j<=nox;j++) 
-	    for(k=1;k<=noz;k++)  {
-	      node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
-	      if(E->control.ggrd_slab_slice){
-		/* 
+      tmean = (top_t + bot_t)/2.0 +  E->control.ggrd.temp.offset;
+      if(E->parallel.me == 0)
+	fprintf(stderr,"tinit: top: %g bot: %g mean: %g scale: %g PREM %i\n",
+		top_t,bot_t,tmean,E->control.ggrd.temp.scale,
+		E->control.ggrd.temp.scale_with_prem);
+      for(i=1;i <= noy;i++)  
+	for(j=1;j <= nox;j++) 
+	  for(k=1;k<=noz;k++)  {
+	    node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
+	    if(E->control.ggrd_t_slab_slice){
+	      /* 
 
-		slab slice input 
+	      slab slice input 
 
-		*/
-		for(slice=hit=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
-		  if(E->control.Rsphere) {
-		    if(in_slab_slice(E->SX[1][node],slice,E)){
-		      /* spherical interpolation for a slice ! */
-		      ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
-						   (double)E->SX[1][node],
-						   (E->control.ggrd_ss_grd+slice),&tadd,
-						   FALSE);
-		      hit=1;
-		    }
-		  }else{		/* cartesian interpolation */
-		    if(in_slab_slice(E->X[2][node],slice,E)){
-		      ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
-						   (double)E->X[3][node],
-						   (E->control.ggrd_ss_grd+slice),&tadd,
-						   FALSE);
-		      hit = 1;
-		    }
+	      */
+	      for(slice=hit=0;(!hit) && (slice < E->control.ggrd_t_slab_slice);slice++){
+		if(E->control.Rsphere) {
+		  if(in_slab_slice(E->SX[1][node],slice,E, E->control.ggrd_t_slab_theta_bound,E->control.ggrd_t_slab_slice)){
+		    /* spherical interpolation for a slice ! */
+		    ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
+						 (double)E->SX[1][node],
+						 (E->control.ggrd_ss_grd+slice),&tadd,
+						 FALSE);
+		    hit=1;
+		  }
+		}else{		/* cartesian interpolation */
+		  if(in_slab_slice(E->X[2][node],slice,E, E->control.ggrd_t_slab_theta_bound,E->control.ggrd_t_slab_slice)){
+		    ggrd_grdtrack_interpolate_xy((double)E->X[1][node],
+						 (double)E->X[3][node],
+						 (E->control.ggrd_ss_grd+slice),&tadd,
+						 FALSE);
+		    hit = 1;
 		  }
 		}
-		if(!hit)
-		  if(((E->control.Rsphere) && (E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))||
-		     (E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))
-		    tadd = E->control.TBCtopval;
-		  else
-		    tadd = 1.0;
-		/* end slice part */
-	      }else{
-		/* 
+	      }
+	      if(!hit)
+		if(((E->control.Rsphere) && (E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))||
+		   (E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))
+		  tadd = E->control.TBCtopval;
+		else
+		  tadd = 1.0;
+	      /* end slice part */
+	    }else{
+	      /* 
 		   
-		3-D grid model input
+	      3-D grid model input
 
-		*/
-		if(E->control.Rsphere) /* spherical interpolation */
-		  ggrd_grdtrack_interpolate_rtp((double)E->SX[3][node],
-						(double)E->SX[1][node],
-						(double)E->SX[2][node],
-						E->control.ggrd.temp.d,&tadd,
-						FALSE,FALSE);
-		else{		/* cartesian interpolation */
-		  ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],
-						(double)E->X[2][node],
-						(double)E->X[3][node],
-						E->control.ggrd.temp.d,&tadd,
-						FALSE);
-		}
+	      */
+	      if(E->control.Rsphere) /* spherical interpolation */
+		ggrd_grdtrack_interpolate_rtp((double)E->SX[3][node],
+					      (double)E->SX[1][node],
+					      (double)E->SX[2][node],
+					      E->control.ggrd.temp.d,&tadd,
+					      FALSE,FALSE);
+	      else{		/* cartesian interpolation */
+		ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],
+					      (double)E->X[2][node],
+					      (double)E->X[3][node],
+					      E->control.ggrd.temp.d,&tadd,
+					      FALSE);
 	      }
-	      if(E->control.ggrd.temp.scale_with_prem){ /* only works for spherical! */
-		/* 
-		   get the PREM density at r for additional scaling  
-		*/
-		prem_get_rho(&rho_prem,(double)E->SX[3][node],&E->control.ggrd.temp.prem);
-		if(rho_prem < 3200.0)
-		  rho_prem = 3200.0; /* we don't want the viscosity of water */
-		/* 
-		   assign temperature 
-		*/
-		E->T[node] = tmean + tadd * E->control.ggrd.temp.scale * 
-		  rho_prem / E->data.density;
-	      }else{
-		/* no PREM scaling */
-		E->T[node] = tmean + tadd * E->control.ggrd.temp.scale;
+	    }
+	    if(E->control.ggrd.temp.scale_with_prem){ /* only works for spherical! */
+	      /* 
+		 get the PREM density at r for additional scaling  
+	      */
+	      prem_get_rho(&rho_prem,(double)E->SX[3][node],&E->control.ggrd.temp.prem);
+	      if(rho_prem < 3200.0)
+		rho_prem = 3200.0; /* we don't want the viscosity of water */
+	      /* 
+		 assign temperature 
+	      */
+	      E->T[node] = tmean + tadd * E->control.ggrd.temp.scale * 
+		rho_prem / E->data.density;
+	    }else{
+	      /* no PREM scaling */
+	      E->T[node] = tmean + tadd * E->control.ggrd.temp.scale;
 		
-		//fprintf(stderr,"z: %11g mean: %11g tadd: %11g scale: %11g T: %11g\n", E->X[3][node],tmean, tadd ,E->control.ggrd_tinit_scale,	E->T[node] );
+	      //fprintf(stderr,"z: %11g mean: %11g tadd: %11g scale: %11g T: %11g\n", E->X[3][node],tmean, tadd ,E->control.ggrd_tinit_scale,	E->T[node] );
 
+	    }
+	    /* 
+	       if we're on the surface or bottom, reassign T and
+	       temperature boundary condition if toptbc or bottbsc == 2
+	    */
+	    if(E->control.Rsphere){
+	      if((E->mesh.toptbc == 2) && (E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1])){
+		E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
 	      }
-	      /* 
-		 if we're on the surface or bottom, reassign T and
-		 temperature boundary condition if toptbc or bottbsc == 2
-	      */
-	      if(E->control.Rsphere){
-		if((E->mesh.toptbc == 2) && (E->SX[3][node] == E->segment.zzlayer[E->segment.zlayers-1])){
-		  E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
-		}
-		if((E->mesh.bottbc == 2) && (E->SX[3][node] == E->segment.zzlayer[0])){
-		  E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
-		}
-	      }else{
-		if((E->mesh.toptbc == 2) && (E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))
-		  E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
-		if((E->mesh.bottbc == 2) && (E->X[3][node] == E->segment.zzlayer[0]))
-		  E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
+	      if((E->mesh.bottbc == 2) && (E->SX[3][node] == E->segment.zzlayer[0])){
+		E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
 	      }
-	      /* 
-		 boundary condition flags 
-	      */
-	      if(!setflag)
-		E->node[node] = E->node[node] | (INTX | INTZ | INTY);
-	    } /* end node loop */
-	setflag=1;
-	/* free the structure, not needed anymore */
-	ggrd_grdtrack_free_gstruc(E->control.ggrd.temp.d);
-	/* 
-	   end temperature from GMT grd init
-	*/
-	/* end grid init branch */
-      }	else {
+	    }else{
+	      if((E->mesh.toptbc == 2) && (E->X[3][node] == E->segment.zzlayer[E->segment.zlayers-1]))
+		E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
+	      if((E->mesh.bottbc == 2) && (E->X[3][node] == E->segment.zzlayer[0]))
+		E->TB[1][node] = E->TB[2][node] = E->TB[3][node] = E->T[node];
+	    }
+	    /* 
+	       boundary condition flags 
+	    */
+	    if(!setflag)
+	      E->node[node] = E->node[node] | (INTX | INTZ | INTY);
+	  } /* end node loop */
+      setflag=1;
+      /* free the structure, not needed anymore */
+      ggrd_grdtrack_free_gstruc(E->control.ggrd.temp.d);
+      /* 
+	 end temperature from GMT grd init
+      */
+      /* end grid init branch */
+    }	else {
 
 
 
-	/* 
+      /* 
 	   
-	add a linear profile and potentially perturbations to the temperature
+      add a linear profile and potentially perturbations to the temperature
 	
 	
-	*/
+      */
 
-	if(E->control.CART3D)
-	  {
+      if(E->control.CART3D)
+	{
 	    
 	  for(i = 1; i <= noy; i++)
 	    for(j = 1; j <= nox; j++)
@@ -367,45 +369,45 @@ void convection_initial_temperature_ggrd(struct All_variables *E)
 	  setflag =1;
 	}						// end for if else if of geometry
 	
-      }	/* end perturnbation branch  */
-      /* 
+    }	/* end perturnbation branch  */
+    /* 
 
-      now deal with composition
+    now deal with composition
 
-      */
-      if(E->control.ggrd.use_comp){ /* read composition init from grid */
-	if(!E->control.composition)
-	  myerror("comp grd init but no composition control set!?",E);
+    */
+    if(E->control.ggrd.use_comp){ /* read composition init from grid */
+      if(!E->control.composition)
+	myerror("comp grd init but no composition control set!?",E);
 
-	ggrd_deal_with_composition_input(E, 1);	/* compositional (density) */
+      ggrd_deal_with_composition_input(E, 1);	/* compositional (density) */
 	
-	/* flavors are dealt with based on markers, and then assigned
-	   to nodes */
+      /* flavors are dealt with based on markers, and then assigned
+	 to nodes */
 
-	//if(E->tracers_add_flavors) /* flavors */
-	  //ggrd_deal_with_composition_input(E, 0);
+      //if(E->tracers_add_flavors) /* flavors */
+      //ggrd_deal_with_composition_input(E, 0);
 
 
-      }	/* end grid cinit */
-      /* 
+    }	/* end grid cinit */
+    /* 
 	 
-      check T and C range 
+    check T and C range 
       
-      */
-      if(E->control.check_t_irange)
-	for(i=1;i<=E->lmesh.nno;i++){
-	  if(E->T[i]>1)E->T[i]=1;
-	  if(E->T[i]<0)E->T[i]=0;
-	}
-      if(E->control.check_c_irange)
-	for(i=1;i<=E->lmesh.nno;i++){
-	  if(E->C[i]>1)E->C[i]=1;
-	  if(E->C[i]<0)E->C[i]=0;
-	}
+    */
+    if(E->control.check_t_irange)
+      for(i=1;i<=E->lmesh.nno;i++){
+	if(E->T[i]>1)E->T[i]=1;
+	if(E->T[i]<0)E->T[i]=0;
+      }
+    if(E->control.check_c_irange)
+      for(i=1;i<=E->lmesh.nno;i++){
+	if(E->C[i]>1)E->C[i]=1;
+	if(E->C[i]<0)E->C[i]=0;
+      }
       
-      if(E->control.composition)
-	convection_initial_markers(E,1);
-    }							// end for restart==0
+    if(E->control.composition)
+      convection_initial_markers(E,1);
+  }							// end for restart==0
 
   else if(E->control.restart)
     {
@@ -474,20 +476,20 @@ void ggrd_deal_with_composition_input(struct All_variables *E, int assign_compos
     strncpy(ingfile,E->control.ggrd_flavor_gfile,1000);
     strncpy(indfile,E->control.ggrd_flavor_dfile,1000);
     if(E->tracers_add_flavors != 1)
-	myerror("ggrd_deal_with_composition_input: only set up for one flavor",E);
+      myerror("ggrd_deal_with_composition_input: only set up for one flavor",E);
 
   }
   if(E->parallel.me > 0){
     mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
 		      MPI_COMM_WORLD, &mpi_stat);
   }
-  if(E->control.ggrd_slab_slice){ 
-    if(E->control.ggrd_slab_slice == 1){
+  if(E->control.ggrd_c_slab_slice){ 
+    if(E->control.ggrd_c_slab_slice == 1){
       if(ggrd_grdtrack_init_general(FALSE,ingfile, char_dummy,"",E->control.ggrd_ss_grd,(E->parallel.me==0),
 				    FALSE,use_nearneighbor))
 	myerror("grdtrack x-z init error",E);
     }else{		/* several slab slices */
-      for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
+      for(slice=0;slice < E->control.ggrd_c_slab_slice;slice++){
 	sprintf(pfile,"%s.%i.grd",ingfile,slice+1);
 	if(ggrd_grdtrack_init_general(FALSE,pfile, char_dummy,"",(E->control.ggrd_ss_grd+slice),(E->parallel.me==0),
 				      FALSE,use_nearneighbor))
@@ -512,11 +514,11 @@ void ggrd_deal_with_composition_input(struct All_variables *E, int assign_compos
     for(j=1;j<=nox;j++){
       for(k=1;k<=noz;k++)  {
 	node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
-	if(E->control.ggrd_slab_slice){
+	if(E->control.ggrd_c_slab_slice){
 	  /* slab */
-	  for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+	  for(hit = slice=0;(!hit) && (slice < E->control.ggrd_c_slab_slice);slice++){
 	    if(E->control.Rsphere) {
-	      if(in_slab_slice(E->SX[1][node],slice,E)){
+	      if(in_slab_slice(E->SX[1][node],slice,E, E->control.ggrd_c_slab_theta_bound,E->control.ggrd_c_slab_slice)){
 		/* spherical interpolation for a slice */
 		ggrd_grdtrack_interpolate_xy((double)E->SX[2][node] * ONEEIGHTYOVERPI,
 					     (double)E->SX[1][node],
@@ -525,7 +527,7 @@ void ggrd_deal_with_composition_input(struct All_variables *E, int assign_compos
 		hit = 1;
 	      }
 	    }else{		/* cartesian interpolation */
-	      if(in_slab_slice(E->X[2][node],slice,E)){
+	      if(in_slab_slice(E->X[2][node],slice,E, E->control.ggrd_c_slab_theta_bound,E->control.ggrd_c_slab_slice)){
 		
 		ggrd_grdtrack_interpolate_xy((double)E->X[1][node],(double)E->X[3][node],
 					     (E->control.ggrd_ss_grd+slice),&tadd,
@@ -601,13 +603,13 @@ void assign_flavor_to_tracer_from_grd(struct All_variables *E)
     mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1), mpi_tag, 
 		      MPI_COMM_WORLD, &mpi_stat);
   }
-  if(E->control.ggrd_slab_slice){ 
-    if(E->control.ggrd_slab_slice == 1){
+  if(E->control.ggrd_c_slab_slice){ 
+    if(E->control.ggrd_c_slab_slice == 1){
       if(ggrd_grdtrack_init_general(FALSE,E->control.ggrd_flavor_gfile, char_dummy,"",
 				    grd,(E->parallel.me==0),FALSE,use_nearneighbor))
 	myerror("grdtrack x-z init error",E);
     }else{		/* several slab slices */
-      for(slice=0;slice < E->control.ggrd_slab_slice;slice++){
+      for(slice=0;slice < E->control.ggrd_c_slab_slice;slice++){
 	sprintf(pfile,"%s.%i.grd",E->control.ggrd_flavor_gfile,slice+1);
 	if(ggrd_grdtrack_init_general(FALSE,pfile, char_dummy,"",(grd+slice),(E->parallel.me==0),
 				      FALSE,use_nearneighbor))
@@ -630,11 +632,11 @@ void assign_flavor_to_tracer_from_grd(struct All_variables *E)
     fprintf(stderr,"ggrd_deal_with_composition_input: last processor done comp with grd init\n");
   }
   for(i=0;i < E->advection.markers;i++) {
-    if(E->control.ggrd_slab_slice){
+    if(E->control.ggrd_c_slab_slice){
       /* slab */
-      for(hit = slice=0;(!hit) && (slice < E->control.ggrd_slab_slice);slice++){
+      for(hit = slice=0;(!hit) && (slice < E->control.ggrd_c_slab_slice);slice++){
 	if(E->control.Rsphere) {
-	  if(in_slab_slice(E->XMC[1][i],slice,E)){
+	  if(in_slab_slice(E->XMC[1][i],slice,E, E->control.ggrd_c_slab_theta_bound,E->control.ggrd_c_slab_slice)){
 	    /* spherical interpolation for a slice */
 	    ggrd_grdtrack_interpolate_xy((double)E->XMC[2][i]* ONEEIGHTYOVERPI,(double)E->XMC[1][i],
 					 (grd+slice),&tadd,
@@ -642,7 +644,7 @@ void assign_flavor_to_tracer_from_grd(struct All_variables *E)
 	    hit = 1;
 	  }
 	}else{		/* cartesian interpolation */
-	  if(in_slab_slice(E->XMC[2][i],slice,E)){
+	  if(in_slab_slice(E->XMC[2][i],slice,E, E->control.ggrd_c_slab_theta_bound,E->control.ggrd_c_slab_slice)){
 	    ggrd_grdtrack_interpolate_xy((double)E->XMC[1][i],(double)E->XMC[3][i],
 					 (grd+slice),&tadd,FALSE);
 	    hit  = 1 ;
@@ -681,26 +683,26 @@ void assign_flavor_to_tracer_from_grd(struct All_variables *E)
 
 
 
-int in_slab_slice(float coord, int slice, struct All_variables *E)
+int in_slab_slice(float coord, int slice, struct All_variables *E,float *theta_bound, int slab_slice)
 {
-  if((slice < 0)||(slice > E->control.ggrd_slab_slice-1))
+  if((slice < 0)||(slice > slab_slice-1))
     myerror("slab slice out of bounds",E);
-  if(E->control.ggrd_slab_slice < 1)
+  if(slab_slice < 1)
     myerror("total slab slice out of bounds",E);
 
-  if(E->control.ggrd_slab_slice == 1)
-    if(coord <=  E->control.ggrd_slab_theta_bound[0])
+  if(slab_slice == 1)
+    if(coord <=  theta_bound[0])
       return 1;
     else
       return 0;
   else{
     if(slice == 0)
-      if(coord <=  E->control.ggrd_slab_theta_bound[0])
+      if(coord <= theta_bound[0])
 	return 1;
       else
 	return 0;
     else
-      if((coord <=  E->control.ggrd_slab_theta_bound[slice]) && (coord > E->control.ggrd_slab_theta_bound[slice-1]))
+      if((coord <=  theta_bound[slice]) && (coord > theta_bound[slice-1]))
 	return 1;
       else
 	return 0;
@@ -747,11 +749,11 @@ void ggrd_read_mat_from_file(struct All_variables *E)
   elxlylz = elxlz * ely;
 
   /*
-     if we have not initialized the time history structure, do it now
+    if we have not initialized the time history structure, do it now
   */
   if(!E->control.ggrd.time_hist.init){
     /*
-       init times, if available
+      init times, if available
     */
     ggrd_init_thist_from_file(&E->control.ggrd.time_hist,
 			      E->control.ggrd.time_hist.file,TRUE,(E->parallel.me == 0));
@@ -770,7 +772,7 @@ void ggrd_read_mat_from_file(struct All_variables *E)
       mpi_rc = MPI_Recv(&mpi_inmsg, 1, MPI_INT, (E->parallel.me-1),
 			0,  MPI_COMM_WORLD, &mpi_stat);
     /*
-       read in the material file(s)
+      read in the material file(s)
     */
     E->control.ggrd.mat = (struct  ggrd_gt *)calloc(E->control.ggrd.time_hist.nvtimes,sizeof(struct ggrd_gt));
     /* 
@@ -827,14 +829,14 @@ void ggrd_read_mat_from_file(struct All_variables *E)
       i1 = 0;
     }
     /*
-       loop through all elements and assign
+      loop through all elements and assign
     */
     for (j=1;j <= elz;j++)  {	/* this assumes a regular grid sorted as in (1)!!! */
       if(((E->control.ggrd.mat_control > 0) && (E->mat[j] <=  E->control.ggrd.mat_control )) || 
 	 ((E->control.ggrd.mat_control < 0) && (E->mat[j] == -E->control.ggrd.mat_control ))){
 	/*
 	  lithosphere or asthenosphere
-	  */
+	*/
 	for (k=1;k <= ely;k++){
 	  for (i=1;i <= elx;i++)   {
 	    /* eq.(1) */
@@ -977,7 +979,7 @@ and e the eigenvectors in each column
 d[0] > d[1] > d[2]
 
 
- */
+*/
 void ggrd_solve_eigen3x3(double a[3][3],double d[3],
 			 double e[3][3],struct All_variables *E)
 {
@@ -1104,7 +1106,7 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
 				ntheta_grd,(E->parallel.me == 0),FALSE,FALSE))
     myerror("ggrd init error",E);
   if(E->control.CART3D)
-  /* n_phi */
+    /* n_phi */
     sprintf(tfilename,"%s/nx.grd",E->viscosity.anisotropic_init_dir);
   else
     sprintf(tfilename,"%s/np.grd",E->viscosity.anisotropic_init_dir);

@@ -678,6 +678,7 @@ void read_initial_settings(struct All_variables *E)
 
 	/* first the problem type (defines subsequent behaviour) */
 	int m;
+	int i;
 
 	m = E->parallel.me;
 	
@@ -857,11 +858,39 @@ void read_initial_settings(struct All_variables *E)
 	
 
 	input_double("ggrd_cinit_offset",&(E->control.ggrd.comp.offset),"0.0", m);
-	/* slab slice handling */
-	input_int("slab_slice",&(E->control.ggrd_slab_slice),"0", m);
-	if(E->control.ggrd_slab_slice > 3)
-	  myerror("too many slab slices, only four allowed",E);
-	input_float_vector("slab_theta_bound",E->control.ggrd_slab_slice,(E->control.ggrd_slab_theta_bound), m);
+	/* 
+
+	slab slice handling 
+
+	*/
+	input_int("slab_slice",&(E->control.ggrd_t_slab_slice),"0", m);	
+	/* old mode, both composition and temperature are controlled
+	   by the same number of slices and theta bounds */
+	if(E->control.ggrd_t_slab_slice){
+	  if(m == 0)fprintf(stderr,"WARNING: compatibility mode, both comp and temp use the same slice number and geometry\n");
+	  if(E->control.ggrd_t_slab_slice > GGRD_MAX_NR_SLICE)
+	    myerror("too many slab slices, increase GGRD_MAX_NR_SLICE",E);
+	  E->control.ggrd_c_slab_slice = E->control.ggrd_t_slab_slice;
+	  input_float_vector("slab_theta_bound",E->control.ggrd_t_slab_slice,(E->control.ggrd_t_slab_theta_bound), m);
+	  for(i=0;i<GGRD_MAX_NR_SLICE;i++){
+	    E->control.ggrd_c_slab_theta_bound[i] =  E->control.ggrd_t_slab_theta_bound[i];
+	  }
+	}else{
+	  /* allow for different slices */
+	  input_int("slab_t_slice",&(E->control.ggrd_t_slab_slice),"0", m);	
+	  if(E->control.ggrd_t_slab_slice > GGRD_MAX_NR_SLICE)
+	    myerror("too many temp slab slices, increase GGRD_MAX_NR_SLICE",E);
+	  input_float_vector("slab_t_theta_bound",E->control.ggrd_t_slab_slice,(E->control.ggrd_t_slab_theta_bound), m);
+
+	  input_int("slab_c_slice",&(E->control.ggrd_c_slab_slice),"0", m);	
+	  if(E->control.ggrd_c_slab_slice > GGRD_MAX_NR_SLICE)
+	    myerror("too many comp slab slices, increase GGRD_MAX_NR_SLICE",E);
+	  input_float_vector("slab_c_theta_bound",E->control.ggrd_c_slab_slice,(E->control.ggrd_c_slab_theta_bound), m);
+
+
+
+
+	}
 	
 	/* 
 	   
