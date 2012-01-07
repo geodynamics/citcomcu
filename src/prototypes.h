@@ -202,6 +202,7 @@ void global_derived_values(struct All_variables *);
 void read_initial_settings(struct All_variables *);
 void check_bc_consistency(struct All_variables *);
 void set_up_nonmg_aliases(struct All_variables *);
+void force_report(struct All_variables *, char *);
 void report(struct All_variables *, char *);
 void record(struct All_variables *, char *);
 void common_initial_fields(struct All_variables *);

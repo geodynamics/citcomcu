@@ -96,8 +96,8 @@ void *Malloc1();
 
 #define GGRD_MAX_NR_SLICE 5
 
-#define CU_MPI_MSG_LIM 100	/* this increase wasn't necessary */
-//#define CU_MPI_MSG_LIM 1000
+//#define CU_MPI_MSG_LIM 100	/* this increase wasn't necessary */
+#define CU_MPI_MSG_LIM 1000
 
 /* Macros */
 
@@ -960,6 +960,7 @@ struct All_variables
   int tracers_add_flavors;
   int *tmaxflavor;
 
+  int tracers_assign_dense_only;
 	int *RG[4];
 	double *XRG[4];
 	double *XP[4], XG1[4], XG2[4];

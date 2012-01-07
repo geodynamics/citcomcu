@@ -1526,7 +1526,10 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
       for(kk = 1; kk <= ends; kk++){
 	CC[kk] = E->C[E->ien[i].node[kk]];
 	if(E->control.check_c_irange){
-	  if(CC[kk] < 0)CC[kk]=0.0;if(CC[kk] > 1)CC[kk]=1.0;
+	  if(CC[kk] < 0)
+	    CC[kk]=0.0;
+	  if(CC[kk] > 1)
+	    CC[kk]=1.0;
 	}
       }
       for(jj = 1; jj <= vpts; jj++){

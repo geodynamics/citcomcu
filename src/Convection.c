@@ -51,9 +51,11 @@ void convection_initial_markers(struct All_variables *,int );
 void set_convection_defaults(struct All_variables *E)
 {
 
-  input_int("composition", &(E->control.composition), "0", E->parallel.me);
+  input_boolean("composition", &(E->control.composition), "0", E->parallel.me);
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
   
+  input_boolean("tracers_assign_dense_only", &(E->tracers_assign_dense_only),"0",E->parallel.me);
+
 	if(E->control.composition)
 		E->next_buoyancy_field = PG_timestep_particle;
 	else
@@ -171,23 +173,45 @@ void convection_allocate_memory(struct All_variables *E)
 void convection_initial_fields(struct All_variables *E)
 {
   int i,j;
-
+  if(E->parallel.me==0)fprintf(stderr,"ok16a\n");
 	if(E->control.composition)
 	{
+
+	  if(E->tracers_assign_dense_only){
+	    force_report(E,"WARNING: assigning only dense tracers, generally not a good idea!");
+	    E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
+
+	  }else{
 		E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
+	  }
 		E->advection.markers = E->advection.markers * E->lmesh.volume / E->mesh.volume;
 		E->advection.markers_uplimit = E->advection.markers * 2;
-		//fprintf(stderr, "aaaa %d %g %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
+		if(E->parallel.me == 0)fprintf(stderr, "amarkers: %d lmesh.volume %g volume %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
 		for(i = 1; i <= E->mesh.nsd; i++)
 		{
 			E->VO[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
+			if(!(E->VO[i]))myerror("Convection: mem error: E->V0",E);
+
 			E->Vpred[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
+			if(!(E->Vpred[i]))myerror("Convection: mem error: E->Vpred",E);
+
 			E->XMCpred[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
+			if(!(E->XMCpred[i]))myerror("Convection: mem error: E->XMCpred",E);
+
 			E->XMC[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
+			if(!(E->XMC[i]))myerror("Convection: mem error: E->XMC",E);
+
 			if(i==1){ /* those should only get allocated once */
 			  E->C12 = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  if(!(E->C12))myerror("Convection: mem error: E->C12",E);
+			  
 			  E->traces_leave = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  if(!(E->traces_leave))myerror("Convection: mem error: E->traces_leave",E);
+
 			  E->CElement = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  if(!(E->CElement))myerror("Convection: mem error: E->CElement",E);
+
+
 			  if(E->tracers_add_flavors){
 			    /* nodal compotional flavors */
 			    E->CF = (int **)malloc( E->tracers_add_flavors * sizeof(int *));
@@ -202,13 +226,17 @@ void convection_initial_fields(struct All_variables *E)
 			  }
 			}
 		}
+		if(E->parallel.me==0)fprintf(stderr,"ok16b\n");
 	}
 
 	report(E, "convection, initial temperature");
 #ifdef USE_GGRD
+	if(E->parallel.me==0)fprintf(stderr,"ok16c\n");
 	convection_initial_temperature_and_comp_ggrd(E);
+	if(E->parallel.me==0)fprintf(stderr,"ok16d1\n");
 #else
 	convection_initial_temperature(E);
+	if(E->parallel.me==0)fprintf(stderr,"ok16d2\n");
 #endif
 	return;
 }
@@ -585,13 +613,14 @@ void convection_initial_markers1(struct All_variables *E)
 			}
 		} while(node < E->advection.markers);
 	}
-
+	
 	for(node = 1; node <= E->advection.markers; node++)
 	{
 		el = E->CElement[node];
-		dx = 1.0 / ((double)element[el]);
-		dr = 0.5 * dx;
-		j = (1 - E->CE[el]) * element[el];
+		// those were unused
+		//dx = 1.0 / ((double)element[el]);
+		//dr = 0.5 * dx;
+		//j = (1 - E->CE[el]) * element[el];
 		if(E->CE[el] < 0.5)
 			E->C12[node] = 0;
 		else
@@ -609,6 +638,7 @@ void convection_initial_markers1(struct All_variables *E)
 */
 
 	}
+	
 	/* nodal values */
 	get_C_from_markers(E, E->C);
 	if(E->tracers_add_flavors)
@@ -652,7 +682,7 @@ void convection_initial_markers(struct All_variables *E,int use_element_nodes_fo
 				  for(temp=0.0,j = 1; j <= ends; j++)
 				    temp += E->C[E->ien[el].node[j]];
 				  temp /= ends;
-				  if(temp >0.5)
+				  if(temp > 0.5)
 				    E->C12[ntracer] = 1;
 				  else
 				    E->C12[ntracer] = 0;

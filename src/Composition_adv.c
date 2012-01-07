@@ -167,26 +167,25 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 
 	if(been == 0)
 	{
-		markers = E->advection.markers / 10;
-		asize = (markers + 1) * E->mesh.nsd * 2;
-		if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
-		  myerror("error, number of neighbors out of bounds",E);
-		for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
-		{
-			E->parallel.traces_transfer_index[neighbor] = (int *)malloc((markers + 1) * sizeof(int));
-
-			E->RVV[neighbor] = (float *)malloc(asize * sizeof(int));
-			E->RXX[neighbor] = (double *)malloc(asize * sizeof(double));
-			E->RINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
-			E->PVV[neighbor] = (float *)malloc(asize  * sizeof(int));
-			E->PXX[neighbor] = (double *)malloc(asize * sizeof(double));
-			E->PINS[neighbor] = (int *)malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
-
-		}
-		E->traces_leave_index = (int *)malloc((markers + 1) * sizeof(int));
-		been++;
+	  markers = E->advection.markers / 10;
+	  asize = (markers + 1) * E->mesh.nsd * 2;
+	  if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
+	    myerror("error, number of neighbors out of bounds",E);
+	  for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
+	    {
+	      E->parallel.traces_transfer_index[neighbor] = (int *)safe_malloc((markers + 1) * sizeof(int));
+	      E->RVV[neighbor] = (float *)safe_malloc(asize * sizeof(int));
+	      E->RXX[neighbor] = (double *)safe_malloc(asize * sizeof(double));
+	      E->RINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
+	      E->PVV[neighbor] = (float *)safe_malloc(asize  * sizeof(int));
+	      E->PXX[neighbor] = (double *)safe_malloc(asize * sizeof(double));
+	      E->PINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
+	      
+	    }
+	  E->traces_leave_index = (int *)safe_malloc((markers + 1) * sizeof(int));
+	  been++;
 	}
-
+	
 	for(neighbor = 0; neighbor <= E->parallel.no_neighbors; neighbor++)
 		E->parallel.traces_transfer_number[neighbor] = 0;
 	if(on_off == 1)
@@ -529,8 +528,8 @@ void get_C_from_markers(struct All_variables *E, float *C)
 	if(been_here == 0)
 	{
 		been_here++;
-		element[0] = (int *)malloc((nel + 1) * sizeof(int));
-		element[1] = (int *)malloc((nel + 1) * sizeof(int));
+		element[0] = (int *)safe_malloc((nel + 1) * sizeof(int));
+		element[1] = (int *)safe_malloc((nel + 1) * sizeof(int));
 	}
 
 	for(el = 1; el <= nel; el++)

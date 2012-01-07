@@ -77,81 +77,72 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 	 * ==================================================  */
 
 	setup_parser(E, argv[1]);
-
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok1\n");
+	force_report(E,"ok1");
 
 	global_default_values(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok2\n");
+	force_report(E,"ok2");
+
 	read_initial_settings(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok3\n");
+	force_report(E,"ok3");
+
 	(E->problem_derived_values) (E);	/* call this before global_derived_  */
 	global_derived_values(E);
+	force_report(E,"ok4");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok4\n");
 	parallel_domain_decomp1(E);
+	force_report(E,"ok5");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok5\n");
 	allocate_common_vars(E);
+	force_report(E,"ok6");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok6\n");
 	(E->problem_allocate_vars) (E);
 	(E->solver_allocate_vars) (E);
+	force_report(E,"ok6a");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok6a\n");
 	construct_ien(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok9\n");
+	force_report(E,"ok9");
+
 	construct_masks(E);			/* order is important here */
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok10\n");
+	force_report(E,"ok10");
+
 	construct_id(E);
 	construct_lm(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok11\n");
+	force_report(E,"ok11");
+
 	construct_sub_element(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok12\n");
+	force_report(E,"ok12a");
 
 	node_locations(E);
-
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok7a\n");
+	force_report(E,"ok12b");
 
 	construct_mat_group(E);
+	force_report(E,"ok12c");
 
 	(E->problem_boundary_conds) (E);
-	check_bc_consistency(E);
+	force_report(E,"ok12d");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok13\n");
+	check_bc_consistency(E);
+	force_report(E,"ok13");
 
 	parallel_shuffle_ele_and_id(E);
+	force_report(E,"ok14");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok14\n");
 	parallel_communication_routs(E);
 
 	construct_shape_functions(E);
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok15\n");
+	force_report(E,"ok15");
+
 	mass_matrix(E);
+	force_report(E,"ok15b");
+	
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok16\n");
+	//assign_surface_rayleigh(E); /* this has a proc wait loop in it  */
+
 	(E->problem_initial_fields) (E);	/* temperature/chemistry/melting etc */
+	force_report(E,"ok17");
 
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok17\n");
 	common_initial_fields(E);	/* velocity/pressure/viscosity (viscosity must be done LAST) */
-	if(E->parallel.me == 0)
-		fprintf(stderr, "ok18\n");
+	force_report(E,"ok18");
 
 	shutdown_parser(E);
 
@@ -1141,6 +1132,15 @@ void set_up_nonmg_aliases(struct All_variables *E)
 void report(struct All_variables *E, char *string)
 {
 	if(E->control.verbose && E->parallel.me == 0)
+	{
+		fprintf(stderr, "%s\n", string);
+		fflush(stderr);
+	}
+	return;
+}
+void force_report(struct All_variables *E, char *string)
+{
+	if(E->parallel.me == 0)
 	{
 		fprintf(stderr, "%s\n", string);
 		fflush(stderr);
