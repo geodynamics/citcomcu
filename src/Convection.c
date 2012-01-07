@@ -53,9 +53,16 @@ void set_convection_defaults(struct All_variables *E)
 
   input_boolean("composition", &(E->control.composition), "0", E->parallel.me);
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
-  
-  input_boolean("tracers_assign_dense_only", &(E->tracers_assign_dense_only),"0",E->parallel.me);
 
+  input_float("tracers_assign_dense_fraction",&(E->tracers_assign_dense_fraction),"1.0",E->parallel.me);
+  if(E->tracers_assign_dense_fraction < 1.0){
+    force_report(E,"WARNING: only assigning tracers to elements which are predominantly dense");
+    if(E->parallel.me == 0)fprintf(stderr,"assuming a fraction of %g%%\n",E->tracers_assign_dense_fraction * 100.0);
+    E->tracers_assign_dense_only = 1;
+  }else{
+    E->tracers_assign_dense_only = 0;
+  }
+  
 	if(E->control.composition)
 		E->next_buoyancy_field = PG_timestep_particle;
 	else
@@ -178,8 +185,11 @@ void convection_initial_fields(struct All_variables *E)
 	{
 
 	  if(E->tracers_assign_dense_only){
-	    force_report(E,"WARNING: assigning only dense tracers, generally not a good idea!");
-	    E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
+	    if(E->parallel.me == 0)
+	      fprintf(stderr,"WARNING: assigning only to %g%% of elements, not a good idea!\n",
+		      E->tracers_assign_dense_fraction*100);
+	    E->advection.markers = (int)((float)E->advection.markers_per_ele * (float) E->mesh.nel *
+					 E->tracers_assign_dense_fraction);
 
 	  }else{
 		E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
@@ -647,112 +657,173 @@ void convection_initial_markers1(struct All_variables *E)
 	return;
 }
 
-void convection_initial_markers(struct All_variables *E,int use_element_nodes_for_init_c)
+void convection_initial_markers(struct All_variables *E,
+				int use_element_nodes_for_init_c)
 {
-	//int el, i, j, k, p, node, ii, jj;
-  int el, ntracer,j,i;
-	//double x, y, z, r, t, f, dX[4], dx, dr;
-	double x, y, z, r, t, f, dX[4];
-	//char input_s[100], output_file[255];
-	//FILE *fp;
-	float temp;
+  //int el, i, j, k, p, node, ii, jj;
+  int el, ntracer,j,i,node,k;
+  //double x, y, z, r, t, f, dX[4], dx, dr;
+  double x, y, z, r, t, f, dX[4];
+  //char input_s[100], output_file[255];
+  //FILE *fp;
+  float temp,frac,locx[3],locp[3];
 
-	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
 
-	if(E->control.CART3D)
-	{
-		ntracer = 0;
-		do
-		{
-			x = drand48() * (E->XG2[1] - E->XG1[1]);
-			y = drand48() * (E->XG2[2] - E->XG1[2]);
-			z = drand48() * (E->XG2[3] - E->XG1[3]);
+  if(E->tracers_assign_dense_only){
+    /* 
+       assign only tracers within elements that are on average dense
+       
+       this is, in general, not a good idea, but i added it for
+       testing purposes
 
-			if((x >= E->XP[1][1] && x <= E->XP[1][E->lmesh.nox]) && (y >= E->XP[2][1] && y <= E->XP[2][E->lmesh.noy]) && (z >= E->XP[3][1] && z <= E->XP[3][E->lmesh.noz]))
-			{
-				ntracer++;
-				E->XMC[1][ntracer] = x;
-				E->XMC[2][ntracer] = y;
-				E->XMC[3][ntracer] = z;
+    */
+    ntracer=0;
+    for(el = 1; el <= E->lmesh.nel; el++){
+      /* get mean composition */
+      for(temp=0.0,j = 1; j <= ends; j++)
+	temp += E->C[E->ien[el].node[j]];
+      temp /= ends;
+      if(temp > 0.5){
+	for(j=0;j < E->advection.markers_per_ele;j++){
+	  ntracer++;
 
-				el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
-				E->CElement[ntracer] = el;
-				if(use_element_nodes_for_init_c){
-				  for(temp=0.0,j = 1; j <= ends; j++)
-				    temp += E->C[E->ien[el].node[j]];
-				  temp /= ends;
-				  if(temp > 0.5)
-				    E->C12[ntracer] = 1;
-				  else
-				    E->C12[ntracer] = 0;
-				}else{ /* use depth */
-				  if(E->XMC[3][ntracer] > E->viscosity.zcomp)
-				    E->C12[ntracer] = 0;
-				  else
-				    E->C12[ntracer] = 1;
-				}
-			}
-		} while(ntracer < E->advection.markers);
+	  if(ntracer > E->advection.markers)
+	    myerror("only dense assign: out of markers",E);
+	  /* get a random location within the element */
+	  if(E->control.CART3D){ /* cartesian */
+	    x = y = z = 0;
+	    for(k=1;k <= ends;k++){
+	      node = E->ien[el].node[k];
+	      frac = drand48();
+	      x += frac * E->X[1][node];
+	      y += frac * E->X[2][node];
+	      z += frac * E->X[3][node];
+	    }
+	    E->XMC[1][ntracer] = x / (float)ends;
+	    E->XMC[2][ntracer] = y / (float)ends;
+	    E->XMC[3][ntracer] = z / (float)ends;
+	  }else{
+	    x = y = z = 0;
+	    for(k=1;k <= ends;k++){
+	      node = E->ien[el].node[k];
+	      frac = drand48();
+	      rtp2xyz((float)E->SX[3][node],(float)E->SX[1][node],(float)E->SX[2][node],locx); /* convert to cart */
+	      x += frac * locx[0];
+	      y += frac * locx[1];
+	      z += frac * locx[2];
+	    }
+	    locx[0] = x / (float)ends; locx[1] = y /(float)ends; locx[2] = z/(float)ends; 
+	    xyz2rtp(locx[0],locx[1],locx[2],locp); /* back to spherical */
+	    E->XMC[1][ntracer] = locp[1]; /* theta */
+	    E->XMC[2][ntracer] = locp[2]; /* phi */
+	    E->XMC[3][ntracer] = locp[0]; /* r */
+	  }
+	  E->C12[ntracer] = 1;
+	  E->CElement[ntracer] = el;
 	}
-	else if(E->control.Rsphere)
-	{
-		ntracer = 0;
-		do
-		{
-			x = (drand48() - 0.5) * 2.0;
-			y = drand48();
-//       y = (drand48()-0.5)*2.0;
-			z = (drand48() - 0.5) * 2.0;
-			r = sqrt(x * x + y * y + z * z);
-			t = acos(z / r);
-			f = myatan(y, x);
-			if((t >= E->XP[1][1] && t <= E->XP[1][E->lmesh.nox]) && (f >= E->XP[2][1] && f <= E->XP[2][E->lmesh.noy]) && (r >= E->XP[3][1] && r <= E->XP[3][E->lmesh.noz]))
-			{
-				ntracer++;
-				E->XMC[1][ntracer] = t;
-				E->XMC[2][ntracer] = f;
-				E->XMC[3][ntracer] = r;
-				el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
-				E->CElement[ntracer] = el;
-				if(use_element_nodes_for_init_c){
-				  for(temp=0.0,j = 1; j <= ends; j++)
-				    temp += E->C[E->ien[el].node[j]];
-				  temp /= ends;
-				  if(temp >0.5)
-				    E->C12[ntracer] = 1;
-				  else
-				    E->C12[ntracer] = 0;
-				}else{ /* use depth */
-				  if(r > E->viscosity.zcomp)
-				    E->C12[ntracer] = 0;
-				  else
-				    E->C12[ntracer] = 1;
-				}
+      }
+    }
 
-
-			}
-		} while(ntracer < E->advection.markers);
-	}
+  }else{
+    /* regular operation */
+    
+	      
+    if(E->control.CART3D)
+      {
+	ntracer = 0;
+	do
+	  {
+	    x = drand48() * (E->XG2[1] - E->XG1[1]);
+	    y = drand48() * (E->XG2[2] - E->XG1[2]);
+	    z = drand48() * (E->XG2[3] - E->XG1[3]);
+		      
+	    if((x >= E->XP[1][1] && x <= E->XP[1][E->lmesh.nox]) && (y >= E->XP[2][1] && y <= E->XP[2][E->lmesh.noy]) && (z >= E->XP[3][1] && z <= E->XP[3][E->lmesh.noz]))
+	      {
+		ntracer++;
+		E->XMC[1][ntracer] = x;
+		E->XMC[2][ntracer] = y;
+		E->XMC[3][ntracer] = z;
+			  
+		el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
+		E->CElement[ntracer] = el;
+		if(use_element_nodes_for_init_c){
+		  for(temp=0.0,j = 1; j <= ends; j++)
+		    temp += E->C[E->ien[el].node[j]];
+		  temp /= ends;
+		  if(temp > 0.5)
+		    E->C12[ntracer] = 1;
+		  else
+		    E->C12[ntracer] = 0;
+		}else{ /* use depth */
+		  if(E->XMC[3][ntracer] > E->viscosity.zcomp)
+		    E->C12[ntracer] = 0;
+		  else
+		    E->C12[ntracer] = 1;
+		}
+	      }
+	  } while(ntracer < E->advection.markers);
+      }
+    else if(E->control.Rsphere)
+      {
+	ntracer = 0;
+	do
+	  {
+	    x = (drand48() - 0.5) * 2.0;
+	    y = drand48();
+	    //       y = (drand48()-0.5)*2.0;
+	    z = (drand48() - 0.5) * 2.0;
+	    r = sqrt(x * x + y * y + z * z);
+	    t = acos(z / r);
+	    f = myatan(y, x);
+	    if((t >= E->XP[1][1] && t <= E->XP[1][E->lmesh.nox]) && (f >= E->XP[2][1] && f <= E->XP[2][E->lmesh.noy]) && (r >= E->XP[3][1] && r <= E->XP[3][E->lmesh.noz]))
+	      {
+		ntracer++;
+		E->XMC[1][ntracer] = t;
+		E->XMC[2][ntracer] = f;
+		E->XMC[3][ntracer] = r;
+		el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
+		E->CElement[ntracer] = el;
+		if(use_element_nodes_for_init_c){
+		  for(temp=0.0,j = 1; j <= ends; j++)
+		    temp += E->C[E->ien[el].node[j]];
+		  temp /= ends;
+		  if(temp >0.5)
+		    E->C12[ntracer] = 1;
+		  else
+		    E->C12[ntracer] = 0;
+		}else{ /* use depth */
+		  if(r > E->viscosity.zcomp)
+		    E->C12[ntracer] = 0;
+		  else
+		    E->C12[ntracer] = 1;
+		}
+			
+			
+	      }
+	  } while(ntracer < E->advection.markers);
+      }
+  } /* end regular operation */
 	
-	/* assign tracers based on ggrd */
-	if(E->tracers_add_flavors){
+    /* assign tracers based on ggrd */
+  if(E->tracers_add_flavors){
 #ifdef USE_GGRD
-	  assign_flavor_to_tracer_from_grd(E);
+    assign_flavor_to_tracer_from_grd(E);
 #else
-	  myerror("convection_initial_markers: flavor init requires GGRD compilation",E);
+    myerror("convection_initial_markers: flavor init requires GGRD compilation",E);
 #endif
-	}
-	/* 
-	   get nodal values 
-	*/
-	get_C_from_markers(E, E->C);
-	if(E->tracers_add_flavors)
-	  get_CF_from_markers(E,E->CF);
-	return;
+  }
+  /* 
+     get nodal values 
+  */
+  get_C_from_markers(E, E->C);
+  if(E->tracers_add_flavors)
+    get_CF_from_markers(E,E->CF);
+  return;
 }
 /* 
-
+	   
 assign a flavor to this tracer based on proximity to a node
 
 */

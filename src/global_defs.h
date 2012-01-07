@@ -961,6 +961,8 @@ struct All_variables
   int *tmaxflavor;
 
   int tracers_assign_dense_only;
+  float tracers_assign_dense_fraction,tracers_dense_frac;
+  
 	int *RG[4];
 	double *XRG[4];
 	double *XP[4], XG1[4], XG2[4];

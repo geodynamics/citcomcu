@@ -549,28 +549,53 @@ void get_C_from_markers(struct All_variables *E, float *C)
 	{
 		element[E->C12[imark]][E->CElement[imark]]++;
 	}
-
-	for(el = 1; el <= nel; el++)
-	{
-		temp0 = element[0][el];
-		temp1 = element[1][el];
-		if(element[0][el] || element[1][el])
-			temp3 = temp1 / (temp0 + temp1);	/* elemental C */
-		else
-			temp3 = E->CE[el];	/* elemental C */
-		for(j = 1; j <= ends; j++)
+	if(E->tracers_assign_dense_only){
+	  /* 
+	     generally, a bad idea, counting dense only
+	  */
+	  for(el = 1; el <= nel; el++)
+	    {
+	      temp1 = element[1][el];
+	      if(element[1][el]){
+		temp3 = temp1 / (float)E->advection.markers_per_ele;	/* elemental C */
+		if(temp3 > 1)
+		  temp3 = 1.0; /* against tracer clumping */
+	      }else
+		temp3 = 0.0;	
+	      for(j = 1; j <= ends; j++)
 		{
-			node = E->ien[el].node[j];
-			C[node] += E->TWW[lev][el].node[j] * temp3;
+		  node = E->ien[el].node[j];
+		  C[node] += E->TWW[lev][el].node[j] * temp3;
 		}
-		E->CE[el] = temp3;
+	      E->CE[el] = temp3;
+	    }
+	}else{
+
+	  /* 
+	     ratio method 
+	  */
+	  for(el = 1; el <= nel; el++)
+	    {
+	      temp0 = element[0][el];
+	      temp1 = element[1][el];
+	      if(element[0][el] || element[1][el])
+		temp3 = temp1 / (temp0 + temp1);	/* elemental C */
+	      else
+		temp3 = E->CE[el];	/* elemental C */
+	      for(j = 1; j <= ends; j++)
+		{
+		  node = E->ien[el].node[j];
+		  C[node] += E->TWW[lev][el].node[j] * temp3;
+		}
+	      E->CE[el] = temp3;
+	    }
 	}
 
 	exchange_node_f20(E, C, E->mesh.levmax);
 
 	for(node = 1; node <= nno; node++)
 	{
-		C[node] = C[node] * E->Mass[node];
+ 		C[node] = C[node] * E->Mass[node];
 	}
 
 	return;

@@ -64,6 +64,8 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 
   char *char_dummy="";
   
+  int c1_local,c1_total,n_total,int_unity = 1;
+
   /* twb additions */
   double rho_prem;
   char pfile[1000];
@@ -405,10 +407,30 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 	if(E->C[i]<0)E->C[i]=0;
       }
       
+    /* compute how many dense nodes were assigned */
+    c1_local = c1_total = n_total = 0;
+    for(i=1;i <= E->lmesh.nno;i++){
+      if(E->C[i] > 0.5)
+	c1_local++;
+    }
+    MPI_Allreduce(&(E->lmesh.nno), &n_total,1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&c1_local, &c1_total,1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    E->tracers_dense_frac = (float)c1_total/(float)n_total;
+    /* check if we restrict assignment */
+    if(E->parallel.me==0)
+      fprintf(stderr,"assigned C>0.5 %i/%i times out of %i/%i, %.1f%%\n",
+	      c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
+    if(E->tracers_assign_dense_only){
+      if(E->parallel.me == 0)
+	fprintf(stderr,"compares with restricted set dense fraction estimate of %g%%\n",
+		E->tracers_assign_dense_fraction * 100);
+      if(E->tracers_assign_dense_fraction < E->tracers_dense_frac)
+	myerror("increase the dense fraction for assignment, too small",E);
+    }
+
     if(E->control.composition)
       convection_initial_markers(E,1);
   }							// end for restart==0
-
   else if(E->control.restart)
     {
 #ifdef USE_GZDIR
