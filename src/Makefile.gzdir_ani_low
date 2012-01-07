@@ -34,7 +34,7 @@ EXPO_LIBS = $(EXPO_OBJS) -llapack -lblas
 
 LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS)  -lm
 
-DEFINES =  \
+DEFINES = -DCITCOM_XMC_LOW_PREC \
 	-DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
 	-I$(HC_DIR)/  $(EXPO_DEFINE) \
 	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
@@ -139,17 +139,17 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 # Makefile rules follow
 ####################################################################
 
-default: citcom.mpi 
+default: citcom_low.mpi 
 
-citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi -nofor_main \
+citcom_low.mpi: $(OBJFILES) $(HEADER) Makefile
+	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom_low.mpi -nofor_main \
 	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
 	rm -f $(OBJFILES)
 
 clean-all:
-	rm -f *.o citcom.mpi
+	rm -f *.o citcom_low.mpi
 
 smaller: 
 	compress $(CFILES)

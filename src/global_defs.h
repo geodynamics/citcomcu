@@ -43,7 +43,6 @@
 
 #ifdef USE_GGRD
 #include "hc.h"
-
 #endif
 
 #if defined(__osf__)
@@ -52,7 +51,11 @@ void *Malloc1();
 
 #define Malloc0(a) Malloc1((a),__FILE__,__LINE__)
 
-
+#ifdef CITCOM_XMC_LOW_PREC
+#define CITCOM_XMC_PREC float
+#else
+#define CITCOM_XMC_PREC double
+#endif
 
 /* #define Malloc0 malloc */
 
@@ -885,10 +888,11 @@ struct DATA
 
 struct TRACES
 {
+
 	float VO[4];
 	float Vpred[4];
-	double XMC[4];
-	double XMCpred[4];
+  CITCOM_XMC_PREC XMC[4];
+  CITCOM_XMC_PREC XMCpred[4];
 	int C12;
 	int leave;
 	int CElement;
@@ -944,13 +948,13 @@ struct All_variables
 
   
 	float *RVV[MAX_NEIGHBORS], *PVV[MAX_NEIGHBORS];
-	double *RXX[MAX_NEIGHBORS], *PXX[MAX_NEIGHBORS];
+	CITCOM_XMC_PREC  *RXX[MAX_NEIGHBORS], *PXX[MAX_NEIGHBORS];
 	int *RINS[MAX_NEIGHBORS], *PINS[MAX_NEIGHBORS];
 
 	float *VO[4];
 	float *Vpred[4];
-	double *XMC[4];
-	double *XMCpred[4];
+  CITCOM_XMC_PREC  *XMC[4];
+  CITCOM_XMC_PREC *XMCpred[4];
 	int *C12;		/* this shold be unsigned short */
 	int *traces_leave;
 	int *traces_leave_index;
@@ -1083,4 +1087,8 @@ void remove_horiz_ave(struct All_variables *, float *, float *, int );
 void output_velo_related_gzdir(struct All_variables *, int);
 void output_velo_related(struct All_variables *, int);
 
+#ifdef CITCOM_XMC_LOW_PREC 
+#include "prototypes_low.h"
+#else
 #include "prototypes.h"
+#endif

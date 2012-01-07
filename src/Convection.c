@@ -55,6 +55,10 @@ void set_convection_defaults(struct All_variables *E)
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
 
   input_float("tracers_assign_dense_fraction",&(E->tracers_assign_dense_fraction),"1.0",E->parallel.me);
+
+  /* how many tracers maximum upon advection, was 2 */
+  input_float("marker_max_factor",&(E->advection.marker_max_factor),"2.0",E->parallel.me);
+  
   if(E->tracers_assign_dense_fraction < 1.0){
     force_report(E,"WARNING: only assigning tracers to elements which are predominantly dense");
     if(E->parallel.me == 0)fprintf(stderr,"assuming a fraction of %g%%\n",E->tracers_assign_dense_fraction * 100.0);
@@ -195,7 +199,7 @@ void convection_initial_fields(struct All_variables *E)
 		E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
 	  }
 		E->advection.markers = E->advection.markers * E->lmesh.volume / E->mesh.volume;
-		E->advection.markers_uplimit = E->advection.markers * 2;
+		E->advection.markers_uplimit = (int)((float)E->advection.markers * E->advection.marker_max_factor);
 		if(E->parallel.me == 0)fprintf(stderr, "amarkers: %d lmesh.volume %g volume %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
 		for(i = 1; i <= E->mesh.nsd; i++)
 		{
@@ -205,10 +209,10 @@ void convection_initial_fields(struct All_variables *E)
 			E->Vpred[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
 			if(!(E->Vpred[i]))myerror("Convection: mem error: E->Vpred",E);
 
-			E->XMCpred[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
+			E->XMCpred[i] = (CITCOM_XMC_PREC *)malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
 			if(!(E->XMCpred[i]))myerror("Convection: mem error: E->XMCpred",E);
 
-			E->XMC[i] = (double *)malloc((E->advection.markers_uplimit + 1) * sizeof(double));
+			E->XMC[i] = (CITCOM_XMC_PREC *)malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
 			if(!(E->XMC[i]))myerror("Convection: mem error: E->XMC",E);
 
 			if(i==1){ /* those should only get allocated once */

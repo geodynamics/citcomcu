@@ -46,6 +46,7 @@ struct ADVECTION
 
 	int markers_g, markers, markers1, markers_uplimit, markers_per_ele;
 	float marker_maxdist, marker_mindist;
+  float marker_max_factor;
 	int markerIX, markerIY, markerIZ;
 
 

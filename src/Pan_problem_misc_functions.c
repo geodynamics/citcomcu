@@ -1023,7 +1023,7 @@ where those coordinates are theta,phi,r for spherical and x,y,z for Cartesian
    still need to test this properly
 
 */
-double distance_to_node(double x1, double x2, double x3,struct All_variables *E, int lnode)
+double distance_to_node(CITCOM_XMC_PREC x1, CITCOM_XMC_PREC x2, CITCOM_XMC_PREC x3,struct All_variables *E, int lnode)
 {
   double tmp1,tmp2,tmp3,dr;
   if(E->control.Rsphere){

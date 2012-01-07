@@ -175,10 +175,10 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	    {
 	      E->parallel.traces_transfer_index[neighbor] = (int *)safe_malloc((markers + 1) * sizeof(int));
 	      E->RVV[neighbor] = (float *)safe_malloc(asize * sizeof(int));
-	      E->RXX[neighbor] = (double *)safe_malloc(asize * sizeof(double));
+	      E->RXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
 	      E->RINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 	      E->PVV[neighbor] = (float *)safe_malloc(asize  * sizeof(int));
-	      E->PXX[neighbor] = (double *)safe_malloc(asize * sizeof(double));
+	      E->PXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
 	      E->PINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 	      
 	    }
@@ -472,7 +472,7 @@ void prepare_transfer_arrays(struct All_variables *E)
 
 // like get_element, assuming uniform mesh in x and y
 
-int locate_processor(struct All_variables *E, double XMC1, double XMC2, double XMC3)
+int locate_processor(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_PREC XMC2, CITCOM_XMC_PREC XMC3)
 {
 	int proc, m1, m2, m3;
 	const int npx = E->parallel.nprocx - 1;
@@ -823,7 +823,7 @@ for 2D, we do not want to implement this yet
   works for uniform mesh in x and y, but unlimited in z
  ================================================ */
 
-int get_element(struct All_variables *E, double XMC1, double XMC2, double XMC3, double dX[4])
+int get_element(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_PREC XMC2, CITCOM_XMC_PREC XMC3, double dX[4])
 {
 	int el;
 	int i, i1, j1;

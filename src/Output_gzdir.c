@@ -55,7 +55,7 @@
 
 #include "element_definitions.h"
 #include "global_defs.h"
-#include "prototypes.h"
+
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
 #include "anisotropic_viscosity.h"
 #endif
