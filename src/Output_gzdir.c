@@ -2,7 +2,7 @@
  * CitcomCU is a Finite Element Code that solves for thermochemical
  * convection within a three dimensional domain appropriate for convection
  
-* within the Earth's mantle. Cartesian and regional-spherical geometries
+ * within the Earth's mantle. Cartesian and regional-spherical geometries
  * are implemented. See the file README contained with this distribution
  * for further details.
  * 
@@ -708,12 +708,16 @@ void process_restart_tc_gzdir(struct All_variables *E)
 	fprintf(stderr,"read error\n");
 	parallel_process_termination();
       }
-      sscanf(input_s, "%i %i %g", &i, &j, &E->monitor.elapsed_time);
-
+      sscanf(input_s, "%i %i %f", &i, &j, &E->monitor.elapsed_time);
+      if(j != E->lmesh.nno)
+	myerror("mismatch of total node number upon restart",E);
+      gzgets (gzin,input_s, 200);
+      sscanf(input_s, "%i %i", &i, &j);
+      /*  */
       for(node = 1; node <= E->lmesh.nno; node++)
 	{
 	  gzgets (gzin,input_s, 200);
-	  sscanf(input_s, "%g", &E->T[node]);
+	  sscanf(input_s, "%f", &E->T[node]);
 	  //if(E->SX[3][node] == 0)fprintf(stderr,"%g %g\n",E->SX[3][node],E->T[node]);
 	  E->C[node] = 0;
 	}
@@ -749,7 +753,7 @@ void process_restart_tc_gzdir(struct All_variables *E)
       for(node = 1; node <= E->lmesh.nno; node++)
 	{  
 	  gzgets (gzin,input_s, 200);
-   	  sscanf(input_s, "%g", &E->C[node]);
+   	  sscanf(input_s, "%f", &E->C[node]);
 	}
       gzclose(gzin);
       

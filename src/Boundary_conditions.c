@@ -126,11 +126,16 @@ void velocity_boundary_conditions(struct All_variables *E)
 
 void freeze_surface(struct All_variables *E)
 {
-
+  
   int lev,top;
   if(E->parallel.me == 0)
     fprintf(stderr,"WARNING: freezing surface boundary condition at time step %i\n",
 	    E->monitor.solution_cycles);
+  /* 
+
+  WARNING: this is not working yet
+
+  */
   /* no slip on top */
   E->mesh.topvbc = 1;E->control.VBXtopval=E->control.VBYtopval=E->control.plate_vel=0.0;
   velocity_boundary_conditions(E);  
@@ -343,24 +348,23 @@ void temperature_refl_vert_bc(struct All_variables *E)
 {
 	int i, j;
 	int node1, node2;
-	//const int dims = E->mesh.nsd;
 
 	/* Temps and bc-values  at top level only */
-	/* fixed temperature at x=0 */
 
-	if(E->parallel.me_loc[1] == 0 || E->parallel.me_loc[1] == E->parallel.nprocx - 1)
+
+	if((E->parallel.me_loc[1] == 0) || (E->parallel.me_loc[1] == E->parallel.nprocx - 1)) /* left or right */
 		for(j = 1; j <= E->lmesh.noy; j++)
 			for(i = 1; i <= E->lmesh.noz; i++)
 			{
 				node1 = i + (j - 1) * E->lmesh.noz * E->lmesh.nox;
 				node2 = node1 + (E->lmesh.nox - 1) * E->lmesh.noz;
-				if(E->parallel.me_loc[1] == 0)
+				if(E->parallel.me_loc[1] == 0) /* left zero flux */
 				{
 					E->node[node1] = E->node[node1] & (~TBX);
 					E->node[node1] = E->node[node1] | FBX;
 					E->TB[1][node1] = 0.0;
 				}
-				if(E->parallel.me_loc[1] == E->parallel.nprocx - 1)
+				if(E->parallel.me_loc[1] == E->parallel.nprocx - 1) /* right zero flux */
 				{
 					E->node[node2] = E->node[node2] & (~TBX);
 					E->node[node2] = E->node[node2] | FBX;
@@ -368,19 +372,19 @@ void temperature_refl_vert_bc(struct All_variables *E)
 				}
 			}					/* end for loop i & j */
 
-	if(E->parallel.me_loc[2] == 0 || E->parallel.me_loc[2] == E->parallel.nprocy - 1)
+	if((E->parallel.me_loc[2] == 0) || (E->parallel.me_loc[2] == E->parallel.nprocy - 1)) /* front or back */
 		for(j = 1; j <= E->lmesh.nox; j++)
 			for(i = 1; i <= E->lmesh.noz; i++)
 			{
 				node1 = i + (j - 1) * E->lmesh.noz;
 				node2 = node1 + (E->lmesh.noy - 1) * E->lmesh.noz * E->lmesh.nox;
-				if(E->parallel.me_loc[2] == 0)
+				if(E->parallel.me_loc[2] == 0) /* front zero flux */
 				{
 					E->node[node1] = E->node[node1] & (~TBY);
 					E->node[node1] = E->node[node1] | FBY;
 					E->TB[2][node1] = 0.0;
 				}
-				if(E->parallel.me_loc[2] == E->parallel.nprocy - 1)
+				if(E->parallel.me_loc[2] == E->parallel.nprocy - 1) /* back zero flux */
 				{
 					E->node[node2] = E->node[node2] & (~TBY);
 					E->node[node2] = E->node[node2] | FBY;
