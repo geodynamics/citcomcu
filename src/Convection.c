@@ -199,6 +199,7 @@ void convection_initial_fields(struct All_variables *E)
 		E->advection.markers = E->advection.markers_per_ele * E->mesh.nel;
 	  }
 		E->advection.markers = E->advection.markers * E->lmesh.volume / E->mesh.volume;
+		/* default was twice as many tracers allowed, now a parameter */
 		E->advection.markers_uplimit = (int)((float)E->advection.markers * E->advection.marker_max_factor);
 		if(E->parallel.me == 0)fprintf(stderr, "amarkers: %d lmesh.volume %g volume %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
 		for(i = 1; i <= E->mesh.nsd; i++)

@@ -80,7 +80,7 @@ void viscosity_parameters(struct All_variables *E)
 		*/
 		if(E->viscosity.plasticity_dimensional){
 		  /* for byerlee, dimensional values are used */
-		  E->viscosity.abyerlee[i]=2.1e4; /* t_y = (a * z[m] + b) *p 
+		  E->viscosity.abyerlee[i]=2.1e4; /* t_y = (a * z[m] + b) * lambda
 						     whereas a is rho * g * 0.6(from friction)
 						     and b is 60MPa cohesion
 						  */

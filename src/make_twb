@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# make regular version
+make -f Makefile clean
+make -f Makefile 
+cp citcom.mpi citcom_regular.mpi 
+
+
+# make high res version with ggrd output and anisotropy
+make -f Makefile.gzdir_ani clean
+make -f Makefile.gzdir_ani 
+cp citcom.mpi citcom_gzdir_ani.mpi 
+# this will leave this version as citcom.mpi
+
+
+# make high res version with ggrd output and anisotropy
+make -f Makefile.gzdir_ani_low clean
+make -f Makefile.gzdir_ani_low
+# this will produce citcom_low.mpi with lower accuracy for tracers
+rm *.o
+
+
+

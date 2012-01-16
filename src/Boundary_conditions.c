@@ -44,11 +44,12 @@
 void velocity_boundary_conditions(struct All_variables *E)
 {
 	int lv;
-	int node,bottom,top;
-	bottom = 1;
+	int node,top;
+	const int bottom = 1;	/* bottom node number */
+
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-	  top = E->mesh.NOZ[lv];
+	  top = E->mesh.NOZ[lv]; /* top for this MG level */
 		if(E->mesh.botvbc != 1) /* free slip on bottom */
 		{
 			horizontal_bc(E, E->VB, bottom, 1, 0.0, VBX, 0, lv);
@@ -76,7 +77,7 @@ void velocity_boundary_conditions(struct All_variables *E)
 
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-	  top = E->mesh.NOZ[lv];
+	  top = E->mesh.NOZ[lv]; /* top node for this MG level */
 		if(E->mesh.botvbc == 1) /* bottom velocity boundary condition */
 		{
 			horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, VBX, 1, lv);
@@ -403,7 +404,8 @@ void temperature_imposed_botm_bcs(struct All_variables *E, float *BC[], int dirn
 	aa2 = E->segment.plume_radius * E->segment.plume_radius;
 
 
-	if(E->parallel.me_loc[3] == E->parallel.nprocz - 1)
+
+	if(E->parallel.me_loc[3] == 0) /* I think this should be the bottom processor */
 	{
 		for(j = 1; j <= E->lmesh.NOY[level]; j++)
 			for(i = 1; i <= E->lmesh.NOX[level]; i++)
@@ -438,7 +440,7 @@ void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, floa
 	else
 		rowl = E->lmesh.NOZ[level];
 
-	if(ROW == 1 && E->parallel.me_loc[3] == 0 || ROW == E->mesh.NOZ[level] && E->parallel.me_loc[3] == E->parallel.nprocz - 1)
+	if(((ROW == 1) && (E->parallel.me_loc[3] == 0)) || ((ROW == E->mesh.NOZ[level]) && (E->parallel.me_loc[3] == E->parallel.nprocz - 1))) /* bottom or top processor */
 	{
 
 		/* turn bc marker to zero */
