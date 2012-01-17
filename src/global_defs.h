@@ -749,6 +749,7 @@ struct CONTROL
 	int DIRECT;
 	int restart;
 	int restart_frame;
+  int restart_timesteps;
 	int CONJ_GRAD;
 	int NMULTIGRID;
 	int EMULTIGRID;

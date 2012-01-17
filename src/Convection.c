@@ -147,7 +147,14 @@ void read_convection_settings(struct All_variables *E)
 
 	if(E->control.restart)
 	{
-		input_int("restart_timesteps", &(E->monitor.solution_cycles), "0", m);
+		input_int("restart_timesteps", &(E->control.restart_timesteps), "0", m); /* to
+											    save
+											    the
+											    initial
+											    restart
+											    step */
+		/* set the timestep counter to the restart timestep */
+		E->monitor.solution_cycles = E->control.restart_timesteps;
 
 		input_string("oldfile", tmp1_string, "initialize", m);
 		input_string("use_scratch", tmp_string, "local", m);

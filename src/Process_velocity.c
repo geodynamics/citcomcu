@@ -59,14 +59,21 @@ void process_new_velocity(struct All_variables *E, int ii)
 
       averages(E);
 
+      /* 
+	 suppress output of first restart timestep such that files do
+	 not get overwritten if using same directory
+      */
+      if((E->control.restart == 0) ||
+	 (E->monitor.solution_cycles !=  E->control.restart_timesteps)){
 #ifdef USE_GZDIR
-      if(E->control.gzdir)
-	output_velo_related_gzdir(E, ii);	/* also topo */
-      else
-	output_velo_related(E, ii);	/* also topo */
+	if(E->control.gzdir)
+	  output_velo_related_gzdir(E, ii);	/* also topo */
+	else
+	  output_velo_related(E, ii);	/* also topo */
 #else
-      output_velo_related(E, ii);	/* also topo */
+	output_velo_related(E, ii);	/* also topo */
 #endif
+      }
     }
 
   return;
