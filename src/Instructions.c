@@ -455,6 +455,8 @@ void global_default_values(struct All_variables *E)
 
 	E->control.composition = 0;
 
+	E->sphere.vtk_base_init = 0;
+
 	E->control.GRID_TYPE = 1;
 	E->mesh.hwidth[1] = E->mesh.hwidth[2] = E->mesh.hwidth[3] = 1.0;	/* divide by this one ! */
 	E->mesh.magnitude[1] = E->mesh.magnitude[2] = E->mesh.magnitude[3] = 0.0;
@@ -1171,14 +1173,19 @@ void record(struct All_variables *E, char *string)
 
 void common_initial_fields(struct All_variables *E)
 {
-	report(E, "Initialize pressure field");
-	initial_pressure(E);
-	report(E, "Initialize velocity field");
-	initial_velocity(E);
-	report(E, "Initialize viscosity field");
-	get_viscosity_option(E);
 
-	return;
+  if(E->control.restart){
+    if(E->parallel.me == 0)fprintf(stderr,"skipping regular P V init because of restart\n");
+  }else{
+    report(E, "Initialize pressure field");
+    initial_pressure(E);
+    report(E, "Initialize velocity field");
+    initial_velocity(E);
+  }
+  report(E, "Initialize viscosity field");
+  get_viscosity_option(E);
+  
+  return;
 }
 
 /* ========================================== */

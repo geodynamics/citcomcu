@@ -550,3 +550,20 @@ void v_from_vector(struct All_variables *E, float **V, double *F)
 	}
 	return;
 }
+/* for a restart, we might have a velocity solution, so assign this to
+   the F vector */
+void vector_from_v(struct All_variables *E, double *F, float **V)
+{
+	int node;
+
+	const int nno = E->lmesh.nno;
+
+	for(node = 1; node <= nno; node++)
+	{
+	  F[E->id[node].doff[1]] = V[1][node];
+	  F[E->id[node].doff[2]] = V[2][node];
+	  F[E->id[node].doff[3]] = V[3][node];
+	  
+	}
+	return;
+}

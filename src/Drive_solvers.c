@@ -60,6 +60,11 @@ void general_stokes_solver(struct All_variables *E)
   
   iterate = need_to_iterate(E);
   if(visits == 0){		/* initialization stage */
+    if(E->control.restart){	/* we have read in a velocity
+				   solution, use this for the force
+				   vector initial solution guess  */
+      vector_from_v(E, E->U,E->V);
+    }
     if(iterate){
       /* damping factors */
       alpha = E->viscosity.sdepv_iter_damp;
@@ -73,8 +78,13 @@ void general_stokes_solver(struct All_variables *E)
       }
       /* allocate oldU only if iterations are needed */
       oldU = (double *)malloc(neq * sizeof(double));
-      for(i = 0; i < neq; i++)
-	oldU[i] = 0.0;
+      if(!E->control.restart){
+	for(i = 0; i < neq; i++)
+	  oldU[i] = 0.0;
+      }else{
+	for(i = 0; i < neq; i++)
+	  oldU[i] = E->U[i];
+      }
     } /* end iterate */
     visits++;
   }

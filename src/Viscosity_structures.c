@@ -707,14 +707,14 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
 	one = 1.0;
 	two = 2.0;
 
-	if(visits == 0)
+	if((!E->control.restart) && (visits == 0))
 	{
 		for(e = 1; e <= nel; e++)
 			eedot[e] = one;
 	}
 	else
 		strain_rate_2_inv(E, eedot, 1);
-	if((!E->viscosity.sdepv_start_from_newtonian)||(visits)){
+	if((!E->viscosity.sdepv_start_from_newtonian)||(E->control.restart)||(visits)){
 	  switch(E->viscosity.sdepv_rheology){
 	  case 1:		/* old default, i think the factors
 				   don't make sense, leave in for
@@ -1291,13 +1291,13 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  myerror("Byerlee is to apply only to certain flavor, but no flavor is set",E);
       }
     }
-    /* 
-       get strain rates for all elements 
-    */
+  }
+  if((!E->control.restart)&&(!visited)){
+    /* start with uniform strain-rates */
     for(i=1;i<=nel;i++)
       eedot[i] = 1.0; 
-
   }else{
+    /* either second time or restart with velocities */
     if(E->viscosity.psrw)
       strain_rate_2_inv(E,eedot,0);
     else

@@ -265,6 +265,7 @@ FILE *safe_fopen(char *, char *);
 void *safe_malloc(size_t);
 void calc_cbase_at_tp(float, float, float *);
 void convert_pvec_to_cvec(float, float, float, float *, float *);
+void convert_cvec_to_pvec(float, float, float, float *, float *);
 void rtp2xyz(float, float, float, float *);
 void xyz2rtp(float, float, float, float *);
 void myerror(char *, struct All_variables *);
@@ -372,6 +373,7 @@ void initial_vel_residual(struct All_variables *, double *, double *, double *, 
 float solve_Ahat_p_fhat(struct All_variables *, double *, double *, double *, double, int *);
 void generate_log_message(int, double, double, double, double, struct All_variables *);
 void v_from_vector(struct All_variables *, float **, double *);
+void vector_from_v(struct All_variables *, double *, float **);
 /* Topo_gravity.c */
 void get_CBF_topo(struct All_variables *, float *, float *);
 void get_STD_topo(struct All_variables *, float *, float *, int);

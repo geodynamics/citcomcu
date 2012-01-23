@@ -451,7 +451,8 @@ struct SPHERE
 
 	double dircos[4][4];
   float *vtk_base;
-
+  int vtk_base_init;
+  
 	int output_llmax;
 
 	int lnox;

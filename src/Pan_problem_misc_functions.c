@@ -868,10 +868,7 @@ void *safe_malloc (size_t size)
 */
 void calc_cbase_at_tp(float theta, float phi, float *base)
 {
-
-
- double ct,cp,st,sp;
-  
+  double ct,cp,st,sp;
   ct=cos(theta);
   cp=cos(phi);
   st=sin(theta);
@@ -889,6 +886,9 @@ void calc_cbase_at_tp(float theta, float phi, float *base)
   base[7]= cp;
   base[8]= 0.0;
 }
+
+
+
 /* given a base from calc_cbase_at_tp, convert a polar vector to
    cartesian */
 void convert_pvec_to_cvec(float vr,float vt, float vp, float *base,
@@ -899,6 +899,17 @@ void convert_pvec_to_cvec(float vr,float vt, float vp, float *base,
     cvec[i]  = base[i]  * vr;
     cvec[i] += base[3+i]* vt;
     cvec[i] += base[6+i]* vp;
+  }
+}
+/* convert cartesian to polae */
+void convert_cvec_to_pvec(float vx,float vy, float vz, float *base,
+			  float *pvec)
+{
+  int i,i3;
+  for(i=i3=0;i<3;i++,i3+=3){
+    pvec[i]  = base[i3]  * vx;
+    pvec[i] += base[i3+1]* vy;
+    pvec[i] += base[i3+2]* vz;
   }
 }
 /* convert r,theta,phi system to cartesian, xout[3] */

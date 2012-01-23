@@ -64,8 +64,8 @@ static gzFile *safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);
 void *safe_malloc (size_t );
 void calc_cbase_at_tp(float , float , float *);
-void convert_pvec_to_cvec(float ,float , float , float *,
-			  float *);
+void convert_pvec_to_cvec(float ,float , float , float *,float *);
+void convert_cvec_to_pvec(float ,float , float , float *,float *);
 void rtp2xyz(float r, float , float , float *);
 
 
@@ -86,7 +86,6 @@ void output_velo_related_gzdir(E, file_number)
   static float *SV, *EV;
   static int been_here = 0;
   float vs;
-  static int vtk_base_init = 0;	/* for spherical */
   int vtk_comp_out;
 
   const int dims = E->mesh.nsd;
@@ -288,17 +287,12 @@ void output_velo_related_gzdir(E, file_number)
 	  gzprintf(gzout,"%.6e\n",E->T[i]);
 	gzclose(gzout);
 	/* velocities */
-	if(E->control.Rsphere && (!vtk_base_init)){ 
-	  /* 
-
-	  STILL NEED TO CHECK THE CONVENTION OF ORDERING FOR SPHERICAL HERE!
-	  */
-
+	if(E->control.Rsphere && (!E->sphere.vtk_base_init)){ 
 	  /* need to init spherical/cartesian conversion vectors */
 	  E->sphere.vtk_base = (float *)safe_malloc(sizeof(float)*E->lmesh.nno*9);
 	  for(k=0,i=1;i<=E->lmesh.nno;i++,k+=9)
 	    calc_cbase_at_tp(E->SX[1][i],E->SX[2][i],(E->sphere.vtk_base+k));
-	  vtk_base_init = 1;
+	  E->sphere.vtk_base_init = 1;
 	}
 	/* write velocities to file */
 	sprintf(output_file,"%s/%d/vtk_v.%d.%d.gz",
@@ -691,15 +685,28 @@ void process_restart_tc_gzdir(struct All_variables *E)
 
   int node, i, j, k, p;
   FILE *fp;
-  float temp1, temp2, *temp;
+  float temp1, temp2, *temp,cvec[3],pvec[3];
   char input_s[200], input_file[255];
   gzFile gzin;
 
+  if(E->control.Rsphere && (!E->sphere.vtk_base_init)){ 
+    /* need to init spherical/cartesian conversion vectors */
+    E->sphere.vtk_base = (float *)safe_malloc(sizeof(float)*E->lmesh.nno * 9);
+    for(k=0,i=1;i <= E->lmesh.nno;i++,k+=9)
+      calc_cbase_at_tp(E->SX[1][i],E->SX[2][i],(E->sphere.vtk_base+k));
+    E->sphere.vtk_base_init = 1;
+  }
+  
   temp = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
   
   if(E->control.restart == 1 || E->control.restart == 3)
     {
-
+      if(E->parallel.me == 0)
+	fprintf(stderr,"restarting from %s timestep %i time %g\n",E->convection.old_T_file,E->monitor.solution_cycles,E->monitor.elapsed_time);
+  
+      /* 
+	 temperatures 
+      */
       sprintf(input_file,"%s/%d/t.%d.%d.gz",
 	      E->convection.old_T_file,  
 	      E->monitor.solution_cycles,E->parallel.me, E->monitor.solution_cycles);
@@ -718,15 +725,61 @@ void process_restart_tc_gzdir(struct All_variables *E)
 	{
 	  gzgets (gzin,input_s, 200);
 	  sscanf(input_s, "%f", &E->T[node]);
-	  //if(E->SX[3][node] == 0)fprintf(stderr,"%g %g\n",E->SX[3][node],E->T[node]);
+	  //if(E->parallel.me==0)fprintf(stderr,"rt: %6i %11g\n",node,E->T[node]);
 	  E->C[node] = 0;
 	}
       gzclose(gzin);
-      if(E->parallel.me == 0)
-	fprintf(stderr,"restarting from %s timestep %i time %g\n",
-		E->convection.old_T_file,E->monitor.solution_cycles,
-		E->monitor.elapsed_time);
-       
+      if(E->parallel.me == 0)fprintf(stderr,"restart T OK\n");
+      /* 
+	 
+      velocities
+
+      */
+      sprintf(input_file,"%s/%d/vtk_v.%d.%d.gz",
+	      E->convection.old_T_file,  
+	      E->monitor.solution_cycles,E->parallel.me, E->monitor.solution_cycles);
+      gzin = safe_gzopen(input_file, "r");
+      if(E->control.Rsphere){
+	for(node = 1,k=0; node <= E->lmesh.nno; node++,k+=9)
+	  {
+	    gzgets (gzin,input_s, 200);
+	    sscanf(input_s, "%f %f %f", (cvec),(cvec+1),(cvec+2));
+	    convert_cvec_to_pvec(cvec[0],cvec[1],cvec[2],(E->sphere.vtk_base+k),pvec);
+	    E->V[3][i] = pvec[0];E->V[1][i]=pvec[1];E->V[2][i]=pvec[2];
+	  }
+      }else{			/* cartesian */
+	for(i=1;i<=E->lmesh.nno;i++) {
+	   gzgets (gzin,input_s, 200);
+	   sscanf(input_s, "%f %f %f",&(E->V[1][i]),&(E->V[2][i]),&(E->V[3][i]));
+	   //if(E->parallel.me==0)fprintf(stderr,"rv: %6i %11g %11g %11g\n",node,E->V[1][i],E->V[2][i],E->V[3][i]);
+	}
+      }
+      gzclose(gzin);
+      if(E->parallel.me == 0)fprintf(stderr,"restart V OK\n");
+      if(E->control.vtk_pressure_out){
+	/* pressures */
+	sprintf(input_file,"%s/%d/p.%d.%d.gz",
+		E->convection.old_T_file,  
+		E->monitor.solution_cycles,E->parallel.me, E->monitor.solution_cycles);
+	gzin = safe_gzopen(input_file, "r");
+	if(gzgets (gzin,input_s, 200) == Z_NULL){
+	  fprintf(stderr,"read error\n");
+	  parallel_process_termination();
+	}
+	sscanf(input_s, "%i %i %f", &i, &j, &E->monitor.elapsed_time);
+	if(j != E->lmesh.nno)
+	  myerror("mismatch of total node number upon restart",E);
+	gzgets (gzin,input_s, 200);
+	sscanf(input_s, "%i %i", &i, &j);
+	/*  */
+	for(node = 1; node <= E->lmesh.nno; node++)
+	  {
+	    gzgets (gzin,input_s, 200);
+	    sscanf(input_s, "%f", &E->NP[node]);
+	  }
+	gzclose(gzin);
+	if(E->parallel.me == 0)fprintf(stderr,"restart P OK\n");
+      }
     }
   else 
     {
