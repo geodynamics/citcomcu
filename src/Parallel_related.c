@@ -187,175 +187,268 @@ void parallel_shuffle_ele_and_id(struct All_variables *E)
 	return;
 }
 
+
 void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
-	int i, ii, j, k, node, node1, llnode;
-	//int lev, elx, elz, ely, nel, nno, nox, noz, noy;
-	int lev, elx, elz, ely, nel, nox, noz, noy;
+  {
 
-	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
-	{
-		nel = E->lmesh.NEL[lev];
-		elx = E->lmesh.ELX[lev];
-		elz = E->lmesh.ELZ[lev];
-		ely = E->lmesh.ELY[lev];
-		nox = E->lmesh.NOX[lev];
-		noy = E->lmesh.NOY[lev];
-		noz = E->lmesh.NOZ[lev];
+  int i,ii,j,k,l,node,node1,el,elt,lnode,llnode,jj,k1,k2;
+  int lev,elx,elz,ely,nel,nno,nox,noz,noy;
 
-		ii = 0;
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+      nel = E->lmesh.NEL[lev];
+      elx = E->lmesh.ELX[lev];
+      elz = E->lmesh.ELZ[lev];
+      ely = E->lmesh.ELY[lev];
+      nox = E->lmesh.NOX[lev];
+      noy = E->lmesh.NOY[lev];
+      noz = E->lmesh.NOZ[lev];
+ 
+      ii = 0;
 
-		for(i = 1; i <= 2; i++)
-		{						/* do the ZOY boundary elements first */
-			ii++;
-			if((i == 1 && E->parallel.me_loc[1] != 0) || (i == 2 && E->parallel.me_loc[1] != E->parallel.nprocx - 1))
-			{
-				for(k = 1; k <= noy; k++)
-					for(j = 1; j <= noz; j++)
-					{
-						node = j + (((i == 1) ? 1 : nox) - 1) * noz + (k - 1) * noz * nox;
-						llnode = j + (k - 1) * noz;
-						E->parallel.NODE[lev][llnode].bound[1][i] = node;
-						E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-						E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-						node1 = node + (((i == 1) ? 1 : -1)) * noz;
-						E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-					}
-				E->parallel.NUM_NNO[lev].bound[1][i] = noy * noz;
-			}
-		}						/* end for i   */
+      for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
+         ii ++;
+         if ( (i==1&&E->parallel.me_loc[1]!=0) || (i==2&&E->parallel.me_loc[1]!=E->parallel.nprocx-1))        {
+   	     for(k=1;k<=noy;k++)
+ 	       for(j=1;j<=noz;j++)   {
+	         node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+	         llnode = j+(k-1)*noz;
+	         E->parallel.NODE[lev][llnode].bound[1][i] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	         node1 = node + ( ((i==1)?1:-1) )*noz;
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	         }
+	     E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+             }
+	 }         /* end for i   */
 
-		for(j = 1; j <= 2; j++)
-		{						/* do XOY boundary elements */
-			ii++;
-			if((j == 1 && E->parallel.me_loc[3] != 0) || (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
-			{
-				for(k = 1; k <= noy; k++)
-					for(i = 1; i <= nox; i++)
-					{
-						node = ((j == 1) ? 1 : noz) + (i - 1) * noz + (k - 1) * noz * nox;
-						llnode = i + (k - 1) * nox;
-						E->parallel.NODE[lev][llnode].bound[3][j] = node;
-						E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-						E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-						node1 = node + (((j == 1) ? 1 : -1));
-						E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-					}
-				E->parallel.NUM_NNO[lev].bound[3][j] = nox * noy;
-			}
-		}						/* end for j   */
+      for(j=1;j<=2;j++)       {   /* do XOY boundary elements */
+         ii ++;
+         if ( (j==1&&E->parallel.me_loc[3]!=0) || (j==2&&E->parallel.me_loc[3]!=E->parallel.nprocz-1))        {
+  	     for(k=1;k<=noy;k++)
+ 	       for(i=1;i<=nox;i++)   {
+	         node = ((j==1)?1:noz) + (i-1)*noz + (k-1)*noz*nox;
+	         llnode = i+(k-1)*nox;
+	         E->parallel.NODE[lev][llnode].bound[3][j] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	         node1 = node + ( ((j==1)?1:-1) );
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	         }
+	     E->parallel.NUM_NNO[lev].bound[3][j] = nox*noy;
+	     }
+	  }         /* end for j   */
 
-		for(k = 1; k <= 2; k++)
-		{						/* do XOZ boundary elements for 3D */
-			ii++;
-			if((k == 1 && E->parallel.me_loc[2] != 0) || (k == 2 && E->parallel.me_loc[2] != E->parallel.nprocy - 1))
-			{
-				for(j = 1; j <= noz; j++)
-					for(i = 1; i <= nox; i++)
-					{
-						node = j + (i - 1) * noz + (((k == 1) ? 1 : noy) - 1) * noz * nox;
-						llnode = j + (i - 1) * noz;
-						E->parallel.NODE[lev][llnode].bound[2][k] = node;
-						E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-						E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-						node1 = node + (((k == 1) ? 1 : -1)) * noz * nox;
-						E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-					}
-				E->parallel.NUM_NNO[lev].bound[2][k] = nox * noz;
-			}
-		}						/* end for k */
+      for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
+           ii ++;
+           if ( (k==1&&E->parallel.me_loc[2]!=0) || (k==2&&E->parallel.me_loc[2]!=E->parallel.nprocy-1))        {
+ 	       for(j=1;j<=noz;j++)
+ 	         for(i=1;i<=nox;i++)   {
+	           node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+	           llnode = j+(i-1)*noz;
+	           E->parallel.NODE[lev][llnode].bound[2][k] = node;
+                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	           node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	           }
+	       E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+	       }       
+	     }       /* end for k */
 
 
-		E->parallel.num_b = ii;
+      E->parallel.num_b = ii;
 
-	}							/* end for level */
-
-	return;
-}
+      }   /* end for level */
+  
+  return;
+  }
 
 // for periodic BC 
 //
 void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, node1, el, elt, lnode, llnode, jj, k1, k2;
-	int i, ii, j, k, node, node1, llnode;
-	//int lev, elx, elz, ely, nel, nno, nox, noz, noy;
-	int lev, elx, elz, ely, nel, nox, noz, noy;
 
-	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
-	{
-		nel = E->lmesh.NEL[lev];
-		elx = E->lmesh.ELX[lev];
-		elz = E->lmesh.ELZ[lev];
-		ely = E->lmesh.ELY[lev];
-		nox = E->lmesh.NOX[lev];
-		noy = E->lmesh.NOY[lev];
-		noz = E->lmesh.NOZ[lev];
+  {
 
-		ii = 0;
+  int i,ii,j,k,l,node,node1,el,elt,lnode,llnode,jj,k1,k2;
+  int lev,elx,elz,ely,nel,nno,nox,noz,noy;
 
-		for(i = 1; i <= 2; i++)
-		{						/* do the ZOY boundary elements first */
-			ii++;
-			for(k = 1; k <= noy; k++)
-				for(j = 1; j <= noz; j++)
-				{
-					node = j + (((i == 1) ? 1 : nox) - 1) * noz + (k - 1) * noz * nox;
-					llnode = j + (k - 1) * noz;
-					E->parallel.NODE[lev][llnode].bound[1][i] = node;
-					E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-					E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-					node1 = node + (((i == 1) ? 1 : -1)) * noz;
-					E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-				}
-			E->parallel.NUM_NNO[lev].bound[1][i] = noy * noz;
-		}						/* end for i   */
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+      nel = E->lmesh.NEL[lev];
+      elx = E->lmesh.ELX[lev];
+      elz = E->lmesh.ELZ[lev];
+      ely = E->lmesh.ELY[lev];
+      nox = E->lmesh.NOX[lev];
+      noy = E->lmesh.NOY[lev];
+      noz = E->lmesh.NOZ[lev];
 
-		for(j = 1; j <= 2; j++)
-		{						/* do XOY boundary elements */
-			ii++;
-			if((j == 1 && E->parallel.me_loc[3] != 0) || (j == 2 && E->parallel.me_loc[3] != E->parallel.nprocz - 1))
-			{
-				for(k = 1; k <= noy; k++)
-					for(i = 1; i <= nox; i++)
-					{
-						node = ((j == 1) ? 1 : noz) + (i - 1) * noz + (k - 1) * noz * nox;
-						llnode = i + (k - 1) * nox;
-						E->parallel.NODE[lev][llnode].bound[3][j] = node;
-						E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-						E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-						node1 = node + (((j == 1) ? 1 : -1));
-						E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-					}
-			}
-			E->parallel.NUM_NNO[lev].bound[3][j] = nox * noy;
-		}						/* end for j   */
+      ii = 0;
 
-		for(k = 1; k <= 2; k++)
-		{						/* do XOZ boundary elements for 3D */
-			ii++;
-			for(j = 1; j <= noz; j++)
-				for(i = 1; i <= nox; i++)
-				{
-					node = j + (i - 1) * noz + (((k == 1) ? 1 : noy) - 1) * noz * nox;
-					llnode = j + (i - 1) * noz;
-					E->parallel.NODE[lev][llnode].bound[2][k] = node;
-					E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-					E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-					node1 = node + (((k == 1) ? 1 : -1)) * noz * nox;
-					E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-				}
-			E->parallel.NUM_NNO[lev].bound[2][k] = nox * noz;
-		}						/* end for k */
+      for(j=1;j<=2;j++)       {   /* do XOY boundary elements */
+         ii ++;
+         if ( (j==1&&E->parallel.me_loc[3]!=0) || (j==2&&E->parallel.me_loc[3]!=E->parallel.nprocz-1))        {
+             for(k=1;k<=noy;k++)
+               for(i=1;i<=nox;i++)   {
+                 node = ((j==1)?1:noz) + (i-1)*noz + (k-1)*noz*nox;
+                 llnode = i+(k-1)*nox;
+                 E->parallel.NODE[lev][llnode].bound[3][j] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                 node1 = node + ( ((j==1)?1:-1) );
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                 }
+                 }
+             E->parallel.NUM_NNO[lev].bound[3][j] = nox*noy;
+          }         /* end for j   */
+
+  }
+
+if (E->mesh.periodic_y && E->mesh.periodic_x)    {
+
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+      nel = E->lmesh.NEL[lev];
+      elx = E->lmesh.ELX[lev];
+      elz = E->lmesh.ELZ[lev];
+      ely = E->lmesh.ELY[lev];
+      nox = E->lmesh.NOX[lev];
+      noy = E->lmesh.NOY[lev];
+      noz = E->lmesh.NOZ[lev];
+
+      ii = 0;
+
+      for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
+         ii ++;
+             for(k=1;k<=noy;k++)
+               for(j=1;j<=noz;j++)   {
+                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+                 llnode = j+(k-1)*noz;
+                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                 node1 = node + ( ((i==1)?1:-1) )*noz;
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                 }
+             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+         }         /* end for i   */
+
+      for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
+           ii ++;
+               for(j=1;j<=noz;j++)
+                 for(i=1;i<=nox;i++)   {
+                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+                   llnode = j+(i-1)*noz;
+                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
+                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                   }
+               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+             }       /* end for k */
 
 
-		E->parallel.num_b = ii;
+      }   /* end for level */
+   }
 
-	}							/* end for level */
+else if (E->mesh.periodic_x)    {
 
-	return;
-}
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+      nel = E->lmesh.NEL[lev];
+      elx = E->lmesh.ELX[lev];
+      elz = E->lmesh.ELZ[lev];
+      ely = E->lmesh.ELY[lev];
+      nox = E->lmesh.NOX[lev];
+      noy = E->lmesh.NOY[lev];
+      noz = E->lmesh.NOZ[lev];
+
+      ii = 0;
+
+      for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
+         ii ++;
+             for(k=1;k<=noy;k++)
+               for(j=1;j<=noz;j++)   {
+                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+                 llnode = j+(k-1)*noz;
+                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                 node1 = node + ( ((i==1)?1:-1) )*noz;
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                 }
+             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+         }         /* end for i   */
+
+      for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
+           ii ++;
+           if ( (k==1&&E->parallel.me_loc[2]!=0) || (k==2&&E->parallel.me_loc[2]!=E->parallel.nprocy-1))        {
+               for(j=1;j<=noz;j++)
+                 for(i=1;i<=nox;i++)   {
+                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+                   llnode = j+(i-1)*noz;
+                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
+                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                   }
+                   }
+               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+             }       /* end for k */
+
+      }   /* end for level */
+   }
+
+else if (E->mesh.periodic_y)    {
+
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+      nel = E->lmesh.NEL[lev];
+      elx = E->lmesh.ELX[lev];
+      elz = E->lmesh.ELZ[lev];
+      ely = E->lmesh.ELY[lev];
+      nox = E->lmesh.NOX[lev];
+      noy = E->lmesh.NOY[lev];
+      noz = E->lmesh.NOZ[lev];
+
+      ii = 0;
+
+      for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
+         ii ++;
+           if ( (i==1&&E->parallel.me_loc[1]!=0) || (i==2&&E->parallel.me_loc[1]!=E->parallel.nprocx-1))        {
+             for(k=1;k<=noy;k++)
+               for(j=1;j<=noz;j++)   {
+                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+                 llnode = j+(k-1)*noz;
+                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
+                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                 node1 = node + ( ((i==1)?1:-1) )*noz;
+                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                 }
+                 }
+             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+         }         /* end for i   */
+
+      for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
+           ii ++;
+               for(j=1;j<=noz;j++)
+                 for(i=1;i<=nox;i++)   {
+                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+                   llnode = j+(i-1)*noz;
+                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
+                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+                   }
+               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+             }       /* end for k */
+
+      }   /* end for level */
+   }
+
+
+  return;
+  }
 
 
 
@@ -366,589 +459,570 @@ void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
 
 void parallel_communication_routs(struct All_variables *E)
 {
-	if(E->mesh.periodic_x || E->mesh.periodic_y)
-	{
-		parallel_communication_routs2(E);
-		if(E->control.composition)
-			parallel_communication_routs4(E);
-	}
-	else
-	{
-		parallel_communication_routs1(E);
-		if(E->control.composition)
-			parallel_communication_routs3(E);
-	}
-
-	return;
+  if(E->mesh.periodic_x || E->mesh.periodic_y)
+    {
+      parallel_communication_routs2(E);
+      if(E->control.composition)
+	parallel_communication_routs4(E);
+    }
+  else
+    {
+      parallel_communication_routs1(E);
+      if(E->control.composition)
+	parallel_communication_routs3(E);
+    }
+  
+  return;
 }
 
 
-
 void parallel_communication_routs1(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	int i, ii, j, k, node, lnode, jj, doff;
-	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
-	int me, nprocz, nprocx, nprocy;
 
-	me = E->parallel.me;
-	nprocx = E->parallel.nprocx;
-	nprocz = E->parallel.nprocz;
-	nprocy = E->parallel.nprocy;
+  {
+  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
+  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
+  int me, nprocz,nprocx, nprocy;
 
-	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
-	{
-		elx = E->lmesh.ELX[lev];
-		elz = E->lmesh.ELZ[lev];
-		ely = E->lmesh.ELY[lev];
-		nox = E->lmesh.NOX[lev];
-		noy = E->lmesh.NOY[lev];
-		noz = E->lmesh.NOZ[lev];
-		nno = E->lmesh.NNO[lev];
+  me = E->parallel.me;
+  nprocx = E->parallel.nprocx;
+  nprocz = E->parallel.nprocz;
+  nprocy = E->parallel.nprocy;
+  
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+     elx = E->lmesh.ELX[lev];
+     elz = E->lmesh.ELZ[lev];
+     ely = E->lmesh.ELY[lev];
+     nox = E->lmesh.NOX[lev];
+     noy = E->lmesh.NOY[lev];
+     noz = E->lmesh.NOZ[lev];
+     nno = E->lmesh.NNO[lev];
+ 
+     ii = 0;
+     kkk = 0;
+     if (E->mesh.nsd == 2) {     
 
-		ii = 0;
-		kkk = 0;
-		if(E->mesh.nsd == 2)
-		{
+       for(i=1;i<=2;i++)    {     /* do the OZ boundaries */
 
-			for(i = 1; i <= 2; i++)
-			{					/* do the OZ boundaries */
+         ii ++;
 
-				ii++;
+	     E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+	     if (E->parallel.me_loc[1]==0 && i==1)
+	       E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+	     else if (E->parallel.me_loc[1]==nprocx-1 && i==2)
+	       E->parallel.NUM_PASS[lev].bound[1][i] = 0;
 
-				E->parallel.NUM_PASS[lev].bound[1][i] = 1;
-				if(E->parallel.me_loc[1] == 0 && i == 1)
-					E->parallel.NUM_PASS[lev].bound[1][i] = 0;
-				else if(E->parallel.me_loc[1] == nprocx - 1 && i == 2)
-					E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+         for (p=1;p<=E->parallel.NUM_PASS[lev].bound[1][i];p++)  {
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[1][i]; p++)
-				{
+	       kkk ++;
+                 /* determine the pass ID for ii-th boundary and p-th pass */
 
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
+                 /* for kkk th pass, get the # of data to be passed */
+	       E->parallel.NUM_NEQ[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy) *E->mesh.nsd;
+	       E->parallel.NUM_NODE[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy);
 
-					/* for kkk th pass, get the # of data to be passed */
-					E->parallel.NUM_NEQ[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy);
+  /* for kkk th pass, determine the target processor */
 
-					/* for kkk th pass, determine the target processor */
+	       E->parallel.PROCESSOR[lev].pass[1][i]=me-((i==1)?1:-1)*nprocz;
 
-					E->parallel.PROCESSOR[lev].pass[1][i] = me - ((i == 1) ? 1 : -1) * nprocz;
+  /* for kkk th pass, determine the ID of equations to be passed */
 
-					/* for kkk th pass, determine the ID of equations to be passed */
+               for (node=1;node<=E->parallel.NUM_NODE[lev].pass[1][i];node++)   {
+		      lnode = E->parallel.NODE[lev][node].bound[1][i]; 
+		      E->parallel.EXCHANGE_NODE[lev][node].pass[1][i] = lnode; 
+		      for(doff=1;doff<=E->mesh.nsd;doff++)     {
+		         jj = doff + (node-1)*E->mesh.nsd;
+	 	         E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][lnode].doff[doff];
+		         }
+		      }
 
-					for(node = 1; node <= E->parallel.NUM_NODE[lev].pass[1][i]; node++)
-					{
-						lnode = E->parallel.NODE[lev][node].bound[1][i];
-						E->parallel.EXCHANGE_NODE[lev][node].pass[1][i] = lnode;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (node - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][lnode].doff[doff];
-						}
-					}
+	       }     /* end for loop p */
+         }       /* end for loop i */
 
-				}				/* end for loop p */
-			}					/* end for loop i */
+       for(j=1;j<=2;j++)       {    /* do OX boundary */
 
-			for(j = 1; j <= 2; j++)
-			{					/* do OX boundary */
+         ii ++;
 
-				ii++;
+	     E->parallel.NUM_PASS[lev].bound[2][j] = 1;
+	     if (E->parallel.me_loc[2]==0 && j==1)
+	       E->parallel.NUM_PASS[lev].bound[2][j] = 0;
+	     else if (E->parallel.me_loc[2]==nprocz-1 && j==2)
+	       E->parallel.NUM_PASS[lev].bound[2][j] = 0;
 
-				E->parallel.NUM_PASS[lev].bound[2][j] = 1;
-				if(E->parallel.me_loc[2] == 0 && j == 1)
-					E->parallel.NUM_PASS[lev].bound[2][j] = 0;
-				else if(E->parallel.me_loc[2] == nprocz - 1 && j == 2)
-					E->parallel.NUM_PASS[lev].bound[2][j] = 0;
+         for (p=1;p<=E->parallel.NUM_PASS[lev].bound[2][j];p++)  {
+	       kkk ++;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[2][j]; p++)
-				{
-					kkk++;
+                 /* for kkk th pass, get the # of data to be passed */
+	       E->parallel.NUM_NEQ[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j]*E->mesh.nsd;
+	       E->parallel.NUM_NODE[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j];
 
-					/* for kkk th pass, get the # of data to be passed */
-					E->parallel.NUM_NEQ[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j] * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j];
+  /* for kkk th pass, determine the target processor */
 
-					/* for kkk th pass, determine the target processor */
+	       E->parallel.PROCESSOR[lev].pass[2][j]=me-((j==1)?1:-1);
 
-					E->parallel.PROCESSOR[lev].pass[2][j] = me - ((j == 1) ? 1 : -1);
+  /* for kkk th pass, determine the ID of equations to be passed */
 
-					/* for kkk th pass, determine the ID of equations to be passed */
+	       for (node=1;node<=E->parallel.NUM_NODE[lev].pass[2][j];node++)   {
+		     lnode = E->parallel.NODE[lev][node].bound[2][j]; 
+		     E->parallel.EXCHANGE_NODE[lev][node].pass[2][j] = lnode; 
+		     for(doff=1;doff<=E->mesh.nsd;doff++)  {
+		       jj = doff + (node-1)*E->mesh.nsd;
+	 	       E->parallel.EXCHANGE_ID[lev][jj].pass[2][j] = E->ID[lev][lnode].doff[doff];
+		       }
+		     }      /* end loop for node */
 
-					for(node = 1; node <= E->parallel.NUM_NODE[lev].pass[2][j]; node++)
-					{
-						lnode = E->parallel.NODE[lev][node].bound[2][j];
-						E->parallel.EXCHANGE_NODE[lev][node].pass[2][j] = lnode;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (node - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[2][j] = E->ID[lev][lnode].doff[doff];
-						}
-					}			/* end loop for node */
+	       }     /* end for loop p */
+         }    /* end for loop j */
 
-				}				/* end for loop p */
-			}					/* end for loop j */
-
-		}						/* end for 2D */
+        }         /* end for 2D */
 
 
 
-		else if(E->mesh.nsd == 3)
-		{
+    else if (E->mesh.nsd ==3)  {
 
-			for(i = 1; i <= 2; i++)
-			{					/* do YOZ boundaries & OY lines */
+      for(i=1;i<=2;i++)       {       /* do YOZ boundaries & OY lines */
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[1][i] = 1;
-				if(E->parallel.me_loc[1] == 0 && i == 1)
-					E->parallel.NUM_PASS[lev].bound[1][i] = 0;
-				else if(E->parallel.me_loc[1] == nprocx - 1 && i == 2)
-					E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+        if(E->parallel.me_loc[1]==0 && i==1)
+          E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+        else if(E->parallel.me_loc[1]==nprocx-1 && i==2)
+          E->parallel.NUM_PASS[lev].bound[1][i] = 0;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[1][i]; p++)
-				{
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy);
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[1][i];p++)  {
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy);
 
-					E->parallel.PROCESSOR[lev].pass[1][i] = me - ((i == 1) ? 1 : -1) * nprocz;
+          E->parallel.PROCESSOR[lev].pass[1][i]=me-((i==1)?1:-1)*nprocz;
 
-					for(k = 1; k <= E->parallel.NUM_NODE[lev].pass[1][i]; k++)
-					{
-						lnode = k;
-						node = E->parallel.NODE[lev][lnode].bound[1][i];
-						E->parallel.EXCHANGE_NODE[lev][k].pass[1][i] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (k - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node k */
+          for (k=1;k<=E->parallel.NUM_NODE[lev].pass[1][i];k++)   {
+            lnode = k;
+            node = E->parallel.NODE[lev][lnode].bound[1][i];
+            E->parallel.EXCHANGE_NODE[lev][k].pass[1][i] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (k-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node k */
 
-				}				/* end for loop p */
-			}					/* end for i */
+          }   /* end for loop p */
+	    }  /* end for i */
 
-			for(j = 1; j <= 2; j++)
-			{					/* do XOY boundaries & OX lines */
+ 	  for(j=1;j<=2;j++)       {       /* do XOY boundaries & OX lines */
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[3][j] = 1;
-				if(E->parallel.me_loc[3] == 0 && j == 1)
-					E->parallel.NUM_PASS[lev].bound[3][j] = 0;
-				else if(E->parallel.me_loc[3] == nprocz - 1 && j == 2)
-					E->parallel.NUM_PASS[lev].bound[3][j] = 0;
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[3][j] = 1;
+        if(E->parallel.me_loc[3]==0 && j==1)
+          E->parallel.NUM_PASS[lev].bound[3][j] = 0;
+        else if(E->parallel.me_loc[3]==nprocz-1 && j==2)
+          E->parallel.NUM_PASS[lev].bound[3][j] = 0;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[3][j]; p++)
-				{
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[3][j] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[3][j] : nox) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[3][j] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[3][j] : nox);
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[3][j];p++)  {
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[3][j] = ((p==1)?E->parallel.NUM_NNO[lev].bound[3][j]:nox) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[3][j] = ((p==1)?E->parallel.NUM_NNO[lev].bound[3][j]:nox);
 
-					E->parallel.PROCESSOR[lev].pass[3][j] = me - ((j == 1) ? 1 : -1);
+          E->parallel.PROCESSOR[lev].pass[3][j]=me-((j==1)?1:-1);
 
-					for(k = 1; k <= E->parallel.NUM_NODE[lev].pass[3][j]; k++)
-					{
-						lnode = k;
-						node = E->parallel.NODE[lev][lnode].bound[3][j];
-						E->parallel.EXCHANGE_NODE[lev][k].pass[3][j] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (k - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[3][j] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node k */
+          for (k=1;k<=E->parallel.NUM_NODE[lev].pass[3][j];k++)   {
+            lnode = k;
+            node = E->parallel.NODE[lev][lnode].bound[3][j];
+            E->parallel.EXCHANGE_NODE[lev][k].pass[3][j] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (k-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[3][j] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node k */
 
-				}				/* end for loop p */
+          }   /* end for loop p */
 
-			}					/* end for j */
+	    }     /* end for j */
 
-			for(k = 1; k <= 2; k++)
-			{					/* do XOZ boundaries & OZ lines */
+ 	  for(k=1;k<=2;k++)        {      /* do XOZ boundaries & OZ lines */
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[2][k] = 1;
-				if(E->parallel.me_loc[2] == 0 && k == 1)
-					E->parallel.NUM_PASS[lev].bound[2][k] = 0;
-				else if(E->parallel.me_loc[2] == nprocy - 1 && k == 2)
-					E->parallel.NUM_PASS[lev].bound[2][k] = 0;
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[2][k] = 1;
+        if(E->parallel.me_loc[2]==0 && k==1)
+          E->parallel.NUM_PASS[lev].bound[2][k] = 0;
+        else if(E->parallel.me_loc[2]==nprocy-1 && k==2)
+          E->parallel.NUM_PASS[lev].bound[2][k] = 0;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[2][k]; p++)
-				{
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[2][k];p++)  {
 
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[2][k] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[2][k] : noz) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[2][k] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[2][k] : noz);
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[2][k] = ((p==1)?E->parallel.NUM_NNO[lev].bound[2][k]:noz) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[2][k] = ((p==1)?E->parallel.NUM_NNO[lev].bound[2][k]:noz);
 
-					E->parallel.PROCESSOR[lev].pass[2][k] = me - ((k == 1) ? 1 : -1) * nprocx * nprocz;
+          E->parallel.PROCESSOR[lev].pass[2][k]=me-((k==1)?1:-1)*nprocx*nprocz;
 
-					for(kk = 1; kk <= E->parallel.NUM_NODE[lev].pass[2][k]; kk++)
-					{
-						lnode = kk;
-						node = E->parallel.NODE[lev][lnode].bound[2][k];
-						E->parallel.EXCHANGE_NODE[lev][kk].pass[2][k] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (kk - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[2][k] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node kk */
+          for (kk=1;kk<=E->parallel.NUM_NODE[lev].pass[2][k];kk++)   {
+            lnode = kk;
+            node = E->parallel.NODE[lev][lnode].bound[2][k];
+            E->parallel.EXCHANGE_NODE[lev][kk].pass[2][k] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (kk-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[2][k] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node kk */
 
-				}				/* end for loop p */
+          }   /* end for loop p */
 
-			}					/* end for k */
+	    }  /* end for k */
 
-		}						/* end of dims==3 */
+	  }       /* end of dims==3 */
 
-		E->parallel.TNUM_PASS[lev] = kkk;
+      E->parallel.TNUM_PASS[lev] = kkk;
 
 
 /*    fprintf(E->fp," me= %d  pass  %d \n",E->parallel.me,E->parallel.TNUM_PASS[lev]);
     for (k=1;k<=E->parallel.TNUM_PASS[lev];k++)  
 fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E->parallel.PROCESSOR[lev].pass[k],E->parallel.NUM_NEQ[lev].pass[k]);
- */
+ */        
 
 
-	}							/* end for level */
-
-	return;
-}
+    }        /* end for level */
+  
+  return;
+  }
 
 
 // periodic BC
+
 void parallel_communication_routs2(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	int i, ii, j, k, node, lnode, jj, doff;
-	int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
-	int me, nprocz, nprocx, nprocy;
 
-	me = E->parallel.me;
-	nprocx = E->parallel.nprocx;
-	nprocz = E->parallel.nprocz;
-	nprocy = E->parallel.nprocy;
+  {
+  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
+  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
+  int me, nprocz,nprocx, nprocy;
 
-	for(lev = E->mesh.levmax; lev >= E->mesh.levmin; lev--)
-	{
-		elx = E->lmesh.ELX[lev];
-		elz = E->lmesh.ELZ[lev];
-		ely = E->lmesh.ELY[lev];
-		nox = E->lmesh.NOX[lev];
-		noy = E->lmesh.NOY[lev];
-		noz = E->lmesh.NOZ[lev];
-		nno = E->lmesh.NNO[lev];
+  me = E->parallel.me;
+  nprocx = E->parallel.nprocx;
+  nprocz = E->parallel.nprocz;
+  nprocy = E->parallel.nprocy;
 
-		ii = 0;
-		kkk = 0;
-		if(E->mesh.nsd == 2)
-		{
+  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+     elx = E->lmesh.ELX[lev];
+     elz = E->lmesh.ELZ[lev];
+     ely = E->lmesh.ELY[lev];
+     nox = E->lmesh.NOX[lev];
+     noy = E->lmesh.NOY[lev];
+     noz = E->lmesh.NOZ[lev];
+     nno = E->lmesh.NNO[lev];
 
-			for(i = 1; i <= 2; i++)
-			{					/* do the OZ boundaries */
+     ii = 0;
+     kkk = 0;
+     if (E->mesh.nsd == 2) {
 
-				ii++;
+       for(i=1;i<=2;i++)    {     /* do the OZ boundaries */
 
-				E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+         ii ++;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[1][i]; p++)
-				{
-
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-
-					/* for kkk th pass, get the # of data to be passed */
-					E->parallel.NUM_NEQ[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy);
-
-					/* for kkk th pass, determine the target processor */
-
-					E->parallel.PROCESSOR[lev].pass[1][i] = me - ((i == 1) ? 1 : -1) * nprocz;
-					if(i == 1 && E->parallel.me_loc[1] == 0)
-						E->parallel.PROCESSOR[lev].pass[1][i] = me + (nprocx - 1) * nprocz;
-					else if(i == 2 && E->parallel.me_loc[1] == nprocx - 1)
-						E->parallel.PROCESSOR[lev].pass[1][i] = me - (nprocx - 1) * nprocz;
-
-					/* for kkk th pass, determine the ID of equations to be passed */
-
-					for(node = 1; node <= E->parallel.NUM_NODE[lev].pass[1][i]; node++)
-					{
-						lnode = E->parallel.NODE[lev][node].bound[1][i];
-						E->parallel.EXCHANGE_NODE[lev][node].pass[1][i] = lnode;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (node - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][lnode].doff[doff];
-						}
-					}
-
-				}				/* end for loop p */
-			}					/* end for loop i */
+         if (E->mesh.periodic_x)
+             E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+         else {
+             if (E->parallel.me_loc[1]==0 && i==1)
+               E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+             else if (E->parallel.me_loc[1]==nprocx-1 && i==2)
+               E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+            }
 
 
-			for(j = 1; j <= 2; j++)
-			{					/* do OX boundary */
+         for (p=1;p<=E->parallel.NUM_PASS[lev].bound[1][i];p++)  {
 
-				ii++;
+               kkk ++;
+                 /* determine the pass ID for ii-th boundary and p-th pass */
 
-				E->parallel.NUM_PASS[lev].bound[2][j] = 1;
-				if(E->parallel.me_loc[2] == 0 && j == 1)
-					E->parallel.NUM_PASS[lev].bound[2][j] = 0;
-				else if(E->parallel.me_loc[2] == nprocz - 1 && j == 2)
-					E->parallel.NUM_PASS[lev].bound[2][j] = 0;
+                 /* for kkk th pass, get the # of data to be passed */
+               E->parallel.NUM_NEQ[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy) *E->mesh.nsd;
+               E->parallel.NUM_NODE[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy);
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[2][j]; p++)
-				{
-					kkk++;
+  /* for kkk th pass, determine the target processor */
 
-					/* for kkk th pass, get the # of data to be passed */
-					E->parallel.NUM_NEQ[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j] * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j];
+               E->parallel.PROCESSOR[lev].pass[1][i]=me-((i==1)?1:-1)*nprocz;
+               if (E->mesh.periodic_x)   {
+                 if (i==1 && E->parallel.me_loc[1]==0)
+                   E->parallel.PROCESSOR[lev].pass[1][i]=me+(nprocx-1)*nprocz;
+                 else if (i==2 && E->parallel.me_loc[1]==nprocx-1)
+                   E->parallel.PROCESSOR[lev].pass[1][i]=me-(nprocx-1)*nprocz;
+                 }
 
-					/* for kkk th pass, determine the target processor */
+  /* for kkk th pass, determine the ID of equations to be passed */
 
-					E->parallel.PROCESSOR[lev].pass[2][j] = me - ((j == 1) ? 1 : -1);
+           for (node=1;node<=E->parallel.NUM_NODE[lev].pass[1][i];node++)   {
+                      lnode = E->parallel.NODE[lev][node].bound[1][i];
+                      E->parallel.EXCHANGE_NODE[lev][node].pass[1][i] = lnode;
+                      for(doff=1;doff<=E->mesh.nsd;doff++)     {
+                         jj = doff + (node-1)*E->mesh.nsd;
+                         E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][lnode].doff[doff];
+                         }
+                      }
 
-					/* for kkk th pass, determine the ID of equations to be passed */
-
-					for(node = 1; node <= E->parallel.NUM_NODE[lev].pass[2][j]; node++)
-					{
-						lnode = E->parallel.NODE[lev][node].bound[2][j];
-						E->parallel.EXCHANGE_NODE[lev][node].pass[2][j] = lnode;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (node - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[2][j] = E->ID[lev][lnode].doff[doff];
-						}
-					}			/* end loop for node */
-
-				}				/* end for loop p */
-			}					/* end for loop j */
-
-		}						/* end for 2D */
+               }     /* end for loop p */
+         }       /* end for loop i */
 
 
+       for(j=1;j<=2;j++)       {    /* do OX boundary */
 
-		else if(E->mesh.nsd == 3)
-		{
+         ii ++;
 
-			for(i = 1; i <= 2; i++)
-			{					/* do YOZ boundaries & OY lines */
+             E->parallel.NUM_PASS[lev].bound[2][j] = 1;
+             if (E->parallel.me_loc[2]==0 && j==1)
+               E->parallel.NUM_PASS[lev].bound[2][j] = 0;
+             else if (E->parallel.me_loc[2]==nprocz-1 && j==2)
+               E->parallel.NUM_PASS[lev].bound[2][j] = 0;
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+         for (p=1;p<=E->parallel.NUM_PASS[lev].bound[2][j];p++)  {
+               kkk ++;
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[1][i]; p++)
-				{
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[1][i] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[1][i] : noy);
+                 /* for kkk th pass, get the # of data to be passed */
+               E->parallel.NUM_NEQ[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j]*E->mesh.nsd;
+               E->parallel.NUM_NODE[lev].pass[2][j] = E->parallel.NUM_NNO[lev].bound[2][j];
 
-					E->parallel.PROCESSOR[lev].pass[1][i] = me - ((i == 1) ? 1 : -1) * nprocz;
-					if(i == 1 && E->parallel.me_loc[1] == 0)
-						E->parallel.PROCESSOR[lev].pass[1][i] = me + (nprocx - 1) * nprocz;
-					else if(i == 2 && E->parallel.me_loc[1] == nprocx - 1)
-						E->parallel.PROCESSOR[lev].pass[1][i] = me - (nprocx - 1) * nprocz;
+  /* for kkk th pass, determine the target processor */
 
-					for(k = 1; k <= E->parallel.NUM_NODE[lev].pass[1][i]; k++)
-					{
-						lnode = k;
-						node = E->parallel.NODE[lev][lnode].bound[1][i];
-						E->parallel.EXCHANGE_NODE[lev][k].pass[1][i] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (k - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node k */
+               E->parallel.PROCESSOR[lev].pass[2][j]=me-((j==1)?1:-1);
 
-				}				/* end for loop p */
-			}					/* end for i */
+  /* for kkk th pass, determine the ID of equations to be passed */
 
-			for(j = 1; j <= 2; j++)
-			{					/* do XOY boundaries & OX lines */
+               for (node=1;node<=E->parallel.NUM_NODE[lev].pass[2][j];node++)   {
+                     lnode = E->parallel.NODE[lev][node].bound[2][j];
+                     E->parallel.EXCHANGE_NODE[lev][node].pass[2][j] = lnode;
+                     for(doff=1;doff<=E->mesh.nsd;doff++)  {
+                       jj = doff + (node-1)*E->mesh.nsd;
+                       E->parallel.EXCHANGE_ID[lev][jj].pass[2][j] = E->ID[lev][lnode].doff[doff];
+                       }
+                     }      /* end loop for node */
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[3][j] = 1;
-				if(E->parallel.me_loc[3] == 0 && j == 1)
-					E->parallel.NUM_PASS[lev].bound[3][j] = 0;
-				else if(E->parallel.me_loc[3] == nprocz - 1 && j == 2)
-					E->parallel.NUM_PASS[lev].bound[3][j] = 0;
+               }     /* end for loop p */
+         }    /* end for loop j */
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[3][j]; p++)
-				{
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[3][j] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[3][j] : nox) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[3][j] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[3][j] : nox);
+         }         /* end for 2D */
 
-					E->parallel.PROCESSOR[lev].pass[3][j] = me - ((j == 1) ? 1 : -1);
 
-					for(k = 1; k <= E->parallel.NUM_NODE[lev].pass[3][j]; k++)
-					{
-						lnode = k;
-						node = E->parallel.NODE[lev][lnode].bound[3][j];
-						E->parallel.EXCHANGE_NODE[lev][k].pass[3][j] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (k - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[3][j] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node k */
+    else if (E->mesh.nsd ==3)  {
 
-				}				/* end for loop p */
+      for(i=1;i<=2;i++)       {       /* do YOZ boundaries & OY lines */
 
-			}					/* end for j */
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[1][i] = 1;
+        if (!E->mesh.periodic_x) {
+             if (E->parallel.me_loc[1]==0 && i==1)
+               E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+             else if (E->parallel.me_loc[1]==nprocx-1 && i==2)
+               E->parallel.NUM_PASS[lev].bound[1][i] = 0;
+            }
 
-			for(k = 1; k <= 2; k++)
-			{					/* do XOZ boundaries & OZ lines */
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[1][i];p++)  {
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[1][i] = ((p==1)?E->parallel.NUM_NNO[lev].bound[1][i]:noy);
 
-				ii++;
-				E->parallel.NUM_PASS[lev].bound[2][k] = 1;
+          E->parallel.PROCESSOR[lev].pass[1][i]=me-((i==1)?1:-1)*nprocz;
+          if (E->mesh.periodic_x)    {
+            if (i==1 && E->parallel.me_loc[1]==0)
+              E->parallel.PROCESSOR[lev].pass[1][i]=me+(nprocx-1)*nprocz;
+            else if (i==2 && E->parallel.me_loc[1]==nprocx-1)
+              E->parallel.PROCESSOR[lev].pass[1][i]=me-(nprocx-1)*nprocz;
+            }
 
-				for(p = 1; p <= E->parallel.NUM_PASS[lev].bound[2][k]; p++)
-				{
+          for (k=1;k<=E->parallel.NUM_NODE[lev].pass[1][i];k++)   {
+            lnode = k;
+            node = E->parallel.NODE[lev][lnode].bound[1][i];
+            E->parallel.EXCHANGE_NODE[lev][k].pass[1][i] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (k-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[1][i] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node k */
 
-					kkk++;
-					/* determine the pass ID for ii-th boundary and p-th pass */
-					E->parallel.NUM_NEQ[lev].pass[2][k] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[2][k] : noz) * E->mesh.nsd;
-					E->parallel.NUM_NODE[lev].pass[2][k] = ((p == 1) ? E->parallel.NUM_NNO[lev].bound[2][k] : noz);
+          }   /* end for loop p */
+        }  /* end for i */
 
-					E->parallel.PROCESSOR[lev].pass[2][k] = me - ((k == 1) ? 1 : -1) * nprocx * nprocz;
-					if(k == 1 && E->parallel.me_loc[2] == 0)
-						E->parallel.PROCESSOR[lev].pass[2][k] = me + (nprocy - 1) * nprocx * nprocz;
-					else if(k == 2 && E->parallel.me_loc[2] == nprocy - 1)
-						E->parallel.PROCESSOR[lev].pass[2][k] = me - (nprocy - 1) * nprocx * nprocz;
+      for(j=1;j<=2;j++)       {       /* do XOY boundaries & OX lines */
 
-					for(kk = 1; kk <= E->parallel.NUM_NODE[lev].pass[2][k]; kk++)
-					{
-						lnode = kk;
-						node = E->parallel.NODE[lev][lnode].bound[2][k];
-						E->parallel.EXCHANGE_NODE[lev][kk].pass[2][k] = node;
-						for(doff = 1; doff <= E->mesh.nsd; doff++)
-						{
-							jj = doff + (kk - 1) * E->mesh.nsd;
-							E->parallel.EXCHANGE_ID[lev][jj].pass[2][k] = E->ID[lev][node].doff[doff];
-						}
-					}			/* end for node kk */
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[3][j] = 1;
+        if(E->parallel.me_loc[3]==0 && j==1)
+          E->parallel.NUM_PASS[lev].bound[3][j] = 0;
+        else if(E->parallel.me_loc[3]==nprocz-1 && j==2)
+          E->parallel.NUM_PASS[lev].bound[3][j] = 0;
 
-				}				/* end for loop p */
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[3][j];p++)  {
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[3][j] = ((p==1)?E->parallel.NUM_NNO[lev].bound[3][j]:nox) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[3][j] = ((p==1)?E->parallel.NUM_NNO[lev].bound[3][j]:nox);
 
-			}					/* end for k */
+          E->parallel.PROCESSOR[lev].pass[3][j]=me-((j==1)?1:-1);
 
-		}						/* end of dims==3 */
+          for (k=1;k<=E->parallel.NUM_NODE[lev].pass[3][j];k++)   {
+            lnode = k;
+            node = E->parallel.NODE[lev][lnode].bound[3][j];
+            E->parallel.EXCHANGE_NODE[lev][k].pass[3][j] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (k-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[3][j] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node k */
 
-		E->parallel.TNUM_PASS[lev] = kkk;
+          }   /* end for loop p */
+
+        }     /* end for j */
+
+      for(k=1;k<=2;k++)        {      /* do XOZ boundaries & OZ lines */
+
+        ii ++;
+        E->parallel.NUM_PASS[lev].bound[2][k] = 1;
+        if (!E->mesh.periodic_y)  {
+          if(E->parallel.me_loc[2]==0 && k==1)
+            E->parallel.NUM_PASS[lev].bound[2][k] = 0;
+          else if(E->parallel.me_loc[2]==nprocy-1 && k==2)
+            E->parallel.NUM_PASS[lev].bound[2][k] = 0;
+          }
+
+        for (p=1;p<=E->parallel.NUM_PASS[lev].bound[2][k];p++)  {
+
+          kkk ++;
+              /* determine the pass ID for ii-th boundary and p-th pass */
+          E->parallel.NUM_NEQ[lev].pass[2][k] = ((p==1)?E->parallel.NUM_NNO[lev].bound[2][k]:noz) *E->mesh.nsd;
+          E->parallel.NUM_NODE[lev].pass[2][k] = ((p==1)?E->parallel.NUM_NNO[lev].bound[2][k]:noz);
+
+          E->parallel.PROCESSOR[lev].pass[2][k]=me-((k==1)?1:-1)*nprocx*nprocz;
+          if (E->mesh.periodic_y)    {
+            if (k==1 && E->parallel.me_loc[2]==0)
+              E->parallel.PROCESSOR[lev].pass[2][k]=me+(nprocy-1)*nprocx*nprocz;
+            else if (k==2 && E->parallel.me_loc[2]==nprocy-1)
+              E->parallel.PROCESSOR[lev].pass[2][k]=me-(nprocy-1)*nprocx*nprocz;
+            }
+
+          for (kk=1;kk<=E->parallel.NUM_NODE[lev].pass[2][k];kk++)   {
+            lnode = kk;
+            node = E->parallel.NODE[lev][lnode].bound[2][k];
+            E->parallel.EXCHANGE_NODE[lev][kk].pass[2][k] = node;
+            for(doff=1;doff<=E->mesh.nsd;doff++)     {
+              jj = doff + (kk-1)*E->mesh.nsd;
+              E->parallel.EXCHANGE_ID[lev][jj].pass[2][k] = E->ID[lev][node].doff[doff];
+              }
+            }  /* end for node kk */
+
+          }   /* end for loop p */
+
+         }  /* end for k */
+
+       }       /* end of dims==3 */
+
+      E->parallel.TNUM_PASS[lev] = kkk;
+
 
 
 /*
-    fprintf(E->fp," me= %d  pass  %d \n",E->parallel.me,E->parallel.TNUM_PASS[lev]);
-    for (k=1;k<=E->parallel.TNUM_PASS[lev];k++)  
-fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E->parallel.PROCESSOR[lev].pass[k],E->parallel.NUM_NEQ[lev].pass[k]);
- */
+ *     fprintf(E->fp," me= %d  pass  %d \n",E->parallel.me,E->parallel.TNUM_PASS[lev]);
+ *         for (k=1;k<=E->parallel.TNUM_PASS[lev];k++)
+ *         fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E->parallel.PROCESSOR[lev].pass[k],E->parallel.NUM_NEQ[lev].pass[k]);
+ *         */
 
-	}							/* end for level */
-
-	return;
-}
+    }        /* end for level */
+  
+  return;
+  }
 
 void parallel_communication_routs3(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	int i, j, k, el;
-	//int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
-	int lev, elx, elz, ely;
-	int m1, m2, m3, me, nprocz, nprocx, nprocy, proc;
 
-	me = E->parallel.me;
-	nprocx = E->parallel.nprocx;
-	nprocz = E->parallel.nprocz;
-	nprocy = E->parallel.nprocy;
+  {
 
+  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
+  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
+  int m1,m2,m3,me, nprocz,nprocx, nprocy,proc;
 
-	E->parallel.no_neighbors = 0;
+  me = E->parallel.me;
+  nprocx = E->parallel.nprocx;
+  nprocz = E->parallel.nprocz;
+  nprocy = E->parallel.nprocy;
 
-	E->parallel.neighbors_rev = (int *)malloc((E->parallel.nproc + 1) * sizeof(int));
+  
+  E->parallel.no_neighbors  = 0;
 
-	for(k = -1; k <= 1; k++)
-		for(i = -1; i <= 1; i++)
-			for(j = -1; j <= 1; j++)
-			{
+  E->parallel.neighbors_rev = (int *)malloc((E->parallel.nproc+1)*sizeof(int));
 
-				m1 = E->parallel.me_loc[1] + i;
-				m2 = E->parallel.me_loc[2] + k;
-				m3 = E->parallel.me_loc[3] + j;
-				if(m1 >= 0 && m1 < nprocx && m2 >= 0 && m2 < nprocy && m3 >= 0 && m3 < nprocz)
-				{
-					proc = m3 + m1 * nprocz + m2 * E->parallel.nprocxz;
-					if(proc != me)
-					{
-						E->parallel.no_neighbors++;
-						E->parallel.neighbors[E->parallel.no_neighbors] = proc;
-						E->parallel.neighbors_rev[proc] = E->parallel.no_neighbors;
-					}
-				}
-			}
+  for (k=-1;k<=1;k++)  
+  for (i=-1;i<=1;i++)  
+  for (j=-1;j<=1;j++)   {
+
+    m1 = E->parallel.me_loc[1]+i; 
+    m2 = E->parallel.me_loc[2]+k; 
+    m3 = E->parallel.me_loc[3]+j; 
+    if (m1>=0 && m1<nprocx && m2>=0 && m2<nprocy && m3>=0 && m3<nprocz)  {
+      proc = m3 + m1*nprocz + m2*E->parallel.nprocxz;
+      if (proc!=me)  {
+        E->parallel.no_neighbors ++;
+        E->parallel.neighbors[E->parallel.no_neighbors] = proc;
+        E->parallel.neighbors_rev[proc] = E->parallel.no_neighbors;
+        }
+      }
+  }
 
 
-	for(i = 1; i <= E->parallel.no_neighbors; i++)
-		fprintf(E->fp, "aaa %d %d %d\n", i, E->parallel.neighbors[i], E->parallel.neighbors_rev[E->parallel.neighbors[i]]);
-	fflush(E->fp);
+  for (i=1;i<=E->parallel.no_neighbors;i++)   
+	  fprintf(E->fp,"aaa %d %d %d\n",i,E->parallel.neighbors[i],E->parallel.neighbors_rev[E->parallel.neighbors[i]]);
+  fflush(E->fp);
 
 
-	lev = E->mesh.levmax;
+  lev=E->mesh.levmax;
 
-	elx = E->lmesh.ELX[lev];
-	elz = E->lmesh.ELZ[lev];
-	ely = E->lmesh.ELY[lev];
+  elx = E->lmesh.ELX[lev];
+  elz = E->lmesh.ELZ[lev];
+  ely = E->lmesh.ELY[lev];
 
-	for(el = 1; el <= E->lmesh.nel; el++)
-		E->Element[el] = 0;
+  for (el=1;el<=E->lmesh.nel;el++)
+      E->Element[el] = 0;
 
-	for(k = 1; k <= ely; k++)
-		for(j = 1; j <= elz; j++)
-		{
-			el = j + (k - 1) * elx * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-			el = j + (elx - 1) * elz + (k - 1) * elx * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-		}
+    for (k=1;k<=ely;k++)  
+    for (j=1;j<=elz;j++)  {
+      el = j + (k-1)*elx*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      el = j + (elx-1)*elz + (k-1)*elx*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      }
 
-	for(i = 1; i <= elx; i++)
-		for(j = 1; j <= elz; j++)
-		{
-			el = j + (i - 1) * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-			el = j + (i - 1) * elz + (ely - 1) * elx * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-		}
+    for (i=1;i<=elx;i++)  
+    for (j=1;j<=elz;j++)  {
+      el = j + (i-1)*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      el = j + (i-1)*elz + (ely-1)*elx*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      }
 
-	for(k = 1; k <= ely; k++)
-		for(i = 1; i <= elx; i++)
-		{
-			el = elz + (i - 1) * elz + (k - 1) * elx * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-			el = 1 + (i - 1) * elz + (k - 1) * elx * elz;
-			E->Element[el] = E->Element[el] | SIDEE;
-		}
+    for (k=1;k<=ely;k++)  
+    for (i=1;i<=elx;i++)  {
+      el = elz + (i-1)*elz + (k-1)*elx*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      el = 1 + (i-1)*elz + (k-1)*elx*elz;
+      E->Element[el] = E->Element[el] | SIDEE;
+      }
 
 
-	return;
-}
+  return;
+  }
 
 void parallel_communication_routs4(struct All_variables *E)
-{
-	//int i, ii, j, k, l, node, el, elt, lnode, jj, doff;
-	//int lev, elx, elz, ely, nno, nox, noz, noy, p, kkk, kk;
-	//int me, nprocz, nprocx, nprocy;
 
-	return;
-}
+  {
+  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
+  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
+  int me, nprocz,nprocx, nprocy;
+
+  fprintf(stderr,"you are using periodic conditions with tracers, an option not being implemented at the moment!!!\n");
+  fprintf(stderr,"quit!!!\n");
+  fprintf(E->fp,"you are using periodic conditions with tracers, an option not being implemented at the moment!!!\n");
+  fprintf(E->fp,"quit!!!\n");
+
+  return;
+  }
+
 
 
 void exchange_number_rec_markers(struct All_variables *E)

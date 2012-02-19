@@ -201,148 +201,130 @@ void temperature_boundary_conditions(struct All_variables *E)
 }
 
 /* ========================================== */
-
-void velocity_refl_vert_bc(struct All_variables *E)
+void velocity_refl_vert_bc(E)
+     struct All_variables *E;
 {
-	int i, j, ii, jj;
-	int node1, node2;
-	int level, nox, noy, noz;
-	//const int dims = E->mesh.nsd;
+  int i,j,ii,jj;
+  int node1,node2;
+  int level,nox,noy,noz;
+  const int dims=E->mesh.nsd;
 
-	/* except one side with XOZ and y=0, all others are not reflecting BC */
-	/* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
+  /* except one side with XOZ and y=0, all others are not reflecting BC*/
+  /* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
 
-	if(E->parallel.me_loc[1] == 0 || E->parallel.me_loc[1] == E->parallel.nprocx - 1)
-		for(j = 1; j <= E->lmesh.noy; j++)
-			for(i = 1; i <= E->lmesh.noz; i++)
-			{
-				node1 = i + (j - 1) * E->lmesh.noz * E->lmesh.nox;
-				node2 = node1 + (E->lmesh.nox - 1) * E->lmesh.noz;
+  if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
+    for(j=1;j<=E->lmesh.noy;j++)
+      for(i=1;i<=E->lmesh.noz;i++)  {
+        node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
+	node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
 
-				ii = i + E->lmesh.nzs - 1;
-				if(E->parallel.me_loc[1] == 0)
-				{
-					E->VB[1][node1] = 0.0;
-					if((ii != 1) && (ii != E->mesh.noz))
-						E->VB[3][node1] = 0.0;
-				}
-				if(E->parallel.me_loc[1] == E->parallel.nprocx - 1)
-				{
-					E->VB[1][node2] = 0.0;
-					if((ii != 1) && (ii != E->mesh.noz))
-						E->VB[3][node2] = 0.0;
-				}
-			}					/* end loop for i and j */
+	ii = i + E->lmesh.nzs - 1;
+        if (E->parallel.me_loc[1]==0 )  {
+	  E->VB[1][node1] = 0.0;
+	  if((ii != 1) && (ii != E->mesh.noz))
+	      E->VB[3][node1] = 0.0;  
+	  }
+        if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
+	  E->VB[1][node2] = 0.0;
+	  if((ii != 1) && (ii != E->mesh.noz))
+	      E->VB[3][node2] = 0.0;
+	  }
+        }      /* end loop for i and j */
 
-	/* for two XOZ planes if 3-D */
+  /* for two XOZ planes if 3-D */
+	
+    if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+      for(j=1;j<=E->lmesh.nox;j++)
+        for(i=1;i<=E->lmesh.noz;i++)       {
+	  node1 = i +(j-1)*E->lmesh.noz;
+	  node2 = node1+(E->lmesh.noy-1)*E->lmesh.noz*E->lmesh.nox;
+	  ii = i + E->lmesh.nzs - 1;
 
-	if(E->parallel.me_loc[2] == 0 || E->parallel.me_loc[2] == E->parallel.nprocy - 1)
-		for(j = 1; j <= E->lmesh.nox; j++)
-			for(i = 1; i <= E->lmesh.noz; i++)
-			{
-				node1 = i + (j - 1) * E->lmesh.noz;
-				node2 = node1 + (E->lmesh.noy - 1) * E->lmesh.noz * E->lmesh.nox;
-				ii = i + E->lmesh.nzs - 1;
+          if (E->parallel.me_loc[2]==0)  {
+	     E->VB[2][node1] = 0.0;
+	     if((ii != 1) && (ii != E->mesh.noz))
+	        E->VB[3][node1] = 0.0;  
+	     }
+          if (E->parallel.me_loc[2]==E->parallel.nprocy-1)  {
+	     E->VB[2][node2] = 0.0;
+	     if((ii != 1) && (ii != E->mesh.noz))
+	        E->VB[3][node2] = 0.0;  
+	     }
+          }    /* end of loop i & j */
+ 
+  /* all vbc's apply at all levels  */
+  for(level=E->mesh.levmax;level>=E->mesh.levmin;level--) {
+    nox = E->lmesh.NOX[level] ;
+    noz = E->lmesh.NOZ[level] ;
+    noy = E->lmesh.NOY[level] ;
 
-				if(E->parallel.me_loc[2] == 0)
-				{
-					E->VB[2][node1] = 0.0;
-					if((ii != 1) && (ii != E->mesh.noz))
-						E->VB[3][node1] = 0.0;
-				}
-				if(E->parallel.me_loc[2] == E->parallel.nprocy - 1)
-				{
-					E->VB[2][node2] = 0.0;
-					if((ii != 1) && (ii != E->mesh.noz))
-						E->VB[3][node2] = 0.0;
-				}
-			}					/* end of loop i & j */
+    if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
+      for(j=1;j<=noy;j++)
+        for(i=1;i<=noz;i++) {
+	  node1 = i + (j-1)*noz*nox ;
+	  node2 = node1 + (nox-1) * noz ;
+	  ii = i + E->lmesh.NZS[level] - 1;
+          if (E->parallel.me_loc[1]==0 )  {
+	      E->NODE[level][node1] = E->NODE[level][node1] & (~SBX);
+	      E->NODE[level][node1] = E->NODE[level][node1] | (VBX);
+	      if((ii!=1) && (ii!=E->mesh.NOZ[level])) {
+		  E->NODE[level][node1] = E->NODE[level][node1] & (~VBY);
+		  E->NODE[level][node1] = E->NODE[level][node1] | SBY;
+		  E->NODE[level][node1] = E->NODE[level][node1] & (~ VBZ);
+		  E->NODE[level][node1] = E->NODE[level][node1] | SBZ;    
+		  }
+	      }
+          if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
+	      E->NODE[level][node2] = E->NODE[level][node2] & (~SBX);
+	      E->NODE[level][node2] = E->NODE[level][node2] | (VBX);
+	      if((ii!=1) && (ii!=E->mesh.NOZ[level])) {
+		  E->NODE[level][node2] = E->NODE[level][node2] & (~VBY);
+		  E->NODE[level][node2] = E->NODE[level][node2] | SBY;
+		  E->NODE[level][node2] = E->NODE[level][node2] & (~ VBZ);
+		  E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
+            	  }
+	      }
+	  }   /* end for loop i & j */
+	   
+      if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+        for(j=1;j<=nox;j++) 
+          for(i=1;i<=noz;i++) {
+	    node1 = i + (j-1)*noz;
+	    node2 = node1+(noy-1)*noz*nox;
+	    ii = i + E->lmesh.NZS[level] - 1;
+	    jj = j + E->lmesh.NXS[level] - 1;
+            if (E->parallel.me_loc[2]==0)  {
+	       E->NODE[level][node1] = E->NODE[level][node1] | VBY;
+               E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
+	       if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+		  E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
+		  E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
+		  } 
+	       if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+		  E->NODE[level][node1] = E->NODE[level][node1] & (~VBX);
+		  E->NODE[level][node1] = E->NODE[level][node1] | SBX;
+		  }
+	       }
+            if (E->parallel.me_loc[2]==E->parallel.nprocy-1) {
+	       E->NODE[level][node2] = E->NODE[level][node2] | VBY;
+	       E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
+	       if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+		  E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
+		  E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
+		  } 
+	       if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+		  E->NODE[level][node2] = E->NODE[level][node2] & (~VBX);
+		  E->NODE[level][node2] = E->NODE[level][node2] | SBX;
+		  }
+	       }
 
-	/* all vbc's apply at all levels  */
-	for(level = E->mesh.levmax; level >= E->mesh.levmin; level--)
-	{
-		nox = E->lmesh.NOX[level];
-		noz = E->lmesh.NOZ[level];
-		noy = E->lmesh.NOY[level];
+	    }    /* end for loop i & j  */
+  }                   /* end for loop level */
 
-		if(E->parallel.me_loc[1] == 0 || E->parallel.me_loc[1] == E->parallel.nprocx - 1)
-			for(j = 1; j <= noy; j++)
-				for(i = 1; i <= noz; i++)
-				{
-					node1 = i + (j - 1) * noz * nox;
-					node2 = node1 + (nox - 1) * noz;
-					ii = i + E->lmesh.NZS[level] - 1;
-					if(E->parallel.me_loc[1] == 0)
-					{
-						E->NODE[level][node1] = E->NODE[level][node1] & (~SBX);
-						E->NODE[level][node1] = E->NODE[level][node1] | (VBX);
-						if((ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node1] = E->NODE[level][node1] & (~VBY);
-							E->NODE[level][node1] = E->NODE[level][node1] | SBY;
-							E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
-							E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
-						}
-					}
-					if(E->parallel.me_loc[1] == E->parallel.nprocx - 1)
-					{
-						E->NODE[level][node2] = E->NODE[level][node2] & (~SBX);
-						E->NODE[level][node2] = E->NODE[level][node2] | (VBX);
-						if((ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node2] = E->NODE[level][node2] & (~VBY);
-							E->NODE[level][node2] = E->NODE[level][node2] | SBY;
-							E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
-							E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
-						}
-					}
-				}				/* end for loop i & j */
-
-		if(E->parallel.me_loc[2] == 0 || E->parallel.me_loc[2] == E->parallel.nprocy - 1)
-			for(j = 1; j <= nox; j++)
-				for(i = 1; i <= noz; i++)
-				{
-					node1 = i + (j - 1) * noz;
-					node2 = node1 + (noy - 1) * noz * nox;
-					ii = i + E->lmesh.NZS[level] - 1;
-					jj = j + E->lmesh.NXS[level] - 1;
-					if(E->parallel.me_loc[2] == 0)
-					{
-						E->NODE[level][node1] = E->NODE[level][node1] | VBY;
-						E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
-						if((ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
-							E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
-						}
-						if((jj != 1) && (jj != E->mesh.NOX[level]) && (ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node1] = E->NODE[level][node1] & (~VBX);
-							E->NODE[level][node1] = E->NODE[level][node1] | SBX;
-						}
-					}
-					if(E->parallel.me_loc[2] == E->parallel.nprocy - 1)
-					{
-						E->NODE[level][node2] = E->NODE[level][node2] | VBY;
-						E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
-						if((ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
-							E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
-						}
-						if((jj != 1) && (jj != E->mesh.NOX[level]) && (ii != 1) && (ii != E->mesh.NOZ[level]))
-						{
-							E->NODE[level][node2] = E->NODE[level][node2] & (~VBX);
-							E->NODE[level][node2] = E->NODE[level][node2] | SBX;
-						}
-					}
-
-				}				/* end for loop i & j  */
-	}							/* end for loop level */
-
-
-	return;
+ 
+  return;
 }
+
 
 void temperature_refl_vert_bc(struct All_variables *E)
 {
@@ -394,6 +376,7 @@ void temperature_refl_vert_bc(struct All_variables *E)
 
 	return;
 }
+
 
 
 void temperature_imposed_botm_bcs(struct All_variables *E, float *BC[], int dirn)
@@ -473,27 +456,209 @@ void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, floa
 }
 
 
-void velocity_apply_periodic_bcs(struct All_variables *E)
+void velocity_apply_periodic_bcs(E)
+    struct All_variables *E;
 {
-	//int n1, n2, level;
-	//int i, j, ii, jj;
-	//const int dims = E->mesh.nsd;
 
-	fprintf(E->fp, "Periodic boundary conditions\n");
+  int i,j,ii,jj;
+  int node1,node2;
+  int level,nox,noy,noz;
+  const int dims=E->mesh.nsd;
 
-	return;
+  fprintf(E->fp,"Periodic boundary conditions\n");
+
+ if (E->mesh.periodic_y && E->mesh.periodic_x)    {
+    return;
+   }
+
+ else if (E->mesh.periodic_y)     {
+
+  /* except one side with XOZ and y=0, all others are not reflecting BC*/
+  /* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
+
+  if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
+    for(j=1;j<=E->lmesh.noy;j++)
+      for(i=1;i<=E->lmesh.noz;i++)  {
+        node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
+        node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+
+        ii = i + E->lmesh.nzs - 1;
+        if (E->parallel.me_loc[1]==0 )  {
+          E->VB[1][node1] = 0.0;
+          if((ii != 1) && (ii != E->mesh.noz))
+              E->VB[3][node1] = 0.0;
+          }
+        if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
+          E->VB[1][node2] = 0.0;
+          if((ii != 1) && (ii != E->mesh.noz))
+              E->VB[3][node2] = 0.0;
+          }
+        }      /* end loop for i and j */
+
+   }
+
+ else if (E->mesh.periodic_x)     {
+
+  /* for two XOZ planes if 3-D */
+
+    if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+      for(j=1;j<=E->lmesh.nox;j++)
+        for(i=1;i<=E->lmesh.noz;i++)       {
+          node1 = i +(j-1)*E->lmesh.noz;
+          node2 = node1+(E->lmesh.noy-1)*E->lmesh.noz*E->lmesh.nox;
+          ii = i + E->lmesh.nzs - 1;
+
+          if (E->parallel.me_loc[2]==0)  {
+             E->VB[2][node1] = 0.0;
+             if((ii != 1) && (ii != E->mesh.noz))
+                E->VB[3][node1] = 0.0;
+             }
+          if (E->parallel.me_loc[2]==E->parallel.nprocy-1)  {
+             E->VB[2][node2] = 0.0;
+             if((ii != 1) && (ii != E->mesh.noz))
+                E->VB[3][node2] = 0.0;
+             }
+          }    /* end of loop i & j */
+   }
+
+  /* all vbc's apply at all levels  */
+for(level=E->mesh.levmax;level>=E->mesh.levmin;level--) {
+    nox = E->lmesh.NOX[level] ;
+    noz = E->lmesh.NOZ[level] ;
+    noy = E->lmesh.NOY[level] ;
+
+  if (E->mesh.periodic_y)     {
+
+    if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
+      for(j=1;j<=noy;j++)
+        for(i=1;i<=noz;i++) {
+          node1 = i + (j-1)*noz*nox ;
+          node2 = node1 + (nox-1) * noz ;
+          ii = i + E->lmesh.NZS[level] - 1;
+          if (E->parallel.me_loc[1]==0 )  {
+              E->NODE[level][node1] = E->NODE[level][node1] & (~SBX);
+              E->NODE[level][node1] = E->NODE[level][node1] | (VBX);
+              if((ii!=1) && (ii!=E->mesh.NOZ[level])) {
+                  E->NODE[level][node1] = E->NODE[level][node1] & (~VBY);
+                  E->NODE[level][node1] = E->NODE[level][node1] | SBY;
+                  E->NODE[level][node1] = E->NODE[level][node1] & (~ VBZ);
+                  E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
+                  }
+              }
+          if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
+              E->NODE[level][node2] = E->NODE[level][node2] & (~SBX);
+              E->NODE[level][node2] = E->NODE[level][node2] | (VBX);
+              if((ii!=1) && (ii!=E->mesh.NOZ[level])) {
+                  E->NODE[level][node2] = E->NODE[level][node2] & (~VBY);
+                  E->NODE[level][node2] = E->NODE[level][node2] | SBY;
+                  E->NODE[level][node2] = E->NODE[level][node2] & (~ VBZ);
+                  E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
+                  }
+              }
+          }   /* end for loop i & j */
+     }
+
+  if (E->mesh.periodic_x)     {
+
+      if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+        for(j=1;j<=nox;j++)
+          for(i=1;i<=noz;i++) {
+            node1 = i + (j-1)*noz;
+            node2 = node1+(noy-1)*noz*nox;
+            ii = i + E->lmesh.NZS[level] - 1;
+            jj = j + E->lmesh.NXS[level] - 1;
+            if (E->parallel.me_loc[2]==0)  {
+               E->NODE[level][node1] = E->NODE[level][node1] | VBY;
+               E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
+               if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+                  E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
+                  E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
+                  }
+               if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+                  E->NODE[level][node1] = E->NODE[level][node1] & (~VBX);
+                  E->NODE[level][node1] = E->NODE[level][node1] | SBX;
+                  }
+               }
+            if (E->parallel.me_loc[2]==E->parallel.nprocy-1) {
+               E->NODE[level][node2] = E->NODE[level][node2] | VBY;
+               E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
+               if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+                  E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
+                  E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
+                  }
+               if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+                  E->NODE[level][node2] = E->NODE[level][node2] & (~VBX);
+                  E->NODE[level][node2] = E->NODE[level][node2] | SBX;
+                  }
+               }
+
+            }    /* end for loop i & j  */
+     }
+
+  }                   /* end for loop level */
+
+    return;
+
 }
 
-void temperature_apply_periodic_bcs(struct All_variables *E)
+void temperature_apply_periodic_bcs(E)
+    struct All_variables *E;
 {
-	//int n1, n2, e1, level;
-	//int i, j, ii, jj;
-	//const int dims = E->mesh.nsd;
+  int i,j;
+  int node1,node2;
+  const int dims=E->mesh.nsd;
 
-	fprintf(E->fp, "Periodic temperature boundary conditions\n");
+ /* Temps and bc-values  at top level only */
+/* fixed temperature at x=0 */
 
-	return;
-}
+ if (E->mesh.periodic_x && E->mesh.periodic_y)  {
+   return;
+   }
+
+ else if (E->mesh.periodic_y)  {
+
+  if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
+    for(j=1;j<=E->lmesh.noy;j++)
+      for(i=1;i<=E->lmesh.noz;i++) {
+        node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
+        node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+        if (E->parallel.me_loc[1]==0 )                   {
+          E->node[node1] = E->node[node1] & (~TBX);
+          E->node[node1] = E->node[node1] | FBX;
+          E->TB[1][node1] = 0.0;
+          }
+        if (E->parallel.me_loc[1]==E->parallel.nprocx-1)   {
+          E->node[node2] = E->node[node2] & (~TBX);
+          E->node[node2] = E->node[node2] | FBX;
+          E->TB[1][node2] = 0.0;
+          }
+        }       /* end for loop i & j */
+      }
+
+ else if (E->mesh.periodic_x)  {
+    if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+      for(j=1;j<=E->lmesh.nox;j++)
+        for(i=1;i<=E->lmesh.noz;i++) {
+          node1 = i +(j-1)*E->lmesh.noz;
+          node2 = node1 +  (E->lmesh.noy-1)*E->lmesh.noz*E->lmesh.nox;
+          if (E->parallel.me_loc[2]==0 ) {
+             E->node[node1] = E->node[node1] & (~TBY);
+             E->node[node1] = E->node[node1] | FBY;
+             E->TB[2][node1] = 0.0;
+             }
+          if (E->parallel.me_loc[2]==E->parallel.nprocy-1) {
+             E->node[node2] = E->node[node2] & (~TBY);
+             E->node[node2] = E->node[node2] | FBY;
+             E->TB[2][node2] = 0.0;
+             }
+      }
+    }
+
+ fprintf(E->fp,"Periodic temperature boundary conditions\n");
+
+  return;
+  }
+
 
 
 

@@ -371,7 +371,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 	  setflag =1;
 	}						// end for if else if of geometry
 	
-    }	/* end perturnbation branch  */
+    }	/* end perturbation branch  */
     /* 
 
     now deal with composition
@@ -417,9 +417,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
     MPI_Allreduce(&c1_local, &c1_total,1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     E->tracers_dense_frac = (float)c1_total/(float)n_total;
     /* check if we restrict assignment */
-    if(E->parallel.me==0)
-      fprintf(stderr,"assigned C>0.5 %i/%i times out of %i/%i, %.1f%%\n",
-	      c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
+   
     if(E->tracers_assign_dense_only){
       if(E->parallel.me == 0)
 	fprintf(stderr,"compares with restricted set dense fraction estimate of %g%%\n",
@@ -428,8 +426,13 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 	myerror("increase the dense fraction for assignment, too small",E);
     }
 
-    if(E->control.composition)
+    if(E->control.composition){
+
+      if(E->parallel.me==0)
+	fprintf(stderr,"assigned C>0.5 %i/%i times out of %i/%i, %.1f%%\n",
+		c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
       convection_initial_markers(E,1);
+    }
   }							// end for restart==0
   else if(E->control.restart)
     {
