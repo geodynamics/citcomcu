@@ -146,7 +146,7 @@ struct VISC_OPT
   float pre_comp[CITCOM_CU_VISC_MAXLAYER*2]; /* prefactors */
   int layer_pre_comp;
 
-  int pdepv_for_flavor;
+  int pdepv_for_flavor,pdepv_for_zero_comp;
 
 
 

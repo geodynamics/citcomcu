@@ -51,6 +51,14 @@
 void process_new_velocity(struct All_variables *E, int ii)
 {
 
+ if(E->mesh.periodic_pin_or_filter == 0){
+    /* check for rigid body motion */
+    if(E->mesh.periodic_x || E->mesh.periodic_y){
+      remove_net_drift(E);
+
+    }
+  }
+
   if(E->control.stokes || ((ii % E->control.record_every) == 0))
     {
       /* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
@@ -76,6 +84,7 @@ void process_new_velocity(struct All_variables *E, int ii)
       }
     }
 
+ 
   return;
 }
 
@@ -209,3 +218,28 @@ void averages(struct All_variables *E)
 
 	return;
 }
+
+void remove_net_drift(struct All_variables *E)
+{
+  float net_drift;
+  int coord,i;
+
+  if(E->mesh.periodic_x && E->mesh.periodic_y)
+     myerror("remove_net_drift: can't deal with both x and y periodicity",E);
+  
+  if(E->mesh.periodic_x)
+    coord = 1;
+  else if(E->mesh.periodic_y)
+    coord = 2;
+
+  net_drift = return_bulk_value(E, E->V[coord], -1,1);
+
+  if(E->parallel.me == 0)
+    fprintf(stderr,"remove_net_drift: removing net drift of %g in %i coord\n",
+	    net_drift,coord);
+  
+  for(i = 1; i <= E->lmesh.nno; i++)
+    E->V[coord][i] -= net_drift;
+  
+}
+

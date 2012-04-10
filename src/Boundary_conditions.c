@@ -70,9 +70,11 @@ void velocity_boundary_conditions(struct All_variables *E)
 		}
 	}
 
-	if(E->mesh.periodic_x || E->mesh.periodic_y)
+	if(E->mesh.periodic_x || E->mesh.periodic_y){
+
 		velocity_apply_periodic_bcs(E);
-	else
+	
+	}else
 		velocity_refl_vert_bc(E);	/* default */
 
 	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
@@ -99,7 +101,31 @@ void velocity_boundary_conditions(struct All_variables *E)
 		}
 	}
 
-
+	if(E->mesh.periodic_pin_or_filter == 1){
+	  if(E->mesh.periodic_x || E->mesh.periodic_y){
+	    
+	    
+	    /* 
+	       pin one node at top in lower left corner
+	    */
+	    for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--){
+	      node = E->mesh.NOZ[lv];
+	      if(E->mesh.periodic_x){
+		E->NODE[lv][node] = E->NODE[lv][node] & (~SBX); /* turn of stress */
+		E->NODE[lv][node] = E->NODE[lv][node] | (VBX);/* turn on velocity BC */
+		if(lv == E->mesh.levmax){	/* NB */
+		  E->VB[1][node] = 0;	/* set to zero */
+		}
+	      }else{	/* assume only x or y periodic */
+		E->NODE[lv][node] = E->NODE[lv][node] & (~SBY);
+		E->NODE[lv][node] = E->NODE[lv][node] | (VBY);
+		if(lv == E->mesh.levmax){	/* NB */
+		  E->VB[2][node] = 0;
+		}
+	      }
+	    }
+	  }
+	}
 	if(E->control.verbose)
 	{
 		for(node = 1; node <= E->lmesh.nno; node++)
@@ -467,11 +493,11 @@ void velocity_apply_periodic_bcs(E)
 
   fprintf(E->fp,"Periodic boundary conditions\n");
 
- if (E->mesh.periodic_y && E->mesh.periodic_x)    {
-    return;
-   }
+  //if (E->mesh.periodic_y && E->mesh.periodic_x)    {
+  // return;
+  //}
 
- else if (E->mesh.periodic_y)     {
+ if (E->mesh.periodic_y)     {
 
   /* except one side with XOZ and y=0, all others are not reflecting BC*/
   /* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
@@ -497,7 +523,7 @@ void velocity_apply_periodic_bcs(E)
 
    }
 
- else if (E->mesh.periodic_x)     {
+ if (E->mesh.periodic_x)     {
 
   /* for two XOZ planes if 3-D */
 
@@ -611,11 +637,11 @@ void temperature_apply_periodic_bcs(E)
  /* Temps and bc-values  at top level only */
 /* fixed temperature at x=0 */
 
- if (E->mesh.periodic_x && E->mesh.periodic_y)  {
-   return;
-   }
+  //if (E->mesh.periodic_x && E->mesh.periodic_y)  {
+  //return;
+  //}
 
- else if (E->mesh.periodic_y)  {
+ if (E->mesh.periodic_y)  {
 
   if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
     for(j=1;j<=E->lmesh.noy;j++)
@@ -635,7 +661,7 @@ void temperature_apply_periodic_bcs(E)
         }       /* end for loop i & j */
       }
 
- else if (E->mesh.periodic_x)  {
+ if (E->mesh.periodic_x)  {
     if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
       for(j=1;j<=E->lmesh.nox;j++)
         for(i=1;i<=E->lmesh.noz;i++) {

@@ -397,3 +397,4 @@ void calc_strain_rate_matrix(struct All_variables *, double *);
 int layers(struct All_variables *, float);
 int weak_zones(struct All_variables *, int, float);
 float boundary_thickness(struct All_variables *, float *);
+void remove_net_drift(struct All_variables *);

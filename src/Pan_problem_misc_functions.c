@@ -85,10 +85,25 @@ void thermal_buoyancy(struct All_variables *E)
 	//const int i2 = 670;
 
 	H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-	for(i = 1; i <= E->lmesh.nno; i++)
-	{
-		j = (i - 1) % (E->lmesh.noz) + 1;
-		E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
+	if(E->control.composition_neutralize_buoyancy){
+
+	  for(i = 1; i <= E->lmesh.nno; i++){ /* for testing purposes,
+						 have unity
+						 composition reset the
+						 buoyancy  */
+	    if(E->C[i]>1)E->C[i] = 1;
+	    if(E->C[i]<0)E->C[i] = 0;
+	    j = (i - 1) % (E->lmesh.noz) + 1;
+	    E->buoyancy[i] = (1.-E->C[i]) * E->control.Atemp * E->T[i] * E->expansivity[j] ;
+
+	  }
+	  
+	}else{			/* default */
+	  for(i = 1; i <= E->lmesh.nno; i++)
+	    {
+	      j = (i - 1) % (E->lmesh.noz) + 1;
+	      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
+	    }
 	}
 	if(E->control.Ra_670 != 0.0 || E->control.Ra_410 != 0.0)
 	{

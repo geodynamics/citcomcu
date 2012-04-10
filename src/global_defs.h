@@ -578,6 +578,7 @@ struct MESH_DATA
 
 	int periodic_x;
 	int periodic_y;
+  int periodic_pin_or_filter;	/*  */
 	double volume;
 	float layer[4];				/* dimensionless dimensions */
 	float lidz;
@@ -781,6 +782,7 @@ struct CONTROL
 
 	int adi_heating, visc_heating;
 	int composition;
+  int composition_neutralize_buoyancy;
 	float z_comp;
 
 	int dfact;

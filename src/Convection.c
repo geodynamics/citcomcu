@@ -52,6 +52,10 @@ void set_convection_defaults(struct All_variables *E)
 {
 
   input_boolean("composition", &(E->control.composition), "0", E->parallel.me);
+
+  input_boolean("composition_neutralize_buoyancy", &(E->control.composition_neutralize_buoyancy), "0", E->parallel.me);
+  if(E->control.composition_neutralize_buoyancy && E->parallel.me == 0)
+    fprintf(stderr,"WARNING: reducing thermal buoyanyc to zero in composition=1 regions\n");
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
 
   input_float("tracers_assign_dense_fraction",&(E->tracers_assign_dense_fraction),"1.0",E->parallel.me);

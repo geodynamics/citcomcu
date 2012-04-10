@@ -454,6 +454,7 @@ void global_default_values(struct All_variables *E)
 	E->control.CHEMISTRY_MODULE = 0;
 
 	E->control.composition = 0;
+	E->control.composition_neutralize_buoyancy = 0;
 
 	E->sphere.vtk_base_init = 0;
 
@@ -495,6 +496,8 @@ void global_default_values(struct All_variables *E)
 	E->mesh.sidevbc = 0;
 	E->mesh.periodic_x = 0;		/* reflection is default */
 	E->mesh.periodic_y = 0;
+	E->mesh.periodic_pin_or_filter = 0; /* filter by default */
+	
 	E->control.VBXtopval = 0.0;
 	E->control.VBYtopval = 0.0;
 	E->control.VBXbotval = 0.0;
@@ -927,6 +930,8 @@ void read_initial_settings(struct All_variables *E)
 
 	input_boolean("periodicx", &(E->mesh.periodic_x), "off", m);
 	input_boolean("periodicy", &(E->mesh.periodic_y), "off", m);
+	input_int("periodic_pin_or_filter", &(E->mesh.periodic_pin_or_filter), "0", m); /* 1: pin 0: filter */
+
 	input_boolean("depthdominated", &(E->control.depth_dominated), "off", m);
 	input_boolean("eqnzigzag", &(E->control.eqn_zigzag), "off", m);
 	input_boolean("eqnviscosity", &(E->control.eqn_viscosity), "off", m);
