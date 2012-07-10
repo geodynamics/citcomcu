@@ -221,25 +221,24 @@ void averages(struct All_variables *E)
 
 void remove_net_drift(struct All_variables *E)
 {
-  float net_drift;
-  int coord,i;
+  float net_drift[3]={0.,0.,0.};
+  int i;
 
-  if(E->mesh.periodic_x && E->mesh.periodic_y)
-     myerror("remove_net_drift: can't deal with both x and y periodicity",E);
+
   
   if(E->mesh.periodic_x)
-    coord = 1;
-  else if(E->mesh.periodic_y)
-    coord = 2;
-
-  net_drift = return_bulk_value(E, E->V[coord], -1,1);
+    net_drift[1] = return_bulk_value(E, E->V[1], -1,1);
+  if(E->mesh.periodic_y)
+    net_drift[2] = return_bulk_value(E, E->V[2], -1,1);
+  
 
   if(E->parallel.me == 0)
-    fprintf(stderr,"remove_net_drift: removing net drift of %g in %i coord\n",
-	    net_drift,coord);
-  
-  for(i = 1; i <= E->lmesh.nno; i++)
-    E->V[coord][i] -= net_drift;
+    fprintf(stderr,"remove_net_drift: removing net drift of x: %g y: %g periodic: x: %i y: %i\n",
+	    net_drift[1],net_drift[2],E->mesh.periodic_x,E->mesh.periodic_y);
+  for(i = 1; i <= E->lmesh.nno; i++){
+    E->V[1][i] -= net_drift[1];
+    E->V[2][i] -= net_drift[2];
+  }
   
 }
 

@@ -505,61 +505,67 @@ void process_restart_tc(struct All_variables *E)
 
 // for composition
 
-	if(E->control.composition && (E->control.restart == 1 || E->control.restart == 2))
-	{
-		convection_initial_markers(E,0);
-	}
-
-	else if(E->control.composition && (E->control.restart == 3))
-	{
-		sprintf(output_file, "%s.comp.%d.%d", E->convection.old_T_file, E->parallel.me, E->monitor.solution_cycles);
-		fp = fopen(output_file, "r");
-		fgets(input_s, 200, fp);
-		sscanf(input_s, "%d %d %g", &i, &j, &E->monitor.elapsed_time);
-
-		for(node = 1; node <= E->lmesh.nno; node++)
+	if(E->control.composition){
+	  
+	  if(E->control.restart == 1 || E->control.restart == 2)
+	    {
+	      convection_initial_markers(E,0);
+	    }
+	  
+	  else if(E->control.restart == 3)
+	    {
+	      sprintf(output_file, "%s.comp.%d.%d", E->convection.old_T_file, E->parallel.me, E->monitor.solution_cycles);
+	      fp = fopen(output_file, "r");
+	      fgets(input_s, 200, fp);
+	      sscanf(input_s, "%d %d %g", &i, &j, &E->monitor.elapsed_time);
+	      
+	      for(node = 1; node <= E->lmesh.nno; node++)
 		{
-			fgets(input_s, 200, fp);
-			sscanf(input_s, "%g", &E->C[node]);
+		  fgets(input_s, 200, fp);
+		  sscanf(input_s, "%g", &E->C[node]);
 		}
-		fclose(fp);
-
+	      fclose(fp);
+	      
 		convection_initial_markers1(E);
-	}
-
-	else if(E->control.composition && E->control.restart == -1)
-	{
-
-		sprintf(output_file, "%s.traces.%d", E->convection.old_T_file, E->parallel.me);
-		fp = fopen(output_file, "r");
-		fgets(input_s, 200, fp);
-		sscanf(input_s, "%d %d %g", &E->advection.markers, &j, &temp1);
-		for(i = 1; i <= E->advection.markers; i++)
+	    }
+	  
+	  else if(E->control.restart == -1)
+	    {
+	      
+	      sprintf(output_file, "%s.traces.%d", E->convection.old_T_file, E->parallel.me);
+	      fp = fopen(output_file, "r");
+	      fgets(input_s, 200, fp);
+	      sscanf(input_s, "%d %d %g", &E->advection.markers, &j, &temp1);
+	      for(i = 1; i <= E->advection.markers; i++)
 		{
-			fgets(input_s, 200, fp);
-			sscanf(input_s, "%lf %lf %lf %d %d", &E->XMC[1][i], &E->XMC[2][i], &E->XMC[3][i], &E->CElement[i], &E->C12[i]);
-			if(E->XMC[3][i] < E->XP[3][1])
-				E->XMC[3][i] = E->XP[3][1];
-			else if(E->XMC[3][i] > E->XP[3][E->lmesh.noz])
-				E->XMC[3][i] = E->XP[3][E->lmesh.noz];
-			if(E->XMC[2][i] < E->XP[2][1])
-				E->XMC[2][i] = E->XP[2][1];
-			else if(E->XMC[2][i] > E->XP[2][E->lmesh.noy])
-				E->XMC[2][i] = E->XP[2][E->lmesh.noy];
-			if(E->XMC[1][i] < E->XP[1][1])
-				E->XMC[1][i] = E->XP[1][1];
-			else if(E->XMC[1][i] > E->XP[1][E->lmesh.nox])
-				E->XMC[1][i] = E->XP[1][E->lmesh.nox];
+		  fgets(input_s, 200, fp);
+		  sscanf(input_s, "%lf %lf %lf %d %d", &E->XMC[1][i], &E->XMC[2][i], &E->XMC[3][i], &E->CElement[i], &E->C12[i]);
+		  if(E->XMC[3][i] < E->XP[3][1])
+		    E->XMC[3][i] = E->XP[3][1];
+		  else if(E->XMC[3][i] > E->XP[3][E->lmesh.noz])
+		    E->XMC[3][i] = E->XP[3][E->lmesh.noz];
+		  if(E->XMC[2][i] < E->XP[2][1])
+		    E->XMC[2][i] = E->XP[2][1];
+		  else if(E->XMC[2][i] > E->XP[2][E->lmesh.noy])
+		    E->XMC[2][i] = E->XP[2][E->lmesh.noy];
+		  if(E->XMC[1][i] < E->XP[1][1])
+		    E->XMC[1][i] = E->XP[1][1];
+		  else if(E->XMC[1][i] > E->XP[1][E->lmesh.nox])
+		    E->XMC[1][i] = E->XP[1][E->lmesh.nox];
 		}
-		for(i = 1; i <= E->lmesh.nel; i++)
+	      for(i = 1; i <= E->lmesh.nel; i++)
 		{
-			fgets(input_s, 200, fp);
-			sscanf(input_s, "%g", &E->CE[i]);
+		  fgets(input_s, 200, fp);
+		  sscanf(input_s, "%g", &E->CE[i]);
 		}
-		fclose(fp);
+	      fclose(fp);
 
-//    get_C_from_markers(E,E->C);
-
+	      //    get_C_from_markers(E,E->C);
+	      
+	    }
+	  /* this will assign C=1 on top left side */
+	  if(E->mesh.slab_influx_side_bc)
+	    composition_apply_slab_influx_side_bc(E);
 	}
 
 	E->advection.timesteps = E->monitor.solution_cycles;
@@ -1000,4 +1006,22 @@ void PG_process(struct All_variables *E, int ii)
 	free((void *)P);
 	free((void *)P2);
 	return;
+}
+
+/* 
+   assign C=1 composition at left half of box, on top 
+*/
+void composition_apply_slab_influx_side_bc(struct All_variables *E)
+{
+  int i;
+  if(E->control.composition){
+    for(i=1;i<=E->advection.markers;i++){
+      if((E->XMC[1][i] <= 0.2)&&
+	 (E->XMC[2][i] <= E->mesh.slab_influx_y2)&&
+	 (E->XMC[3][i] >= E->mesh.slab_influx_z2)){
+	E->C12[i] = 1;
+      }
+    }
+  }
+
 }

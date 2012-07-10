@@ -1029,7 +1029,7 @@ vis2.grd for the viscosity factors, read in log10(eta_S/eta)
 nr.grd, nt.grd, np.grd for the directors
 
 */
-void ggrd_read_anivisc_from_file(struct All_variables *E)
+void ggrd_read_anivisc_from_file_cu(struct All_variables *E)
 {
   MPI_Status mpi_stat;
   int mpi_rc;
@@ -1074,7 +1074,11 @@ void ggrd_read_anivisc_from_file(struct All_variables *E)
       }
     }
   }
-  sprintf(gmt_string,"");	/* regional */
+  if(E->control.Rsphere)
+    sprintf(gmt_string,GGRD_GMT_GEOGRAPHIC_STRING);
+  else
+    sprintf(gmt_string,"");
+  
 
   /*
     

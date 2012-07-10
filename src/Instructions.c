@@ -494,10 +494,19 @@ void global_default_values(struct All_variables *E)
 	E->mesh.topvbc = 0;			/* stress */
 	E->mesh.botvbc = 0;
 	E->mesh.sidevbc = 0;
+	
 	E->mesh.periodic_x = 0;		/* reflection is default */
 	E->mesh.periodic_y = 0;
 	E->mesh.periodic_pin_or_filter = 0; /* filter by default */
-	
+
+	E->mesh.slab_influx_side_bc = 0;
+
+	E->mesh.slab_influx_z1=0.6;		/* above z1, below z2 --> tapered inflow */
+	E->mesh.slab_influx_z2=0.9;			/* above z2 --> lithosphere */
+
+	E->mesh.slab_influx_y2=2.37;			/* y-extent of continental BC */
+
+
 	E->control.VBXtopval = 0.0;
 	E->control.VBYtopval = 0.0;
 	E->control.VBXbotval = 0.0;
@@ -930,7 +939,9 @@ void read_initial_settings(struct All_variables *E)
 
 	input_boolean("periodicx", &(E->mesh.periodic_x), "off", m);
 	input_boolean("periodicy", &(E->mesh.periodic_y), "off", m);
-	input_int("periodic_pin_or_filter", &(E->mesh.periodic_pin_or_filter), "0", m); /* 1: pin 0: filter */
+	input_int("periodic_pin_or_filter", &(E->mesh.periodic_pin_or_filter), "0", m); /* 1: pin 
+											   0: filter */
+	input_boolean("slab_influx_side_bc",&(E->mesh.slab_influx_side_bc),"off",m);
 
 	input_boolean("depthdominated", &(E->control.depth_dominated), "off", m);
 	input_boolean("eqnzigzag", &(E->control.eqn_zigzag), "off", m);
@@ -952,6 +963,7 @@ void read_initial_settings(struct All_variables *E)
 	if((E->parallel.me == 0) && (fabs(E->control.plate_vel) > 5e-7))
 	  fprintf(stderr,"WARNING: plate velocity is overriding VBx \n");
 	  
+	input_float("sub_vel", &(E->control.sub_vel), "0.0", m);
 
 	input_float("plate_age", &(E->control.plate_age), "0.0", m);
 	input_float("plume_radius", &(E->segment.plume_radius), "0.0", m);

@@ -543,6 +543,11 @@ void get_C_from_markers(struct All_variables *E, float *C)
 	{
 		C[i] = 0.0;
 	}
+	
+	/* this will assign C=1 on top left side */
+	if(E->mesh.slab_influx_side_bc)
+	  composition_apply_slab_influx_side_bc(E);
+	
 
 	/* for each element, count dense and regular marks  */
 	for(imark = 1; imark <= E->advection.markers; imark++)

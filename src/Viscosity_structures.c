@@ -546,6 +546,7 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 		    EEta[(i - 1) * vpts + jj] = tempa * exp((E->viscosity.E[l]) / (temp + E->viscosity.T[l]));
 		  }
 	      }
+	    break;
 	  case 2:
 	    /* 
 	       eta = eta0 * exp(E + (1-z)*Z0/(T+T0))
@@ -677,7 +678,7 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	  default:
 	    myerror("RHEOL option undefined",E);
 	    break;
-	  } /* end swith */
+	  } /* end switch */
 
 	  visits++;
 	  

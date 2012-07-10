@@ -578,6 +578,9 @@ struct MESH_DATA
 
 	int periodic_x;
 	int periodic_y;
+  int slab_influx_side_bc;
+  float slab_influx_z1,slab_influx_z2,slab_influx_y2;
+  
   int periodic_pin_or_filter;	/*  */
 	double volume;
 	float layer[4];				/* dimensionless dimensions */
@@ -794,6 +797,7 @@ struct CONTROL
 	int comparison;
 	int crust;
 	float plate_vel;
+  float sub_vel;
 	float plate_age;
 
   //float tole_comp;
