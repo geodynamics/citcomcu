@@ -30,7 +30,7 @@ EDIT THE FILES in hc, not the citcom subdirectories
 
 
 #else  /* CU */
-   void ggrd_read_anivisc_from_file(struct All_variables *);
+   void ggrd_read_anivisc_from_file_cu(struct All_variables *);
 #endif
 
 #include "anisotropic_viscosity.h"
@@ -383,7 +383,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
       else			/* regional */
 	ggrd_read_anivisc_from_file(E,0);
 #else  /* CitcomCU */
-      ggrd_read_anivisc_from_file(E);
+      ggrd_read_anivisc_from_file_cu(E);
 #endif
       break;
     case 6:		

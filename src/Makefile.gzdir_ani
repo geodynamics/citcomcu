@@ -20,8 +20,7 @@
 COMPRESS=/bin/gzip
 GMT_DIR = $(GMTHOME)
 NETCDF_DIR = $(NETCDFHOME)
-HC_DIR = ../../../hc-svn/
-LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
+LIB_PATH= -L$(HC_HOME)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
 
 
@@ -36,7 +35,7 @@ LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS)  -lm
 
 DEFINES =  \
 	-DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
-	-I$(HC_DIR)/  $(EXPO_DEFINE) \
+	-I$(HC_HOME)/  $(EXPO_DEFINE) \
 	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
 	-DPREM_MODEL_FILE=\"$(PWD)/prem/prem.dat\"
 
@@ -61,7 +60,7 @@ LinuxFLAGS=
 LinuxLDFLAGS=
 #LinuxOPTIM=-g -O0 -Werror $(DEFINES)
 #LinuxOPTIM=-O3 -mtune=core2 -Werror $(DEFINES)
-LinuxOPTIM=-O2 -Werror $(DEFINES)
+LinuxOPTIM=-O2  $(DEFINES)
 
 ####################################
 #PARAGON 
