@@ -752,7 +752,11 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
 	return;
 }
 
+/* 
+   
+   compute the second invariant for every element
 
+ */
 void strain_rate_2_inv(struct All_variables *E, float *EEDOT, 
 		       int SQRT)
 {

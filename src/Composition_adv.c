@@ -91,15 +91,10 @@ void Runge_Kutta(struct All_variables *E, float *C, float *V[4], int on_off)
 		}
 	}
 
-	transfer_markers_processors(E, on_off);
 
-	/* assign element numbers to markers */
-	element_markers(E, on_off);
+	/* assign to elements */
+	transfer_marker_properties(E,C,on_off);
 
-	/* get nodal values from markers */
-	get_C_from_markers(E, C);
-	if(E->tracers_add_flavors)
-	  get_CF_from_markers(E,E->CF);
 
 	E->advection.markers_g = -1;
 	if(E->advection.timesteps % 10 == 0)
@@ -138,15 +133,12 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
 			E->XMCpred[3][i] = temp3;
 		}
 	}
-	transfer_markers_processors(E, on_off);
+
 
 	/*   predicted compositional field at t+dt  */
-	element_markers(E, on_off);
-	/* update nodal values */
-	get_C_from_markers(E, C);
-	if(E->tracers_add_flavors)
-	  get_CF_from_markers(E,E->CF);
 
+	/* assign to processor and then to elements */
+	transfer_marker_properties(E,C,on_off);
 
 	return;
 }
@@ -504,6 +496,34 @@ int locate_processor(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_P
 
 	return (proc);
 }
+
+
+
+/* 
+
+   assign all properties from markers to elements 
+   con: 1: use old location 0: use new location
+
+*/
+
+void transfer_marker_properties(struct All_variables *E, float *C, int con)
+{
+
+  /* assign to processor */
+  transfer_markers_processors(E, con);
+
+  /* assign element numbers to markers */
+  element_markers(E, con);
+  /* 
+     get elemental values from markers 
+  */
+  get_C_from_markers(E, C); /* composition */
+  
+  if(E->tracers_add_flavors)
+    get_CF_from_markers(E,E->CF); /* flavors */
+  
+}
+
 
 /* ================================================ 
  ================================================  */

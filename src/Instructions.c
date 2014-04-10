@@ -687,7 +687,6 @@ void read_initial_settings(struct All_variables *E)
 
 	m = E->parallel.me;
 	
-
 	input_string("Problem", E->control.PROBLEM_TYPE, NULL, m);
 	if(strcmp(E->control.PROBLEM_TYPE, "convection") == 0)
 	{
@@ -710,6 +709,8 @@ void read_initial_settings(struct All_variables *E)
 	}
 
 	input_string("Geometry", E->control.GEOMETRY, NULL, m);
+
+
 	if(strcmp(E->control.GEOMETRY, "cart2d") == 0)
 	{
 		E->control.CART2D = 1;
@@ -737,10 +738,10 @@ void read_initial_settings(struct All_variables *E)
 	else
 	{
 		fprintf(E->fp, "Unable to determine geometry, assuming cartesian 2d ... \n");
+		force_report(E,"Unable to determine geometry, assuming cartesian 2d ... ");
 		E->control.CART2D = 1;
 		set_2dc_defaults(E);
 	}
-
 
 
 	input_string("Solver", E->control.SOLVER_TYPE, NULL, m);
@@ -789,7 +790,7 @@ void read_initial_settings(struct All_variables *E)
 	input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
 	input_boolean("vtk_viscosity_out",&(E->control.vtk_viscosity_out),"on",m);
 
-
+	
 	input_string("use_scratch", tmp_string, "local", m);
 	if(strcmp(tmp_string, "local") == 0)
 		strcpy(E->control.data_file2, E->control.data_file);
@@ -840,6 +841,7 @@ void read_initial_settings(struct All_variables *E)
 
 	input_int("solution_cycles_out",&(E->monitor.solution_cycles_out),"5",m);
 #ifdef USE_GGRD
+
 	/* ggrd control */
 	ggrd_init_master(&(E->control.ggrd));
 
