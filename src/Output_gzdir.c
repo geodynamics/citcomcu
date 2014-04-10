@@ -60,7 +60,7 @@
 #include "anisotropic_viscosity.h"
 #endif
 
-static gzFile *safe_gzopen(char *,char *);
+gzFile safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);
 void *safe_malloc (size_t );
 void calc_cbase_at_tp(float , float , float *);
@@ -647,7 +647,7 @@ void output_velo_related_gzdir(E, file_number)
 	for(i = 1; i <= E->advection.markers; i++)
 	  gzprintf(gzout, "%g %g %g %d %d\n", E->XMC[1][i], E->XMC[2][i], E->XMC[3][i], E->CElement[i], E->C12[i]);
 	for(i = 1; i <= E->lmesh.nel; i++)
-	  fprintf(gzout, "%g\n", E->CE[i]);
+	  gzprintf(gzout, "%g\n", E->CE[i]);
 	gzclose(gzout);
       }else{
 	sprintf(output_file, "%s/%d/traces.%d", E->control.data_file2, file_number, E->parallel.me);
@@ -667,16 +667,16 @@ void output_velo_related_gzdir(E, file_number)
 }
 
 /* safe gzopen function */
-static gzFile *safe_gzopen(char *name,char *mode)
+gzFile safe_gzopen(char *name,char *mode)
 {
-  gzFile *tmp;
+  gzFile tmp;
   char m2[300];
-  if((tmp=(gzFile *)gzopen(name,mode))==NULL){	
+  if((tmp=gzopen(name,mode))==NULL){	
     fprintf(stderr,"error: cannot gzopen file %s, exiting\n",
 	    name);
     parallel_process_termination();
   }
-  return ((gzFile *)tmp);
+  return (tmp);
 }	
 
 /* gzdir version, will not limit temperatures to [0;1] */

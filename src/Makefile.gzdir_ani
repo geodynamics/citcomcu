@@ -31,7 +31,7 @@ EXPO_FILES = expokit/dgpadm.f
 EXPO_LIBS = $(EXPO_OBJS) -llapack -lblas 
 
 
-LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS)  -lm
+LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS) -nofor_main -lm
 
 DEFINES =  \
 	-DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
@@ -141,7 +141,7 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 default: citcom.mpi 
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi -nofor_main \
+	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
 	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
