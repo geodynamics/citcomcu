@@ -159,7 +159,6 @@ void velocity_boundary_conditions(struct All_variables *E)
 void freeze_surface(struct All_variables *E)
 {
   
-  int lev,top;
   if(E->parallel.me == 0)
     fprintf(stderr,"WARNING: freezing surface boundary condition at time step %i (not working yet)\n",
 	    E->monitor.solution_cycles);
@@ -239,7 +238,6 @@ void velocity_refl_vert_bc(E)
   int i,j,ii,jj;
   int node1,node2;
   int level,nox,noy,noz;
-  const int dims=E->mesh.nsd;
 
   /* except one side with XOZ and y=0, all others are not reflecting BC*/
   /* for two YOZ planes if 3-D, or two OZ side walls for 2-D */
@@ -560,8 +558,7 @@ void velocity_apply_periodic_bcs(E)
   int i,j,ii,jj;
   int node1,node2;
   int level,nox,noy,noz;
-  const int dims=E->mesh.nsd;
-
+  
   fprintf(E->fp,"Periodic boundary conditions\n");
 
   //if (E->mesh.periodic_y && E->mesh.periodic_x)    {
@@ -703,7 +700,6 @@ void temperature_apply_periodic_bcs(E)
 {
   int i,j;
   int node1,node2;
-  const int dims=E->mesh.nsd;
 
  /* Temps and bc-values  at top level only */
 /* fixed temperature at x=0 */

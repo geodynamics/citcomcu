@@ -149,7 +149,7 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 {
 	//FILE *fp;
 	//char output_file[255];
-  int i, proc, neighbor, no_transferred, no_received,asize;
+  int i, proc, neighbor, no_transferred, no_received,asize,asizet;
 
 	static int been = 0;
 	static int markers;
@@ -160,16 +160,18 @@ void transfer_markers_processors(struct All_variables *E, int on_off)
 	if(been == 0)
 	{
 	  markers = E->advection.markers / 10;
-	  asize = (markers + 1) * E->mesh.nsd * 2;
+	  asize = (markers + 1) * (E->mesh.nsd * 2 );
+	  asizet = (markers + 1) * (E->mesh.nsd * 2 + E->tracers_track_strain);
+
 	  if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
 	    myerror("error, number of neighbors out of bounds",E);
 	  for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
 	    {
 	      E->parallel.traces_transfer_index[neighbor] = (int *)safe_malloc((markers + 1) * sizeof(int));
-	      E->RVV[neighbor] = (float *)safe_malloc(asize * sizeof(int));
+	      E->RVV[neighbor] = (float *)safe_malloc(asizet * sizeof(int));
 	      E->RXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
 	      E->RINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
-	      E->PVV[neighbor] = (float *)safe_malloc(asize  * sizeof(int));
+	      E->PVV[neighbor] = (float *)safe_malloc(asizet  * sizeof(int));
 	      E->PXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
 	      E->PINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
 	      
@@ -279,9 +281,11 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
   int i, j,k;
 	int ii, jj, kk;
-	int nsd2, neighbor, no_trans1;
+	int nsd2, nsd2t, neighbor, no_trans1;
 	int rioff;
-	nsd2 = E->mesh.nsd * 2;
+	nsd2 = E->mesh.nsd * 2;	/*  */
+	nsd2t = nsd2 + E->tracers_track_strain; /* for those arrays that have strain in them */
+	
 	rioff = 2 + E->tracers_add_flavors;
 
 	ii = 0;
@@ -314,12 +318,15 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				else
 					ii = E->advection.markers + jj - no_trans1;
 
-				E->VO[1][ii] = E->RVV[neighbor][j * nsd2];
-				E->VO[2][ii] = E->RVV[neighbor][j * nsd2 + 1];
-				E->VO[3][ii] = E->RVV[neighbor][j * nsd2 + 2];
-				E->Vpred[1][ii] = E->RVV[neighbor][j * nsd2 + 3];
-				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2 + 4];
-				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2 + 5];
+				E->VO[1][ii] = E->RVV[neighbor][j * nsd2t];
+				E->VO[2][ii] = E->RVV[neighbor][j * nsd2t + 1];
+				E->VO[3][ii] = E->RVV[neighbor][j * nsd2t + 2];
+				E->Vpred[1][ii] = E->RVV[neighbor][j * nsd2t + 3];
+				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2t + 4];
+				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2t + 5];
+				if(E->tracers_track_strain)
+				  E->tracer_strain[ii] = E->RVV[neighbor][j * nsd2t + 6];
+
 				E->XMC[1][ii] = E->RXX[neighbor][j * nsd2];
 				E->XMC[2][ii] = E->RXX[neighbor][j * nsd2 + 1];
 				E->XMC[3][ii] = E->RXX[neighbor][j * nsd2 + 2];
@@ -343,12 +350,16 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 			{
 				jj++;
 				ii = E->traces_leave_index[jj];
-				E->VO[1][ii] = E->RVV[neighbor][j * nsd2];
-				E->VO[2][ii] = E->RVV[neighbor][j * nsd2 + 1];
-				E->VO[3][ii] = E->RVV[neighbor][j * nsd2 + 2];
-				E->Vpred[1][ii] = E->RVV[neighbor][j * nsd2 + 3];
-				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2 + 4];
-				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2 + 5];
+				E->VO[1][ii] = E->RVV[neighbor][j * nsd2t];
+				E->VO[2][ii] = E->RVV[neighbor][j * nsd2t + 1];
+				E->VO[3][ii] = E->RVV[neighbor][j * nsd2t + 2];
+				E->Vpred[1][ii] = E->RVV[neighbor][j * nsd2t + 3];
+				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2t + 4];
+				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2t + 5];
+				if(E->tracers_track_strain)
+				  E->tracer_strain[ii] = E->RVV[neighbor][j * nsd2t + 6];
+
+
 				E->XMC[1][ii] = E->RXX[neighbor][j * nsd2];
 				E->XMC[2][ii] = E->RXX[neighbor][j * nsd2 + 1];
 				E->XMC[3][ii] = E->RXX[neighbor][j * nsd2 + 2];
@@ -413,10 +424,11 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 void prepare_transfer_arrays(struct All_variables *E)
 {
   int j, part, neighbor, k1, k2, k3,k;
-  static int asize, markers,bsize,been_here = 0;
+  static int asize, asizet,markers,bsize,been_here = 0;
   if(!been_here){
     markers = E->advection.markers / 10;
-    asize = (markers + 1) * E->mesh.nsd * 2;
+    asize = (markers + 1) * (E->mesh.nsd * 2 );
+    asizet = (markers + 1) * (E->mesh.nsd * 2 + E->tracers_track_strain);
     bsize = (markers + 1) * (2 + E->tracers_add_flavors);
     been_here = 1;
   }
@@ -439,7 +451,8 @@ void prepare_transfer_arrays(struct All_variables *E)
 			E->PVV[neighbor][k1++] = E->Vpred[1][part];
 			E->PVV[neighbor][k1++] = E->Vpred[2][part];
 			E->PVV[neighbor][k1++] = E->Vpred[3][part];
-
+			if(E->tracers_track_strain)
+			  E->PVV[neighbor][k1++] = E->tracer_strain[part];
 
 			//if(k2+6 >= asize){fprintf(stderr,"k2 %i asize %i out of bounds\n",k2,asize);myerror("exit",E);};
 			E->PXX[neighbor][k2++] = E->XMC[1][part];
@@ -501,7 +514,8 @@ int locate_processor(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_P
 
 /* 
 
-   assign all properties from markers to elements 
+   assign all properties from markers to elements , and then to nodes
+
    con: 1: use old location 0: use new location
 
 */
@@ -521,7 +535,13 @@ void transfer_marker_properties(struct All_variables *E, float *C, int con)
   
   if(E->tracers_add_flavors)
     get_CF_from_markers(E,E->CF); /* flavors */
-  
+  //if(E->parallel.me == 0)fprintf(stderr,"transfer_marker_properties: t %g dt %g con %i\n",E->monitor.elapsed_time,E->advection.timestep,con);
+				 
+  if(E->tracers_track_strain){	/* update tracer strain */
+    if(!con)
+      evolve_tracer_strain(E);
+    get_strain_from_markers(E,E->strain);
+  }
 }
 
 
@@ -615,7 +635,7 @@ void get_C_from_markers(struct All_variables *E, float *C)
 	      E->CE[el] = temp3;
 	    }
 	}
-
+	/* go from elements to nodes */
 	exchange_node_f20(E, C, E->mesh.levmax);
 
 	for(node = 1; node <= nno; node++)
@@ -625,6 +645,8 @@ void get_C_from_markers(struct All_variables *E, float *C)
 
 	return;
 }
+
+
 /* 
 
 obtain nodal flavor from markers
@@ -670,7 +692,7 @@ void get_CF_from_markers(struct All_variables *E, int **CF)
     /* determine nodal flavor based on the closest tracer */
     for(k=0;k < nno1;k++)
       dmin[k] = 1e10;
-    for(itracer=0;itracer < E->advection.markers;itracer++){
+    for(itracer=1;itracer <= E->advection.markers;itracer++){
       el = E->CElement[itracer] ;
       for(jnode = 1; jnode <= ends; jnode++){	/* loop through the nodes within this element */
 	node = E->ien[el].node[jnode];
@@ -721,6 +743,53 @@ void get_CF_from_markers(struct All_variables *E, int **CF)
   }
   free(dmin);
 }
+/* 
+
+obtain total strain from markers and assign to nodes
+
+*/
+void get_strain_from_markers(struct All_variables *E, float *strain)
+{
+   int el, itracer, imark, jnode, node,i,j;
+   float *element_strain;
+   int *element_count;
+   
+   const int nno = E->lmesh.nno;
+   const int nel = E->lmesh.nel;
+   const int dims = E->mesh.nsd;
+   const int ends = enodes[dims];
+   const int lev = E->mesh.levmax;
+   
+ 
+   element_strain = (float *)calloc((nel + 1), sizeof(float));
+   element_count = (int *)calloc((nel + 1),sizeof(int));
+   /* 
+        compute based on the mean strain of each element
+   */
+   for(i = 1; i <= nno; i++){
+     strain[i] = 0.0;
+   }
+   for(imark = 1; imark <= E->advection.markers; imark++){
+     el = E->CElement[imark];
+     element_strain[el] += E->tracer_strain[imark];
+     element_count[el] ++;
+   }
+   for(el = 1; el <= nel; el++){
+     if(element_count[el])
+       element_strain[el] /= (float)element_count[el];
+     for(j = 1; j <= ends; j++){
+       node = E->ien[el].node[j];
+       strain[node] += E->TWW[lev][el].node[j] * element_strain[el];
+     }
+   }
+   exchange_node_f20(E, strain, E->mesh.levmax);
+   for(node = 1; node <= nno; node++){
+     strain[node] *= E->Mass[node];
+   }
+   free(element_strain);
+   free(element_count);
+}
+
 
 
 

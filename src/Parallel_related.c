@@ -1095,13 +1095,17 @@ void exchange_markers(struct All_variables *E)
 		if(E->parallel.traces_transfer_number[k] > 0)
 		{
 			target_proc = E->parallel.neighbors[k];
+
 			idb++;
 			kk = E->parallel.traces_transfer_number[k] * rioff + 1;
 			MPI_Isend(E->PINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
+
+			idb++;
+			kk = E->parallel.traces_transfer_number[k] * (2 * E->mesh.nsd + E->tracers_track_strain) + 1;
+			MPI_Isend(E->PVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
+
 			idb++;
 			kk = E->parallel.traces_transfer_number[k] * 2 * E->mesh.nsd + 1;
-			MPI_Isend(E->PVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
-			idb++;
 			MPI_Isend(E->PXX[k], kk, MPI_DOUBLE, target_proc, 3, MPI_COMM_WORLD, &request[idb - 1]);
 		}
 	}							/* for k */
@@ -1111,13 +1115,17 @@ void exchange_markers(struct All_variables *E)
 		if(E->parallel.traces_receive_number[k] > 0)
 		{
 			target_proc = E->parallel.neighbors[k];
+
 			idb++;
 			kk = E->parallel.traces_receive_number[k] * rioff + 1;
 			MPI_Irecv(E->RINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
+
+			idb++;
+			kk = E->parallel.traces_receive_number[k] * (2 * E->mesh.nsd + E->tracers_track_strain) + 1;
+			MPI_Irecv(E->RVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
+
 			idb++;
 			kk = E->parallel.traces_receive_number[k] * 2 * E->mesh.nsd + 1;
-			MPI_Irecv(E->RVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
-			idb++;
 			MPI_Irecv(E->RXX[k], kk, MPI_DOUBLE, target_proc, 3, MPI_COMM_WORLD, &request[idb - 1]);
 		}
 	}							/* for k */

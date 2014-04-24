@@ -963,13 +963,16 @@ struct All_variables
 	float *Vpred[4];
   CITCOM_XMC_PREC  *XMC[4];
   CITCOM_XMC_PREC *XMCpred[4];
-	int *C12;		/* this shold be unsigned short */
+	int *C12;		/* this should be unsigned short */
 	int *traces_leave;
 	int *traces_leave_index;
 	int *CElement;
 
   int **tflavors;		/* this should also be unsigned short */
   int tracers_add_flavors;
+  int tracers_track_strain;
+  CITCOM_XMC_PREC *tracer_strain;
+  
   int *tmaxflavor;
 
   int tracers_assign_dense_only;
@@ -1005,6 +1008,8 @@ struct All_variables
 	float *diffusivity, *expansivity;
 	float *T, *C, *CE, *buoyancy;
   int **CF;			/* tracer flavors */
+  float *strain;			/* strain */
+  
 	float *Tdot;
 	float *VI[MAX_LEVELS];		/* viscosity has to soak down to all levels */
 	float *EVI[MAX_LEVELS];		/* element viscosity has to soak down to all levels */

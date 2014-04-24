@@ -127,7 +127,6 @@ struct VISC_OPT
 
 
   float plasticity_viscosity_offset;
-
   int plasticity_trans;		/* 1: effective viscosity approach
 				   0: min viscosity approach
 
@@ -136,9 +135,9 @@ struct VISC_OPT
   int plasticity_dimensional;	/* 1: use Byerlee type setting with
 				   dimensional values
 				   0: use non-dimensional values for yield stress
-
 				*/
-
+  int strain_dep_plasticity;
+  float plastic_strain_func[3];
 
   int CDEPV;			/* composition dependent viscosity */
   int cdepv_absolute;		/* make the composition an absolute viscosity,

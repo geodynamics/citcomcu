@@ -1,5 +1,7 @@
 void transfer_marker_properties(struct All_variables *, float *, int );
-
+void evolve_tracer_strain(struct All_variables *);
+void get_strain_from_markers(struct All_variables *,float *);
+float strain_plasticity_function_factor(float ,float *);
 /* Advection_diffusion.c */
 
 void advection_diffusion_parameters(struct All_variables *);

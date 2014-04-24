@@ -485,7 +485,15 @@ void output_velo_related_gzdir(E, file_number)
 	    gzprintf(gzout,"%12.4e\n",E->C[i]);
 	  gzclose(gzout);
 
-
+	  if(E->tracers_track_strain){
+	    sprintf(output_file,"%s/%d/strain.%d.%d.gz",
+		    E->control.data_file2,file_number, E->parallel.me,file_number);
+	    gzout=safe_gzopen(output_file,"w");
+	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	    for(i=1;i<=E->lmesh.nno;i++)           
+	      gzprintf(gzout,"%12.4e\n",E->strain[i]);
+	    gzclose(gzout);
+	  }
 
 	  if(E->tracers_add_flavors){
 	    sprintf(output_file,"%s/%d/cf.%d.%d.gz",

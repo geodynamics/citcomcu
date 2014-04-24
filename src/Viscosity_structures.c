@@ -56,8 +56,7 @@ void *safe_malloc (size_t );
 
 void viscosity_parameters(struct All_variables *E)
 {
-	int i, l;
-	float temp;
+	int i;
 	int m = E->parallel.me ;
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
@@ -147,6 +146,9 @@ void viscosity_parameters(struct All_variables *E)
 	input_float_vector("viscE", E->viscosity.num_mat, (E->viscosity.E),m);
 	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0),m);	/* redundant */
 	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0),m);
+	
+	input_boolean("strain_dep_plasticity",&(E->viscosity.strain_dep_plasticity),"off",m);
+	input_float_vector("plastic_strain_func",3,E->viscosity.plastic_strain_func,m); /* high/low/strain */
 
 	input_boolean("TDEPV", &(E->viscosity.TDEPV), "on",m);
 	input_boolean("SDEPV", &(E->viscosity.SDEPV), "off",m);
@@ -455,11 +457,9 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	//float c1, c2, c3, zero, e_6, one, eta0, Tave, depth, temp, tempa, TT[9];
 	float zero, one, temp, tempa, TT[9];
 	//double ztop, zbotm, zz, visc1, area1, temp1, temp2, temp3, temp4;
-	double ztop, zbotm, zz, temp1, temp2, temp3, temp4;
+	double ztop, zbotm, zz, temp3, temp4;
 	float *Xtmp[4];
 	static int visits = 0;
-	static float *Tadi;
-	static double slope = 0;
 	const int vpts = vpoints[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
 	const int nel = E->lmesh.nel;
@@ -1246,12 +1246,13 @@ where the 2\eps_II arises because our \eps_II has the 1/2 factor in it
 
 */
 //#define DEBUG
-static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int propogate)
+static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, 
+			int propogate)
 {
   static int visited = 0;
   float scale,stress_magnitude,depth,exponent1,eta_old,eta_old2,eta_new;
   float *eedot;
-  float zzz,zz[9],wmax,weight;
+  float zzz,zz[9],wmax,weight,strain[9],estrain,fac;
   int point_flavor,tfn[9];
   float tau,tau2,ettby,ettnew;
   int m,l,z,jj,kk,i,node,tepoints,epoints,npc,tnpc;
@@ -1296,12 +1297,20 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
       fprintf(stderr,"\tpsrw: %i\n",E->viscosity.psrw);
       if(E->viscosity.pdepv_for_zero_comp && E->viscosity.pdepv_for_flavor)
 	myerror("error, can't have both flavor and composition dependent plasticity",E);
-
-
       if(E->viscosity.pdepv_for_flavor){
 	if((E->tracers_add_flavors < 1)  || (E->control.composition == 0))
 	  myerror("Byerlee is to apply only to certain flavor, but no flavor is set",E);
       }
+      if(E->viscosity.strain_dep_plasticity){
+	if(!E->control.composition)
+	  myerror("strain dependent plasticity requires composition on",E);
+	if(!E->tracers_track_strain)
+	  myerror("strain dependent plasticity requires track_strain on",E);
+	if(E->parallel.me == 0)
+	  fprintf(stderr,"strain dependent plasticity: zero strain: %g, drops to %g at strain %g\n",
+		  E->viscosity.plastic_strain_func[0],E->viscosity.plastic_strain_func[1],E->viscosity.plastic_strain_func[2]);
+      }
+	
     }
   }
   if((!E->control.restart)&&(!visited)){
@@ -1333,9 +1342,11 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  tfn[kk]= E->CF[0][node];
 	else if(E->viscosity.pdepv_for_zero_comp)
 	  tfn[kk]= E->C[node];
+	if(E->viscosity.strain_dep_plasticity)
+	  strain[kk] = E->strain[node];
       }
       for(jj=1;jj <= vpts;jj++) { 
-	zzz = wmax = 0.0;
+	zzz = wmax = estrain = 0.0;
 	for(kk=1;kk <= ends;kk++)   {
 	  weight = E->N.vpt[GNVINDEX(kk,jj)];
 	  zzz += zz[kk] * weight;
@@ -1345,6 +1356,8 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	      point_flavor = tfn[kk]; /* use the most important nodal flavor */
 	    }
 	  }
+	  if(E->viscosity.strain_dep_plasticity)
+	    estrain += strain[kk] * weight;
 	}
 	if(((E->viscosity.pdepv_for_flavor==0) && (E->viscosity.pdepv_for_zero_comp))||
 	   (E->viscosity.pdepv_for_flavor && (point_flavor == E->viscosity.pdepv_for_flavor))||
@@ -1358,6 +1371,9 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  }else{
 	    tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
 	    tau = min(tau,  E->viscosity.lbyerlee[l]);
+	  }
+	  if(E->viscosity.strain_dep_plasticity){
+	    tau *= strain_plasticity_function_factor(estrain, E->viscosity.plastic_strain_func);
 	  }
 	  if((visited > 1) && (tau < 1e15)){
 	    tau2 = tau * tau;
@@ -1396,10 +1412,13 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  tfn[kk]= E->CF[0][node];
 	else if(E->viscosity.pdepv_for_zero_comp)
 	   tfn[kk]= E->C[node];
+	if(E->viscosity.strain_dep_plasticity)
+	  strain[kk] = E->strain[node];
+  
       }
       for(jj=1;jj <= vpts;jj++) { 
 	/* loop over nodes in element */
-	zzz = wmax = 0.0;
+	zzz = wmax = estrain = 0.0;
 	for(kk=1;kk <= ends;kk++)   { /* add the nodal contribution */
 	  /* 
 	     depth  [m] 
@@ -1412,6 +1431,8 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	      point_flavor = tfn[kk]; /* use the most important nodal flavor */
 	    }
 	  }
+	  if(E->viscosity.strain_dep_plasticity)
+	    estrain += strain[kk] * weight;
 	}
 	/* 
 	   three different ways  to apply plasticity 
@@ -1451,6 +1472,10 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
 	  }else{
 	    tau = E->viscosity.abyerlee[l] * zzz + E->viscosity.bbyerlee[l];
 	    tau = min(tau,  E->viscosity.lbyerlee[l]);
+	  }
+
+	  if(E->viscosity.strain_dep_plasticity){
+	    tau *= strain_plasticity_function_factor(estrain,E->viscosity.plastic_strain_func);
 	  }
 	  /* 
 	     
@@ -1514,6 +1539,26 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta, int pr
   visited = 1;
   free ((void *)eedot);
   return;  
+}
+
+float strain_plasticity_function_factor(float strain, float *plastic_strain_func)
+{
+  float fac;
+  static int visited = 0;
+  static float a,b,strain_limit,ab;
+  if(!visited){
+    a = plastic_strain_func[0];
+    b = plastic_strain_func[1];
+    strain_limit = plastic_strain_func[2];
+    ab = b - a;
+    visited = 1;
+  }
+  if(strain < strain_limit){
+    fac = a + strain/strain_limit * ab;
+  }else{
+    fac = b;
+  }
+  return fac;
 }
 /* 
 
@@ -1605,5 +1650,52 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
     }
   }
   visited++;
+}
+
+
+/* 
+
+   timestep the total strain on each marker, assumes that E->CElement
+   is assigned and that strain-rates are meaningful (i.e. don't call
+   without obtaining a velocity solution)
+
+   (could put the finite strain ellipsoid computation here, but beware
+   the simplicity of the Euler approach below)
+   
+*/
+void evolve_tracer_strain(struct All_variables *E)
+
+{
+  float *eedot,min_strain,max_strain;
+  int i,imark;
+  const int nel = E->lmesh.nel;
+  
+  eedot = (float *) safe_malloc((2+nel)*sizeof(float));
+  /* calculate the second invariant */
+  strain_rate_2_inv(E,eedot,1);
+
+  max_strain = -1e20;
+  min_strain = 1e20;
+  for(i=1;i<=nel;i++){
+    if(eedot[i] < min_strain)
+      min_strain = eedot[i];
+    if(eedot[i] > max_strain)
+      max_strain = eedot[i];
+  }
+  if(E->parallel.me == 0)fprintf(stderr,"evolving strain with dt %g, min/max strain-rate: %g/%g ",
+				 E->advection.timestep,min_strain,max_strain);
+  max_strain = -1e20;
+  min_strain = 1e20;
+  for(imark = 1; imark <= E->advection.markers; imark++){
+    /* increment strain */
+    E->tracer_strain[imark] += eedot[E->CElement[imark]] * E->advection.timestep;
+    if(E->tracer_strain[imark] > max_strain)
+      max_strain = E->tracer_strain[imark];
+    if(E->tracer_strain[imark] < min_strain)
+      min_strain = E->tracer_strain[imark];
+  }
+  if(E->parallel.me == 0)fprintf(stderr,"min/max strain: %g/%g\n",min_strain,max_strain);
+
+  free(eedot);
 }
 

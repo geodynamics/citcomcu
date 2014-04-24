@@ -56,7 +56,11 @@ void set_convection_defaults(struct All_variables *E)
   input_boolean("composition_neutralize_buoyancy", &(E->control.composition_neutralize_buoyancy), "0", E->parallel.me);
   if(E->control.composition_neutralize_buoyancy && E->parallel.me == 0)
     fprintf(stderr,"WARNING: reducing thermal buoyanyc to zero in composition=1 regions\n");
+
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
+
+  /* should be zero or one */
+  input_int("tracers_track_strain",&(E->tracers_track_strain), "0", E->parallel.me);
 
   input_float("tracers_assign_dense_fraction",&(E->tracers_assign_dense_fraction),"1.0",E->parallel.me);
 
@@ -236,8 +240,15 @@ void convection_initial_fields(struct All_variables *E)
 
 			  E->CElement = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
 			  if(!(E->CElement))myerror("Convection: mem error: E->CElement",E);
+			  if(E->tracers_track_strain){
+			    /* strain */
+			    report(E, "tracking total strain");
+			    E->tracer_strain = (CITCOM_XMC_PREC *)calloc((E->advection.markers_uplimit + 1),
+									 sizeof(CITCOM_XMC_PREC));
+			    if(!E->tracer_strain)myerror("Convection: mem error: tracer_strain",E);
+			    E->strain = (float *)calloc((E->lmesh.nno + 1), sizeof(float));
 
-
+			  }
 			  if(E->tracers_add_flavors){
 			    /* nodal compotional flavors */
 			    E->CF = (int **)malloc( E->tracers_add_flavors * sizeof(int *));
@@ -578,7 +589,7 @@ void convection_initial_markers1(struct All_variables *E)
 {
 	//int *element, el, i, j, k, p, node, ii, jj;
 	int *element, el, j, node;
-	double x, y, z, r, t, f, dX[4], dx, dr;
+	double x, y, z, r, t, f, dX[4];
 	//char input_s[100], output_file[255];
 	//FILE *fp;
 
@@ -683,7 +694,7 @@ void convection_initial_markers(struct All_variables *E,
 				int use_element_nodes_for_init_c)
 {
   //int el, i, j, k, p, node, ii, jj;
-  int el, ntracer,j,i,node,k;
+  int el, ntracer,j,node,k;
   //double x, y, z, r, t, f, dX[4], dx, dr;
   double x, y, z, r, t, f, dX[4];
   //char input_s[100], output_file[255];
