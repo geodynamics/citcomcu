@@ -16,7 +16,6 @@
 #	Individual Machine Variations
 ##############################################################################
 
-#COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
 GMT_DIR = $(GMTHOME)
 NETCDF_DIR = $(NETCDFHOME)
@@ -28,10 +27,9 @@ LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
 # use the expokit stuff?
 EXPO_DEFINE = -DCITCOM_USE_EXPOKIT
 EXPO_FILES = expokit/dgpadm.f
-EXPO_LIBS = $(EXPO_OBJS) -llapack -lblas 
+EXPO_LIBS = $(EXPO_OBJS) $(MATHLIBS)
 
-
-LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS) -nofor_main -lm
+LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS) $(FTRN_LIB) -lm
 
 DEFINES =  \
 	-DUSE_GZDIR -DUSE_GGRD -DCITCOM_ALLOW_ANISOTROPIC_VISC \
@@ -47,7 +45,6 @@ CC=mpicc
 F77=mpif77
 CPP=
 
-
 CEXT=c
 FEXT=F   # which implies further action of cpp
 OBJEXT=o
@@ -58,28 +55,15 @@ FOBJFLAG=-c
 
 LinuxFLAGS=
 LinuxLDFLAGS=
-#LinuxOPTIM=-g -O0 -Werror $(DEFINES)
-#LinuxOPTIM=-O3 -mtune=core2 -Werror $(DEFINES)
-LinuxOPTIM=-O2  $(DEFINES)
+LinuxOPTIM=-O3  $(DEFINES) 
+#LinuxOPTIM=-O2  $(DEFINES) 
+#LinuxOPTIM=-g  $(DEFINES) -DDEBUG
 
-####################################
-#PARAGON 
-PARAGONFLAGS=-nx
-PARAGONLDFLAGS=
-PARAGONOPTIM=-O4
-####################################
 
-####################################################################
-#	Choose the actual flags for your machine here ...
-####################################################################
-
-FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
+FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\" -I/usr/include/
 LDFLAGS= $(LinuxLDFLAGS)
 OPTIM= $(LinuxOPTIM)
 
-#FLAGS= $(SOLARISFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
-#LDFLAGS= $(SOLARISLDFLAGS)
-#OPTIM= $(SOLARISOPTIM)
 
 ####################################################################
 #	CitcomCU's files .....
@@ -141,7 +125,7 @@ OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
 default: citcom.mpi 
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(F77) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
+	$(CC)  $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
 	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
@@ -155,6 +139,10 @@ smaller:
 
 larger:
 	uncompress $(CFILES)
+
+proto:
+	cproto $(DEFINES) -q -p -I. -f2 -I/share/apps/mpich2/1.4/intel12/include -I/usr/local/src/netcdf-4.0.1/ -I/usr/include/ -I$(HOME)/progs/src/cig/hc/ *.c > prototypes.h
+
 
 
 ####################################################################
@@ -267,4 +255,4 @@ Ggrd_handling.o: $(HEADER) Ggrd_handling.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Ggrd_handling.c
 
 expokit/dgpadm.o: expokit/dgpadm.f $(HEADER)
-	$(F77) $(OPTIM) $(FOPTIM) -c expokit/dgpadm.f -o expokit/dgpadm.o
+	$(F77) $(OPTIM) $(FOPTIM)  -c expokit/dgpadm.f -o expokit/dgpadm.o

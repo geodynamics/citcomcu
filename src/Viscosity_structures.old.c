@@ -56,8 +56,7 @@ void *safe_malloc (size_t );
 
 void viscosity_parameters(struct All_variables *E)
 {
-	int i, l;
-	float temp;
+	int i;
 	int m = E->parallel.me ;
 	/* default values .... */
 	E->viscosity.update_allowed = 0;
@@ -153,37 +152,20 @@ void viscosity_parameters(struct All_variables *E)
 
 	input_boolean("TDEPV", &(E->viscosity.TDEPV), "on",m);
 	input_boolean("SDEPV", &(E->viscosity.SDEPV), "off",m);
-	input_int("sdepv_rheology", &(E->viscosity.sdepv_rheology), "2",m); /* type of stress dependence */
+	input_int("sdepv_rheology", &(E->viscosity.sdepv_rheology), "1",m); /* type of stress dependence */
 
-        input_int("composite",&(E->viscosity.composite), "1",m); /* diff and/or disl? */
 	input_boolean("sdepv_start_from_newtonian", &(E->viscosity.sdepv_start_from_newtonian), "off",m);
-        input_boolean("adiabatic_T", &(E->viscosity.adiabatic_T), "off",m);
-        input_boolean("layered_mantle", &(E->viscosity.layered_mantle), "off",m);
+
 	input_int("max_sdep_visc_iter",&(E->monitor.max_sdep_visc_iter),"50",m); /* max number of powerlaw iterations */
 
 	input_boolean("BDEPV",&(E->viscosity.BDEPV),"off",m);
-	input_int("pdepv_for_flavor",&(E->viscosity.pdepv_for_flavor),"0",m); /* byerlee only for flavor = 1 */
+
+	input_int("pdepv_for_flavor",&(E->viscosity.pdepv_for_flavor),"0",m); /* byerlee only for certain flavor */
+
 	input_int("pdepv_for_zero_comp",&(E->viscosity.pdepv_for_zero_comp),"0",m); /* byerlee only for zero composition */
-        input_int("pdepv_for_unity_comp",&(E->viscosity.pdepv_for_unity_comp),"0",m); /* byerlee only for unity composition */
-        input_int("cdepv_for_flavor",&(E->viscosity.cdepv_for_flavor),"0",m); /* viscosity modification for flavor = 1 */
-        input_float("flavor_visc",&(E->viscosity.flavor_visc),"1.0",m);
-        input_boolean("sdepv_for_zero_comp",&(E->viscosity.sdepv_for_zero_comp),"off",m);
-
-
-        input_int("another_flavor",&(E->viscosity.another_flavor),"0",m);
-        input_float("another_flavor_value",&(E->viscosity.another_flavor_value),"10",m);
-        input_float("another_flavor_visc",&(E->viscosity.another_flavor_visc),"1.0",m);
 
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
-	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	    /* make comp dep viscosity absolute  */
-        input_boolean("const_crust_visc",&(E->viscosity.const_crust_visc),"off",m); /* constant crustal viscosity */
-        input_boolean("const_lith_visc",&(E->viscosity.const_lith_visc),"off",m); /* constant lithospheric viscosity */
-        input_boolean("const_flav_visc",&(E->viscosity.const_flav_visc),"off",m); /* constant flavor viscosity */
-        input_float("adiabatic_grad", &(E->viscosity.adiabatic_grad), "0.3",m);
-        input_float("mantle_visc_factor", &(E->viscosity.mantle_visc_factor), "1.0",m);
-        input_boolean("no_crust_buoy",&(E->viscosity.no_crust_buoy),"off",m);
-        input_int("crust_cutoff",&(E->viscosity.crust_cutoff),"0",m);
-        input_int("crust_option",&(E->viscosity.crust_option),"1",m);
+	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	/* make comp dep viscosity absolute  */
 
 	/* plasticity offset viscosity */
 	input_float("plasticity_viscosity_offset", &(E->viscosity.plasticity_viscosity_offset),"0.0",m);
@@ -275,23 +257,7 @@ void viscosity_parameters(struct All_variables *E)
 
 
 	input_float("sdepv_misfit", &(E->viscosity.sdepv_misfit), "0.001",m);
-        input_float("sdepv_trns_T", &(E->viscosity.sdepv_trns_T), "3000",m);
-	input_float("sdepv_trns_c", &(E->viscosity.sdepv_trns_c), "2.0",m);
-        //input_float("sdepv_trns_strain", &(E->viscosity.sdepv_trns_strain), "1000.0",m);
-        input_float("sdepv_Adiff", &(E->viscosity.sdepv_Adiff), "1.0",m);
-        input_float("sdepv_Adis", &(E->viscosity.sdepv_Adis), "1.0",m);
-        input_float("sdepv_Ediff", &(E->viscosity.sdepv_Ediff), "1.0",m);
-        input_float("sdepv_Edis", &(E->viscosity.sdepv_Edis), "1.0",m);
-        input_float("sdepv_Vdiff", &(E->viscosity.sdepv_Vdiff), "1.0",m);
-        input_float("sdepv_Vdis", &(E->viscosity.sdepv_Vdis), "1.0",m);
-
-        input_float("crust_comp_thresh", &(E->viscosity.crust_comp_thresh), "0.0",m);
-        input_float("crust_depth", &(E->viscosity.crust_depth), "1.0",m);
-        input_float("crust_depth_lower", &(E->viscosity.crust_depth_lower), "1.0",m);
-        input_float("crust_visc", &(E->viscosity.crust_visc), "1.0",m);
-        input_float("lith_visc", &(E->viscosity.lith_visc), "500.0",m);
-        input_float("bdepv_trns_c", &(E->viscosity.bdepv_trns_c), "2.0",m);
-        input_float_vector("sdepv_expt", E->viscosity.num_mat, (E->viscosity.sdepv_expt),m);
+	input_float_vector("sdepv_expt", E->viscosity.num_mat, (E->viscosity.sdepv_expt),m);
 	input_float_vector("sdepv_trns", E->viscosity.num_mat, (E->viscosity.sdepv_trns),m);
 
 	/* iteration damping for alpha < 1 */
@@ -300,14 +266,12 @@ void viscosity_parameters(struct All_variables *E)
 	input_boolean("TDEPV_AVE", &(E->viscosity.TDEPV_AVE), "off",m);
 	input_boolean("VFREEZE", &(E->viscosity.FREEZE), "off",m);
 	input_boolean("VMAX", &(E->viscosity.MAX), "off",m);
-    input_boolean("FLAV_VMAX", &(E->viscosity.FLAV_MAX), "off",m);
 	input_boolean("VMIN", &(E->viscosity.MIN), "off",m);
 	input_boolean("VISC_UPDATE", &(E->viscosity.update_allowed), "on",m);
 
 	input_float("freeze_thresh", &(E->viscosity.freeze_thresh), "0.0",m);
 	input_float("freeze_value", &(E->viscosity.freeze_value), "1.0",m);
 	input_float("visc_max", &(E->viscosity.max_value), "nodefault",m);
-    input_float("flav_visc_max", &(E->viscosity.flav_max_value), "nodefault",m);
 	input_float("visc_min", &(E->viscosity.min_value), "nodefault",m);
 
 	input_boolean("VISC_GUESS", &(E->viscosity.guess), "off",m);
@@ -351,81 +315,88 @@ void get_viscosity_option(struct All_variables *E)
 void viscosity_for_system(struct All_variables *E)
 {
 
-  get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
-	
-  return;
+	get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
+
+	return;
 }
 
 
 void get_system_viscosity(struct All_variables *E, int propogate, float *evisc, float *visc)
 {
-  int i, j;
-  //float *visc_old, *evisc_old;
-  
-  const int vpts = vpoints[E->mesh.nsd];
-  
-#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
-  if(E->viscosity.allow_anisotropic_viscosity){
-    if(!E->viscosity.anisotropic_viscosity_init)
-      set_anisotropic_viscosity_at_element_level(E,1);
-    else
-      set_anisotropic_viscosity_at_element_level(E,0);
-  }
-#endif
-  
-  
-  if(E->viscosity.TDEPV)
-    visc_from_T(E, visc, evisc, propogate);
-  else
-    visc_from_mat(E, visc, evisc);
-#ifdef USE_GGRD
-  /* pre-factor applies here */
-  if(E->control.ggrd.mat_control != 0){
-    ggrd_read_mat_from_file(E);
-    for(i = 1; i <= E->lmesh.nel; i++){
-      for(j = 1; j <= vpoints[E->mesh.nsd]; j++){
-	evisc[(i - 1) * vpoints[E->mesh.nsd] + j] *= E->VIP[i];
-      }
-    }
-  }
-#endif	
-  
-  if(E->viscosity.SDEPV)
-    visc_from_S(E, visc, evisc, propogate);
-  if(E->viscosity.CDEPV)
-    visc_from_C(E, visc, evisc, propogate);
-  if(E->viscosity.BDEPV)
-    visc_from_B(E, visc, evisc, propogate);
-  if(E->viscosity.SMOOTH)
-    apply_viscosity_smoother(E, visc, evisc);
+	int i, j;
+	//float *visc_old, *evisc_old;
 
- if(E->viscosity.MAX){
-    for(i = 1; i <= E->lmesh.nel; i++)
-      for(j = 1; j <= vpts; j++)
-	{
-	  if(evisc[(i - 1) * vpts + j] > E->viscosity.max_value)
-	    evisc[(i - 1) * vpts + j] = E->viscosity.max_value;
+	const int vpts = vpoints[E->mesh.nsd];
+
+#ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
+	if(E->viscosity.allow_anisotropic_viscosity){
+	  if(!E->viscosity.anisotropic_viscosity_init)
+	    set_anisotropic_viscosity_at_element_level(E,1);
+	  else
+	    set_anisotropic_viscosity_at_element_level(E,0);
 	}
-  }
-  
-  if(E->viscosity.MIN){
-    for(i = 1; i <= E->lmesh.nel; i++)
-      for(j = 1; j <= vpts; j++)
-	if(evisc[(i - 1) * vpts + j] < E->viscosity.min_value)
-	  evisc[(i - 1) * vpts + j] = E->viscosity.min_value;
-  }
-  
+#endif
+	
+
+	if(E->viscosity.TDEPV)
+		visc_from_T(E, visc, evisc, propogate);
+	else
+		visc_from_mat(E, visc, evisc);
+#ifdef USE_GGRD
+	/* pre-factor applies here */
+	if(E->control.ggrd.mat_control != 0){
+	  ggrd_read_mat_from_file(E);
+	  for(i = 1; i <= E->lmesh.nel; i++){
+	    for(j = 1; j <= vpoints[E->mesh.nsd]; j++){
+	      evisc[(i - 1) * vpoints[E->mesh.nsd] + j] *= E->VIP[i];
+	    }
+	  }
+	}
+#endif	
+
+	if(E->viscosity.CDEPV)
+	  visc_from_C(E, visc, evisc, propogate);
+
+	if(E->viscosity.SDEPV)
+		visc_from_S(E, visc, evisc, propogate);
+
+	if(E->viscosity.BDEPV)
+	  visc_from_B(E, visc, evisc, propogate);
+
+	if(E->viscosity.SMOOTH)
+	  apply_viscosity_smoother(E, visc, evisc);
+
+
+
+	if(E->viscosity.MAX)
+	{
+		for(i = 1; i <= E->lmesh.nel; i++)
+			for(j = 1; j <= vpts; j++)
+			{
+				if(evisc[(i - 1) * vpts + j] > E->viscosity.max_value)
+					evisc[(i - 1) * vpts + j] = E->viscosity.max_value;
+			}
+	}
+
+	if(E->viscosity.MIN)
+	{
+		for(i = 1; i <= E->lmesh.nel; i++)
+			for(j = 1; j <= vpts; j++)
+				if(evisc[(i - 1) * vpts + j] < E->viscosity.min_value)
+					evisc[(i - 1) * vpts + j] = E->viscosity.min_value;
+	}
+
 #ifdef USE_GZDIR
-  /* this is much preferred over v_to_nodes */
-  visc_from_gint_to_nodes(E,evisc,visc,E->mesh.levmax);
+	/* this is much preferred over v_to_nodes */
+	visc_from_gint_to_nodes(E,evisc,visc,E->mesh.levmax);
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC /* allow for anisotropy */
-  if(E->viscosity.allow_anisotropic_viscosity){
-    visc_from_gint_to_nodes(E,E->EVI2[E->mesh.levmax], E->VI2[E->mesh.levmax],E->mesh.levmax);
-    visc_from_gint_to_nodes(E,E->EVIn1[E->mesh.levmax], E->VIn1[E->mesh.levmax],E->mesh.levmax);
-    visc_from_gint_to_nodes(E,E->EVIn2[E->mesh.levmax], E->VIn2[E->mesh.levmax],E->mesh.levmax);
-    visc_from_gint_to_nodes(E,E->EVIn3[E->mesh.levmax], E->VIn3[E->mesh.levmax],E->mesh.levmax);
-    normalize_director_at_nodes(E,E->VIn1[E->mesh.levmax],E->VIn2[E->mesh.levmax],E->VIn3[E->mesh.levmax],E->mesh.levmax);
-  }
+	if(E->viscosity.allow_anisotropic_viscosity){
+	  visc_from_gint_to_nodes(E,E->EVI2[E->mesh.levmax], E->VI2[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn1[E->mesh.levmax], E->VIn1[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn2[E->mesh.levmax], E->VIn2[E->mesh.levmax],E->mesh.levmax);
+	  visc_from_gint_to_nodes(E,E->EVIn3[E->mesh.levmax], E->VIn3[E->mesh.levmax],E->mesh.levmax);
+	  normalize_director_at_nodes(E,E->VIn1[E->mesh.levmax],E->VIn2[E->mesh.levmax],E->VIn3[E->mesh.levmax],E->mesh.levmax);
+	}
 #endif
 #endif
 
@@ -486,11 +457,9 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	//float c1, c2, c3, zero, e_6, one, eta0, Tave, depth, temp, tempa, TT[9];
 	float zero, one, temp, tempa, TT[9];
 	//double ztop, zbotm, zz, visc1, area1, temp1, temp2, temp3, temp4;
-	double ztop, zbotm, zz, temp1, temp2, temp3, temp4;
+	double ztop, zbotm, zz, temp3, temp4;
 	float *Xtmp[4];
 	static int visits = 0;
-	static float *Tadi;
-	static double slope = 0;
 	const int vpts = vpoints[E->mesh.nsd];
 	const int ends = enodes[E->mesh.nsd];
 	const int nel = E->lmesh.nel;
@@ -630,8 +599,6 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
 		      }
 		    EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l] * (E->viscosity.T[l]  - temp ));
-                    if(EEta[(i - 1) * vpts + jj] > E->viscosity.max_value){
-                       EEta[(i - 1) * vpts + jj] = E->viscosity.max_value;}
 		  }
 	      }
 	    break;
@@ -709,7 +676,7 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
               }
             break;
 	  default:
-	    myerror("RHEOL option undefined in TDEPV",E);
+	    myerror("RHEOL option undefined",E);
 	    break;
 	  } /* end switch */
 
@@ -729,219 +696,60 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
-  static int visits = 0;
-  float R, scale, exponent, exponent1, temp, TT[9], comp, CC[9];      /* AH ADDED temp AND TT[9] AND zero */
-  float ztop, zbotm, P_660, add_T_660;
-  float zzz, zz[9], zzz_dim,*eddpart,edd_add;
-  float *eedot,eedot_dim;
-  float temp_dim, tempa, tempc;
-  double  EEta_diff, EEta_dis;
-  double  EEta_diff_dim, EEta_dis_dim;
-  float *Xtmp[4];
-  int e, l, z, jj, kk, i,loc_composite;
-  
-  double loc_adiff_fac,P_Pa;
-  const int vpts = vpoints[E->mesh.nsd];
-  const int nel = E->lmesh.nel;
-  const int ends = enodes[E->mesh.nsd];               /* AH ADDED */
-  
-  const float fac_n = 3.5; /* power law expnent */
-  
-  const double zero = 0.0;
-  const double one = 1.0;
-  const double two = 2.0;
-  
-  const double fac1 = one/fac_n;
-  const double fac2 = (one-fac_n)/fac_n;
-  
-  double hstress_scale;
-  
+	static int visits = 0;
+	//float one, two, scale, stress_magnitude, depth, exponent1;
+	float one, two, scale, exponent1;
+	float *eedot;
 
-  hstress_scale =  E->data.density * E->data.grav_acc * E->monitor.length_scale;
-  P_660 = E->viscosity.zlm * hstress_scale;    // lithostatic pressure [Pa] at 660 km
+	//int e, l, z, jj, kk;
+	int e, jj;
 
-  add_T_660  = E->viscosity.adiabatic_grad * E->viscosity.zlm * (E->monitor.length_scale/1000.0);
+	const int vpts = vpoints[E->mesh.nsd];
+	const int nel = E->lmesh.nel;
 
-  if((visits == 0) && (E->viscosity.sdepv_rheology == 3)){
-    E->Vddpart =  (float *)calloc(E->lmesh.nno+2,sizeof(float));
-    if(E->parallel.me==0)
-      fprintf(stderr,"storing disl/diff partitioning for %i\n",E->lmesh.nno);
-  }
+	eedot = (float *)malloc((2 + nel) * sizeof(float));
+	one = 1.0;
+	two = 2.0;
 
-
-  eedot = (float *)malloc((2 + nel) * sizeof(float));
-  
-  if(E->control.Rsphere){
-    for(i = 1; i <= E->mesh.nsd; i++)
-      Xtmp[i] = E->SX[i];
-    ztop = E->sphere.ro;
-    zbotm = E->sphere.ri;
-  }else if(E->control.CART3D){
-    for(i = 1; i <= E->mesh.nsd; i++)
-      Xtmp[i] = E->X[i];
-    ztop = 1.0;
-    zbotm = 0.0;
-  }
-  
-  if((!E->control.restart) && (visits == 0)){
-    for(e = 1; e <= nel; e++)
-      eedot[e] = one;
-  }else{
-    strain_rate_2_inv(E, eedot, 1);
-  }
-  
-  if((!E->viscosity.sdepv_start_from_newtonian)||
-     (E->control.restart)||(visits)){
-    switch(E->viscosity.sdepv_rheology){
-    case 1:		/* old default, i think the factors
-			   don't make sense, leave in for
-			   backward compatibility  */
-      for(e = 1; e <= nel; e++){
-	exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
-	scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
-	for(jj = 1; jj <= vpts; jj++)
-	  EEta[(e - 1) * vpts + jj] = two * EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
-      }
-      break;
-    case 2:		/* composite rheology, different from
-			   above by the missing two up front*/
-      for(e = 1; e <= nel; e++){
-	exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
-	scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
-	for (kk = 1; kk <= ends; kk++){
-	  CC[kk] = E->C[E->ien[e].node[kk]];
-	  TT[kk] = E->T[E->ien[e].node[kk]]; 
-	} 
-	for(jj = 1; jj <= vpts; jj++){
-	  temp = comp = 0;
-	  for (kk = 1; kk <= ends; kk++){
-	    temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk,jj)];
-	    comp += max(zero, CC[kk]) * E->N.vpt[GNVINDEX(kk,jj)];
-	  }                     
-	  /* apply below transition temperature and composition */
-	  if((temp < E->viscosity.sdepv_trns_T) 
-	     && (comp < E->viscosity.sdepv_trns_c)){    
-	    EEta[(e - 1) * vpts + jj] = 
-	      EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
-	    
-	    //if(E->parallel.me==0){      /* control output */
-	    //fprintf(stderr,"Power-law, %e visits: T = %e, C = %e, strain = %e, trans_stress = %e, exponent = %e -> EEta = %e \n",visits,temp,comp,eedot[e],E->viscosity.sdepv_trns[E->mat[e] - 1],exponent1,EEta[(e - 1) * vpts + jj]);}
-	  }               
+	if((!E->control.restart) && (visits == 0))
+	{
+		for(e = 1; e <= nel; e++)
+			eedot[e] = one;
 	}
-      }
-      break;
-    case 3:    // ARRHENIUS RHEOLOGY (parameters from Bina and Cizkova --> see Newtonian_NEW.m)
-
-      eddpart = (float *)malloc((E->lmesh.nel + 3) * sizeof(float));
-      // Viscosity calculated in dimensional world, and then non dimensionalized
-      for(e = 1; e <= nel; e++){
-
-        if(E->viscosity.sdepv_for_zero_comp){	
-          for (kk = 1; kk <= ends; kk++){
-             CC[kk] = E->C[E->ien[e].node[kk]];
-             if(E->control.check_c_irange){
-               if(CC[kk] < 0)
-                  CC[kk]=0.0;
-               if(CC[kk] > 1)
-                  CC[kk]=1.0;
-             }
-          }
-        }
- 
-        eddpart[e]=0;
-	for(jj = 1; jj <= vpts; jj++){ /* loop through integration points of element */
-          zzz = temp = zero;
-          temp_dim  = 273.0 + 1.0 * 1300.0;
-          comp = 0.0;
-	  for(kk = 1; kk <= ends; kk++){ /* loop through points in element */
-	     zzz += (1.0 - Xtmp[3][E->ien[e].node[kk]]) * E->N.vpt[GNVINDEX(kk, jj)]; /* depth, 1-z*/
-             comp += CC[kk] * E->N.vpt[GNVINDEX(kk,jj)];}
-          zzz_dim   = zzz * E->monitor.length_scale;
-
-	  eedot_dim = eedot[e] / E->monitor.time_scale;  // dim strain rate 2nd invariant 
-	  
-          if((E->viscosity.layered_mantle) && (zzz >= E->viscosity.zlm)){ /* in lower mantle */
-	    if(E->viscosity.adiabatic_T)
-	      temp_dim  += add_T_660;
-	    P_Pa = P_660;	/* lith pressure at 660 */
-	    loc_adiff_fac = (double)E->viscosity.mantle_visc_factor/(double)E->viscosity.sdepv_Adiff;
-	    loc_composite = 2;	/* only diffusion */
-	  }else{
-	    /* upper mantle scaling */
-	    if(E->viscosity.adiabatic_T)
-	      temp_dim  += (E->viscosity.adiabatic_grad * zzz * (E->monitor.length_scale/1000.0));
-	    P_Pa = hstress_scale * zzz;    // lithostatic pressure (Pa)
-	    loc_adiff_fac = one/(double)E->viscosity.sdepv_Adiff;
-	    loc_composite = E->viscosity.composite;
-	  }
-
-	  /* DIFFUSION */
-	  EEta_diff  = loc_adiff_fac * exp(((double)E->viscosity.sdepv_Ediff + P_Pa * 
-					    (double)E->viscosity.sdepv_Vdiff)/
-					   ((double)E->data.gas_const * (double)temp_dim)); /* dimensional */
-          EEta_diff_dim = EEta_diff;
-	  EEta_diff /= (double)E->data.ref_viscosity; /* non-dimensional */
-	  if(isinf(EEta_diff) || (EEta_diff > 1e6))
-	    EEta_diff = 1e6;
-
-	  /* DISLOCATION */
-	  EEta_dis  = (1.0/pow((double)E->viscosity.sdepv_Adis,fac1)) * pow((double)eedot_dim,fac2) * 
-	    exp(((double)E->viscosity.sdepv_Edis + 
-		 P_Pa * (double)E->viscosity.sdepv_Vdis)/(fac_n * (double)E->data.gas_const * 
-							  (double)temp_dim)); /* dimensional */
-
-          EEta_dis_dim = EEta_dis;
-	  EEta_dis /= (double)E->data.ref_viscosity; /* non-dimensional */
-	  if(isinf(EEta_dis) || (EEta_dis > 1e6))
-	    EEta_dis = 1e6;
-
-
-	  switch(loc_composite){
-	  case 1:  /* COMPOSITE */
-            if(E->viscosity.sdepv_for_zero_comp){  
-                if(comp < 0.1){  
-                   EEta[(e - 1) * vpts + jj] = (EEta_diff * EEta_dis) / ( EEta_diff + EEta_dis);
-	           edd_add = log10(EEta[(e - 1) * vpts + jj]/EEta_dis);
-                }else{
-                   EEta[(e - 1) * vpts + jj] = EEta[(e - 1) * vpts + jj];
-                   edd_add = -8;}
-            }else{
-                EEta[(e - 1) * vpts + jj] = (EEta_diff * EEta_dis) / ( EEta_diff + EEta_dis);
-                edd_add = log10(EEta[(e - 1) * vpts + jj]/EEta_dis);}
-            break;
-	  case 2: /* DIFFUSION */
-	    EEta[(e - 1) * vpts + jj] = EEta_diff;
-	    edd_add = -8;
+	else
+		strain_rate_2_inv(E, eedot, 1);
+	if((!E->viscosity.sdepv_start_from_newtonian)||(E->control.restart)||(visits)){
+	  switch(E->viscosity.sdepv_rheology){
+	  case 1:		/* old default, i think the factors
+				   don't make sense, leave in for
+				   backward compatibility  */
+	    for(e = 1; e <= nel; e++)
+	      {
+		exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
+		scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
+		for(jj = 1; jj <= vpts; jj++)
+		  EEta[(e - 1) * vpts + jj] = two * EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
+	      }
 	    break;
-	  case 3:  /* DISLOCATION */
-	    EEta[(e - 1) * vpts + jj] = EEta_dis;
-	    edd_add = 8;
+	  case 2:		/* composite rheology, different from
+				   above by the missing two up front*/
+	    for(e = 1; e <= nel; e++){
+		exponent1 = one - one / E->viscosity.sdepv_expt[E->mat[e] - 1];
+		scale = pow(two * eedot[e] / E->viscosity.sdepv_trns[E->mat[e] - 1], exponent1);
+		for(jj = 1; jj <= vpts; jj++)
+		  EEta[(e - 1) * vpts + jj] = EEta[(e - 1) * vpts + jj] / (one + scale * pow(EEta[(e - 1) * vpts + jj], exponent1));
+	      }
+
 	    break;
 	  default:
-	    myerror("composite viscosity flag error",E);
-	    break;
+	    myerror("stress dependent rheology mode undefined",E);
 	  }
-	  eddpart[e] += edd_add;
 	}
-	eddpart[e] /= (float) vpts;
-      }
 
+	visits++;
 
-
-      /* project to nodes */
-      e2_to_nodes(E,eddpart,E->Vddpart,E->mesh.levmax);
-      free(eddpart);
-      break;
-    default:
-      myerror("stress dependent rheology mode undefined",E);
-      break;
-    }
-  }
-  
-  visits++;
-  
-  free((void *)eedot);
-  return;
+	free((void *)eedot);
+	return;
 }
 
 /* 
@@ -1030,9 +838,11 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT,
 	    dudx[p][q] += VV[p][i] * E->gNX[e].ppt[GNPXINDEX(q - 1, i, 1)];
       
       for(p = 1; p <= dims; p++)
-	for(q = 1; q <= dims; q++){/* adam wants to add a factor of 0.5 here.. */
-	  edot[p][q] = 0.5 * (dudx[p][q] + dudx[q][p]);
-	}
+	for(q = 1; q <= dims; q++)
+	  edot[p][q] = dudx[p][q] + dudx[q][p];
+
+      /* if(e < 5)fprintf(stderr,"1: %11.4e %11.4e %11.4e %11.4e %11.4e %11.4e\n",edot[1][1]/2,edot[1][2]/2,edot[1][3]/2,edot[2][2]/2,edot[2][3]/2,edot[3][3]/2); */
+
       
       if(dims == 2)
 	EEDOT[e] = edot[1][1] * edot[1][1] + edot[2][2] * edot[2][2] + edot[1][2] * edot[1][2] * 2.0;
@@ -1043,6 +853,7 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT,
     }
   }
   
+
   
   if(SQRT)
     for(e = 1; e <= nel; e++)
@@ -1125,6 +936,7 @@ void get_vgm_p(double VV[4][9],struct Shape_function *N,
   int i,k,j,a;
   double ra[9], si[9], ct[9];
   const double one = 1.0;
+  const double two = 2.0;
   double vgm[3][3];
   double shp, cc1, cc2, cc3,d_t,d_r,d_p,up,ur,ut;
   /* init L matrix */
@@ -1440,8 +1252,8 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
   static int visited = 0;
   float scale,stress_magnitude,depth,exponent1,eta_old,eta_old2,eta_new;
   float *eedot;
-  float zzz,zz[9],wmax,weight,strain[9],estrain,fac,CC[9];
-  int point_flavor,tfn[9],tracer_value;
+  float zzz,zz[9],wmax,weight,strain[9],estrain,fac;
+  int point_flavor,tfn[9];
   float tau,tau2,ettby,ettnew;
   int m,l,z,jj,kk,i,node,tepoints,epoints,npc,tnpc;
   static float ndz_to_m;
@@ -1486,7 +1298,7 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
       if(E->viscosity.pdepv_for_zero_comp && E->viscosity.pdepv_for_flavor)
 	myerror("error, can't have both flavor and composition dependent plasticity",E);
       if(E->viscosity.pdepv_for_flavor){
-	if((E->tracers_add_flavors < 1)  || (!E->control.composition))
+	if((E->tracers_add_flavors < 1)  || (E->control.composition == 0))
 	  myerror("Byerlee is to apply only to certain flavor, but no flavor is set",E);
       }
       if(E->viscosity.strain_dep_plasticity){
@@ -1547,16 +1359,9 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
 	  if(E->viscosity.strain_dep_plasticity)
 	    estrain += strain[kk] * weight;
 	}
-	if(((E->viscosity.pdepv_for_flavor == 0) && (E->viscosity.pdepv_for_zero_comp == 0))|| /* regular operation */
-	   (E->viscosity.pdepv_for_flavor && (point_flavor == E->viscosity.pdepv_for_flavor))||	/* flavor
-												   dependent
-												   plasticity */
-	   (E->viscosity.pdepv_for_zero_comp && (point_flavor < 0.5)) /* dependent
-									 on
-									 regular
-									 composition */
-
-	   ){
+	if(((E->viscosity.pdepv_for_flavor==0) && (E->viscosity.pdepv_for_zero_comp))||
+	   (E->viscosity.pdepv_for_flavor && (point_flavor == E->viscosity.pdepv_for_flavor))||
+	   (E->viscosity.pdepv_for_zero_comp && (point_flavor < 0.5))){
 	  npc++;
 	  /* plasticity applies */
 	  if(E->viscosity.plasticity_dimensional){
@@ -1596,7 +1401,6 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
       l = E->mat[i] - 1;	/* material of element */
       for(kk=1;kk <= ends;kk++){/* loop through integration points*/
 	node = E->ien[i].node[kk];
-        
 	/* depth in meters */
 	if(E->control.Rsphere)
 	  zz[kk] = (1.0 - E->SX[3][node]); 
@@ -1604,10 +1408,10 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
 	  zz[kk] = (1.0 -  E->X[3][node]); 
 	if(E->viscosity.plasticity_dimensional)
 	  zz[kk] *= ndz_to_m;	/* scale to meters */
-	if(E->viscosity.pdepv_for_flavor){ 
-          tfn[kk]= E->CF[0][node];}
-	else if(E->viscosity.pdepv_for_zero_comp || E->viscosity.pdepv_for_unity_comp)
-	  tfn[kk]= E->C[node];
+	if(E->viscosity.pdepv_for_flavor) /* nodal flavors */
+	  tfn[kk]= E->CF[0][node];
+	else if(E->viscosity.pdepv_for_zero_comp)
+	   tfn[kk]= E->C[node];
 	if(E->viscosity.strain_dep_plasticity)
 	  strain[kk] = E->strain[node];
   
@@ -1621,23 +1425,39 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
 	  */
 	  weight = E->N.vpt[GNVINDEX(kk,jj)];
 	  zzz += zz[kk] * weight;
-	  if(E->viscosity.pdepv_for_flavor || E->viscosity.pdepv_for_zero_comp || E->viscosity.pdepv_for_unity_comp){
+	  if(E->viscosity.pdepv_for_flavor || E->viscosity.pdepv_for_zero_comp){
 	    if(weight > wmax){
 	      wmax = weight;
-	      tracer_value = tfn[kk]; /* use the most important nodal flavor or composition (see above!) */
+	      point_flavor = tfn[kk]; /* use the most important nodal flavor */
 	    }
 	  }
 	  if(E->viscosity.strain_dep_plasticity)
 	    estrain += strain[kk] * weight;
 	}
-        //if(E->parallel.me==0)fprintf(stderr,"WHUDDUP: pdepv_for_flavor %i, pdepv_for_zero_comp %i, pdepv_for_unity_comp %i, c = %i \n", E->viscosity.pdepv_for_flavor,E->viscosity.pdepv_for_zero_comp,E->viscosity.pdepv_for_unity_comp,tracer_value);
-//	fprintf(stderr,"WHUDDUP: pdepv_for_flavor %i, pdepv_for_zero_comp %i, pdepv_for_unity_comp %i, c = %i \n", E->viscosity.pdepv_for_flavor,E->viscosity.pdepv_for_zero_comp,E->viscosity.pdepv_for_unity_comp,tracer_value);
-        if(((E->viscosity.pdepv_for_flavor==0) && (E->viscosity.pdepv_for_zero_comp==0) && (E->viscosity.pdepv_for_unity_comp==0))||
-           (E->viscosity.pdepv_for_flavor && (tracer_value == E->viscosity.pdepv_for_flavor))||
-           (E->viscosity.pdepv_for_zero_comp && (tracer_value < 0.5))||(E->viscosity.pdepv_for_unity_comp && (tracer_value > 0.5))){
-          npc++;
-           
-  //        fprintf(stderr,"WHUDDUP:in \n");
+	/* 
+	   three different ways  to apply plasticity 
+
+	*/
+	if(((E->viscosity.pdepv_for_flavor == 0) && (E->viscosity.pdepv_for_zero_comp == 0))|| /* regular operation */
+	   (E->viscosity.pdepv_for_flavor && (point_flavor == E->viscosity.pdepv_for_flavor))||	/* flavor
+												   dependent
+												   plasticity */
+	   (E->viscosity.pdepv_for_zero_comp && (point_flavor < 0.5)) /* dependent
+									 on
+									 regular
+									 composition */
+
+	   ){
+	  
+
+	  /*  */
+	  npc++;
+	  /* 
+	     apply plasticity for this integration point if
+	     pdepv_for_flavor is zero, or if the flavor matches
+
+	  */
+
 	  if(E->viscosity.plasticity_dimensional){
 	    /* byerlee type */
 	    
@@ -1676,11 +1496,13 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
 	    */
 	    
 	    ettnew = 1.0/(1.0/EEta[ (i-1)*vpts + jj ] + 1.0/ettby);
+	    //fprintf(stderr,"a: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
 	  }else{
 	    /* 
 	       min(\eta_p, \eta_visc )
 	    */
 	    ettnew = min(EEta[ (i-1)*vpts + jj ],ettby);
+	    //fprintf(stderr,"m: %g %g %g\n",EEta[ (i-1)*vpts + jj ],ettby,ettnew);
 	  }
 	
 #ifdef DEBUG
@@ -1704,7 +1526,6 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
       }	/* end integration point loop */
     } /* end regular plasticity */
   }
-  
   if(E->viscosity.pdepv_for_flavor){
     MPI_Allreduce(&epoints,&tepoints,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
     MPI_Allreduce(&npc,&tnpc,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
@@ -1746,13 +1567,10 @@ multiply with composition factor
 */
 static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
-  float comp,comp_fac,CC[9],tcomp,crust_thresh,lith_thresh;
-  float zz[9], zzz, weight, wmax;
-  double vmean,cc_loc,flav_loc,crust_measure,lith_measure; 
-  int m,l,l2,z,jj,kk,i,j,node;
-  int point_flavor, tfn[9],tracer_value;
+  float comp,comp_fac,CC[9],tcomp;
+  double vmean,cc_loc;
+  int m,l,l2,z,jj,kk,i,j;
   static int visited = 0;
-  static double crust_twidth;
   static double logv[CITCOM_CU_VISC_MAXLAYER*2];
   const int vpts = vpoints[E->mesh.nsd];
   const int nel = E->lmesh.nel;
@@ -1773,22 +1591,14 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
     if((E->parallel.me==0)&&(E->viscosity.cdepv_absolute)){
       fprintf(stderr,"WARNING: using cdepv for absolute viscosity\n");
     }
-    if(E->viscosity.crust_cutoff == 2){ /* transition in crust behavior */
-      crust_twidth = E->viscosity.crust_depth_lower - E->viscosity.crust_depth;
-      if(crust_twidth < 0)
-	myerror("crustal transition width should not be negative",E);
-    }
-
-    /* end init */
   }
   if(E->viscosity.cdepv_absolute){ /* this is OFF by default */
     /* 
        
-       override all other viscosities (this is exact same as below but
-       for the viscosity assignment (repeated here to avoid if
-       statments)
-       
-       will make compositional viscosity an on/off kind of thing
+    override all other viscosities (this is exact same as below but
+    for the viscosity assignment (repeated here to avoid if statments)
+    
+    will make compositional viscosity an on/off kind of thing
     
     */
     for(i = 1; i <= nel; i++){
@@ -1821,83 +1631,23 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
       l2 = l*2;
       /* determine composition of each of the nodes of the element */
       for(kk = 1; kk <= ends; kk++){
-        CC[kk]  = E->C[E->ien[i].node[kk]];
-        node=E->ien[i].node[kk];
-	/* depth */
-        zz[kk] = (1.0 - E->X[3][node]);  
+	CC[kk] = E->C[E->ien[i].node[kk]];
 	if(E->control.check_c_irange){
-	  if(CC[kk] < 0)
-	    CC[kk]=0.0;
-	  if(CC[kk] > 1)
-	    CC[kk]=1.0;
-	}
-        if(E->viscosity.crust_option==2 || E->viscosity.cdepv_for_flavor==1){
-	  tfn[kk]= E->CF[0][node];
+	  if(CC[kk] < 0)CC[kk]=0.0;
+	  if(CC[kk] > 1)CC[kk]=1.0;
 	}
       }
       for(jj = 1; jj <= vpts; jj++){
-        /* compute mean composition and depth */
-	zzz = wmax = 0.0;
-	cc_loc = 0.0;
-	flav_loc = 0.0;
-	for(kk = 1; kk <= ends; kk++){/* the vpt takes care of averaging */
-	  cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
-	  weight = E->N.vpt[GNVINDEX(kk,jj)];
-	  zzz += zz[kk] * weight;
-	  flav_loc += tfn[kk] * E->N.vpt[GNVINDEX(kk, jj)];}
-      lith_thresh = E->viscosity.lith_comp_thresh;
-
-        /* if crustal tapering used, comp_thresh = f(z) */
-        if((E->viscosity.crust_cutoff == 2)&&(zzz > E->viscosity.crust_depth)&&(zzz < E->viscosity.crust_depth_lower)){
-           /* taper the crustal threshold to unobtainable */
-           crust_thresh = E->viscosity.crust_comp_thresh +(zzz - E->viscosity.crust_depth)/crust_twidth*(1.0-E->viscosity.crust_comp_thresh);
-        }else{
-           crust_thresh = E->viscosity.crust_comp_thresh;
-        }
-
-        lith_measure = cc_loc;
-	    crust_measure = flav_loc;
-        if(E->viscosity.const_lith_visc){
-	  if(lith_measure > E->viscosity.lith_comp_thresh){ 
-	     EEta[ (i-1)*vpts + jj ] = E->viscosity.lith_visc;}
-	}else{   
-	     vmean = exp(cc_loc  * logv[l2+1] + (1.0-cc_loc) * logv[l2]);
-	     EEta[ (i-1)*vpts + jj ] *= vmean;}
- 
-        if(E->viscosity.cdepv_for_flavor == 1){
-           /* viscosity decrease in crust */ 
-           if((crust_measure > crust_thresh)&&(crust_measure < 1.5)){
-               switch(E->viscosity.crust_cutoff){
-               case 0:             /* always reduce */
-                 EEta[ (i-1)*vpts + jj ] = E->viscosity.flavor_visc;
-                 break;
-               case 1:             /* reduce for regions shallower than crust_depth */
-                 if(zzz < E->viscosity.crust_depth){
-                   EEta[ (i-1)*vpts + jj ] = E->viscosity.flavor_visc;
-                 }
-                 break;
-               case 2:             /* reduce for regions shallowed than crust_depth_lower */
-                 if(zzz < E->viscosity.crust_depth_lower){
-                   EEta[ (i-1)*vpts + jj ] = E->viscosity.flavor_visc;
-                 }
-                 break;
-               default:
-                 myerror("crust_cutoff out of range",E);
-                 break;
-               }
-           }
-           
-           /* viscosity increase/decrease in flavor ~ 3 for additional flavor dependent viscosity */
-           if((E->viscosity.another_flavor == 1)&&(crust_measure > (E->viscosity.another_flavor_value-1.0))){
-              if(E->viscosity.const_flav_visc){
-                  EEta[ (i-1)*vpts + jj ] = E->viscosity.another_flavor_visc;}
-              else{ 
-                  EEta[ (i-1)*vpts + jj ] *= E->viscosity.another_flavor_visc;}}
-      
-  
-         } /* end flavors if statement */
-      } /* end jj loop (vpts) */
-    }  /* end i loop (nel) */
+	  /* compute mean composition  */
+	  cc_loc = 0.0;
+	  for(kk = 1; kk <= ends; kk++){/* the vpt takes care of averaging */
+	    cc_loc += CC[kk] * E->N.vpt[GNVINDEX(kk, jj)];
+	  }
+	  /* geometric mean of compositional viscosity prefactors */
+	  vmean = exp(cc_loc  * logv[l2+1] + (1.0-cc_loc) * logv[l2]);
+	  EEta[ (i-1)*vpts + jj ] *= vmean;
+	} /* end jj loop */
+    }
   }
   visited++;
 }
@@ -1932,9 +1682,8 @@ void evolve_tracer_strain(struct All_variables *E)
     if(eedot[i] > max_strain)
       max_strain = eedot[i];
   }
-  if(E->parallel.me == 0)
-    fprintf(stderr,"evolving strain with dt %g, min/max strain-rate: %g/%g ",
-	    E->advection.timestep,min_strain,max_strain);
+  if(E->parallel.me == 0)fprintf(stderr,"evolving strain with dt %g, min/max strain-rate: %g/%g ",
+				 E->advection.timestep,min_strain,max_strain);
   max_strain = -1e20;
   min_strain = 1e20;
   for(imark = 1; imark <= E->advection.markers; imark++){
@@ -1945,8 +1694,7 @@ void evolve_tracer_strain(struct All_variables *E)
     if(E->tracer_strain[imark] < min_strain)
       min_strain = E->tracer_strain[imark];
   }
-  if(E->parallel.me == 0)
-    fprintf(stderr,"min/max strain: %g/%g\n",min_strain,max_strain);
+  if(E->parallel.me == 0)fprintf(stderr,"min/max strain: %g/%g\n",min_strain,max_strain);
 
   free(eedot);
 }

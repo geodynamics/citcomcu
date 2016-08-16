@@ -120,6 +120,122 @@ void advection_diffusion_allocate_memory(struct All_variables *E)
 	return;
 }
 
+
+void PG_timestep_only_particles(struct All_variables *E)
+{
+        float T_interior1;
+        int iredo, i, psc_pass, count;
+        //float *DTdot, *Tdot1, *T1, T_maxvaried;
+
+        static int been_here = 0;
+        static int on_off = 0;
+        static int step_debug = 0;
+
+        //DTdot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+        //Tdot1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+        //T1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+
+        if(been_here++ == 0)
+        {
+        }
+
+        if(on_off == 0)
+        {
+          if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: std advect\n");
+                E->advection.timesteps++;
+                std_timestep(E);
+                E->advection.total_timesteps++;
+        }
+
+        if(on_off == 1)
+        {
+          if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: RK\n");
+                Runge_Kutta(E, E->C, E->V, on_off);
+        }
+        else if(on_off == 0)
+        {
+          if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: main\n");
+                //for(i = 1; i <= E->lmesh.nno; i++)
+                //{
+                //        T1[i] = E->T[i];
+                //        //Tdot1[i] = E->Tdot[i];         
+                //}
+
+                //T_maxvaried = 1.01;
+                //T_interior1 = Tmax(E, E->T);
+
+                E->advection.dt_reduced = 1.0;
+                E->advection.last_sub_iterations = 1;
+                E->advection.timestep *= E->advection.dt_reduced;
+
+                count = 0;
+
+                //do
+                ////{
+
+                //        E->advection.timestep *= E->advection.dt_reduced;
+
+                //        iredo = 0;
+
+                        //if(E->advection.ADVECTION)
+                        //{
+                          //if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect predict\n");
+                          //      predictor(E, E->T, E->Tdot);
+
+                                //for(psc_pass = 0; psc_pass < E->advection.temp_iterations; psc_pass++)
+                                //{
+                                //  if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect correct\n");
+                                //        pg_solver(E, E->T, E->Tdot, DTdot, E->V, E->convection.heat_sources, 1.0, 1, E->TB, E->node);
+                                //        corrector(E, E->T, E->Tdot, DTdot);
+                                //}
+                        //}
+                        //E->monitor.T_interior = Tmax(E, E->T);
+
+                        //if(E->monitor.T_interior / T_interior1 > T_maxvaried)
+                        //{
+                        //        for(i = 1; i <= E->lmesh.nno; i++)
+                        //        {
+                        //                E->T[i] = T1[i];
+                        //                E->Tdot[i] = Tdot1[i];
+                        //        }
+                        //        iredo = 1;
+                        //        E->advection.dt_reduced *= 0.5;
+                        //        E->advection.last_sub_iterations++;
+                        //}
+                        //if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: main iter %i\n",E->advection.last_sub_iterations);
+                //} while(iredo == 1 && E->advection.last_sub_iterations <= 5);
+
+
+                count++;
+
+                /* probably OK to comment out, but left in to be safe */
+                temperatures_conform_bcs(E);
+                /******************************************************/
+                
+                E->advection.last_sub_iterations = count;
+
+                if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: Euler %i\n",on_off);
+                Euler(E, E->C, E->V, on_off);
+                if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: Euler done\n");
+                E->monitor.elapsed_time += E->advection.timestep;
+        }                                                       /* end for on_off==0  */
+        if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: thermal\n");
+        thermal_buoyancy(E);
+ 
+        if(E->monitor.solution_cycles < E->advection.max_timesteps)
+                E->control.keep_going = 1;
+        else
+                E->control.keep_going = 0;
+
+        on_off = (on_off == 0) ? 1 : 0;
+
+        //free((void *)DTdot);            /* free memory for vel solver */
+        //free((void *)Tdot1);            /* free memory for vel solver */
+        //free((void *)T1);                       /* free memory for vel solver */
+
+        return;
+}
+
 void PG_timestep_particle(struct All_variables *E)
 {
 	float T_interior1;
@@ -547,7 +663,9 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
    Used to correct the Tdot term.
    =========================================  */
 
-void element_residual(struct All_variables *E, int el, struct Shape_function PG, float **vel, float *field, float *fielddot, struct SOURCES Q0, double Eres[9], double rtf[4][9], float diff, float **BC, unsigned int *FLAGS)
+void element_residual(struct All_variables *E, int el, struct Shape_function PG, float **vel, float *field, 
+		      float *fielddot, struct SOURCES Q0, double Eres[9], 
+		      double rtf[4][9], float diff, float **BC, unsigned int *FLAGS)
 {
 	//int i, j, a, k, node, nodes[5], d, aid, back_front, onedfns;
 	int i, j, a, k, node, nodes[5], aid, back_front, onedfns;
@@ -675,7 +793,7 @@ void element_residual(struct All_variables *E, int el, struct Shape_function PG,
 	if(FLAGS != NULL)
 	{
 		onedfns = 0;
-		for(a = 1; a <= ends; a++)
+		for(a = 1; a <= ends; a++){
 			if(FLAGS[E->ien[el].node[a]] & FBZ)
 			{
 				if(!onedfns++)
@@ -698,9 +816,13 @@ void element_residual(struct All_variables *E, int el, struct Shape_function PG,
 					back_front = dims;
 
 				for(j = 1; j <= onedvpoints[dims]; j++)
-					for(k = 1; k <= onedvpoints[dims]; k++)
-						Eres[a] += dGamma.vpt[GMVGAMMA(1 + back_front, j)] * E->M.vpt[GMVINDEX(aid, j)] * g_1d[j].weight[dims - 1] * BC[2][E->ien[el].node[a]] * E->M.vpt[GMVINDEX(k, j)];
+				  for(k = 1; k <= onedvpoints[dims]; k++){
+				    Eres[a] += dGamma.vpt[GMVGAMMA(1 + back_front, j)] * 
+				      E->M.vpt[GMVINDEX(aid, j)] * g_1d[j].weight[dims - 1] * 
+				      BC[3][E->ien[el].node[a]] * E->M.vpt[GMVINDEX(k, j)];
+				  }
 			}
+		}
 	}
 
 	return;

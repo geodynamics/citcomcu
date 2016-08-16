@@ -215,12 +215,12 @@ void node_locations(struct All_variables *E)
 			E->XP[2][k] = E->XX[E->mesh.levmax][2][1 + (k - 1) * E->lmesh.noz * E->lmesh.nox];
 		for(i = 1; i <= E->lmesh.nox; i++)
 			E->XP[1][i] = E->XX[E->mesh.levmax][1][1 + (i - 1) * E->lmesh.noz];
-		E->XG1[1] = 1.0e-6;
-		E->XG1[2] = 1.0e-6;
-		E->XG1[3] = 1.0e-6;
-		E->XG2[1] = E->mesh.layer[1] - 1.0e-6;
-		E->XG2[2] = E->mesh.layer[2] - 1.0e-6;
-		E->XG2[3] = E->mesh.layer[3] - 1.0e-6;
+		E->XG1[1] = CITCOM_TRACER_EPS_MARGIN;
+		E->XG1[2] = CITCOM_TRACER_EPS_MARGIN;
+		E->XG1[3] = CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[1] = E->mesh.layer[1] - CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[2] = E->mesh.layer[2] - CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[3] = E->mesh.layer[3] - CITCOM_TRACER_EPS_MARGIN;
 	}
 	else if(E->control.Rsphere)
 	{
@@ -232,12 +232,12 @@ void node_locations(struct All_variables *E)
 			E->XP[1][i] = E->SXX[E->mesh.levmax][1][1 + (i - 1) * E->lmesh.noz];
 
 
-		E->XG1[1] = E->sphere.ti * rad_conv + 1.0e-6;
-		E->XG1[2] = E->sphere.fi * rad_conv + 1.0e-6;
-		E->XG1[3] = E->sphere.ri + 1.0e-6;
-		E->XG2[1] = E->sphere.to * rad_conv - 1.0e-6;
-		E->XG2[2] = E->sphere.fo * rad_conv - 1.0e-6;
-		E->XG2[3] = E->sphere.ro - 1.0e-6;
+		E->XG1[1] = E->sphere.ti * rad_conv + CITCOM_TRACER_EPS_MARGIN;
+		E->XG1[2] = E->sphere.fi * rad_conv + CITCOM_TRACER_EPS_MARGIN;
+		E->XG1[3] = E->sphere.ri + CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[1] = E->sphere.to * rad_conv - CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[2] = E->sphere.fo * rad_conv - CITCOM_TRACER_EPS_MARGIN;
+		E->XG2[3] = E->sphere.ro - CITCOM_TRACER_EPS_MARGIN;
 	}
 
 	pre_interpolation(E);
@@ -433,6 +433,7 @@ void e2_to_nodes(struct All_variables *E, float *e2, float *e2n, int lev)
   
   return;
 }
+
 
 
 void p_to_centres(struct All_variables *E, float *PN, double *P, int lev)

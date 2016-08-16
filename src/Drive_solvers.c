@@ -118,12 +118,14 @@ void general_stokes_solver(struct All_variables *E)
   E->monitor.visc_iter_count = 0;
   
   do{
-    if(step_debug && (E->parallel.me==0))fprintf(stderr,"dealing with viscosity\n");
+    if(step_debug && (E->parallel.me==0))
+      fprintf(stderr,"dealing with viscosity\n");
     if(E->viscosity.update_allowed)
       get_system_viscosity(E, 1, E->EVI[E->mesh.levmax], E->VI[E->mesh.levmax]);
     
     construct_stiffness_B_matrix(E);
-    if(step_debug && (E->parallel.me==0))fprintf(stderr,"calling solver\n");
+    if(step_debug && (E->parallel.me==0))
+      fprintf(stderr,"calling solver\n");
 	
     solve_constrained_flow_iterative(E);
     
@@ -162,7 +164,11 @@ void general_stokes_solver(struct All_variables *E)
   return;
 }
 
+
 int need_to_iterate(struct All_variables *E){
+  if(E->control.force_initial_stokes_iteration && (E->monitor.solution_cycles == 0))
+    return 1;
+
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
   /* anisotropic viscosity */
   if(E->viscosity.allow_anisotropic_viscosity){

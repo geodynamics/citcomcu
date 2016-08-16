@@ -87,17 +87,37 @@ struct VISC_OPT
 	float freeze_value;
 
 	int MAX;
+        int FLAV_MAX;
 	float max_value;
+        float flav_max_value;
 	int MIN;
 	float min_value;
-
-	int SDEPV;
+        int composite;
+        float mantle_visc_factor;
+ 	int SDEPV;
 	float sdepv_misfit;
   int sdepv_rheology;
 	float sdepv_iter_damp;
 	int sdepv_normalize;
+    int crust_option;
 	float sdepv_expt[CITCOM_CU_VISC_MAXLAYER];
 	float sdepv_trns[CITCOM_CU_VISC_MAXLAYER];
+        float sdepv_trns_T;
+        float sdepv_trns_c;
+        float sdepv_trns_strain;
+        float bdepv_trns_c;
+        float sdepv_Ediff;
+        float sdepv_Edis;
+        float sdepv_Adiff;
+        float sdepv_Adis;
+        float sdepv_Vdiff;
+        float sdepv_Vdis;
+        float adiabatic_grad;
+        float crust_comp_thresh;
+        float lith_comp_thresh;
+        float crust_depth;
+        float crust_depth_lower;
+        int crust_cutoff;
   int sdepv_start_from_newtonian;
 
 	int TDEPV;
@@ -122,6 +142,8 @@ struct VISC_OPT
 	       lithostatic pressure. Caution: 0 might produce crap.
   */
   int BDEPV;
+  int adiabatic_T; 
+  int layered_mantle;
   float abyerlee[CITCOM_CU_VISC_MAXLAYER],bbyerlee[CITCOM_CU_VISC_MAXLAYER],
     lbyerlee[CITCOM_CU_VISC_MAXLAYER];
 
@@ -142,11 +164,24 @@ struct VISC_OPT
   int CDEPV;			/* composition dependent viscosity */
   int cdepv_absolute;		/* make the composition an absolute viscosity,
 				   not a prefactor */
+  int const_crust_visc;
+  int const_lith_visc;
+  int const_flav_visc;
+  int no_crust_buoy;
+  float crust_visc;
+  float lith_visc;
   float pre_comp[CITCOM_CU_VISC_MAXLAYER*2]; /* prefactors */
   int layer_pre_comp;
 
   int pdepv_for_flavor,pdepv_for_zero_comp;
-
+  int pdepv_for_unity_comp;
+  int cdepv_for_flavor;
+  int sdepv_for_zero_comp;
+  int another_flavor;
+  float flavor_visc;
+  float another_flavor_value;
+  float another_flavor_visc;
+   
 
 
 

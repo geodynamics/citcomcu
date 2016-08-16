@@ -147,135 +147,265 @@ void Euler(struct All_variables *E, float *C, float *V[4], int on_off)
  ================================================  */
 void transfer_markers_processors(struct All_variables *E, int on_off)
 {
-	//FILE *fp;
-	//char output_file[255];
+  //FILE *fp;
+  //char output_file[255];
   int i, proc, neighbor, no_transferred, no_received,asize,asizet;
+  
+  static int been = 0;
+  static int markers;
+  
+  if(been == 0){
 
-	static int been = 0;
-	static int markers;
+    markers = E->advection.markers / 10;
+    asize = (markers + 1) * (E->mesh.nsd * 2 );
+    asizet = (markers + 1) * (E->mesh.nsd * 2 + E->tracers_track_strain);
+    
+    if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
+      myerror("error, number of neighbors out of bounds",E);
+    for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++){
+      E->parallel.traces_transfer_index[neighbor] = (int *)safe_malloc((markers + 1) * sizeof(int));
+      E->RVV[neighbor] = (float *)safe_malloc(asizet * sizeof(int));
+      E->RXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
+      E->RINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
+      E->PVV[neighbor] = (float *)safe_malloc(asizet  * sizeof(int));
+      E->PXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
+      E->PINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
+      
+    }
+    E->traces_leave_index = (int *)safe_malloc((markers + 1) * sizeof(int));
+    been++;
+  }
+  
+  /* check which processor tracer will be moved to */
+  move_tracers_to_neighbors(E,on_off);
 
-	const int me = E->parallel.me;
+  // prepare for transfer 
+  no_transferred = 0;
+  for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++){
+    no_transferred += E->parallel.traces_transfer_number[neighbor];
+  }
+  
+  /* this is the bad routine!!! */
+  prepare_transfer_arrays(E);
 
+  exchange_number_rec_markers(E);
 
-	if(been == 0)
-	{
-	  markers = E->advection.markers / 10;
-	  asize = (markers + 1) * (E->mesh.nsd * 2 );
-	  asizet = (markers + 1) * (E->mesh.nsd * 2 + E->tracers_track_strain);
-
-	  if( E->parallel.no_neighbors >= MAX_NEIGHBORS)
-	    myerror("error, number of neighbors out of bounds",E);
-	  for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
-	    {
-	      E->parallel.traces_transfer_index[neighbor] = (int *)safe_malloc((markers + 1) * sizeof(int));
-	      E->RVV[neighbor] = (float *)safe_malloc(asizet * sizeof(int));
-	      E->RXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
-	      E->RINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
-	      E->PVV[neighbor] = (float *)safe_malloc(asizet  * sizeof(int));
-	      E->PXX[neighbor] = (CITCOM_XMC_PREC *)safe_malloc(asize * sizeof(CITCOM_XMC_PREC));
-	      E->PINS[neighbor] = (int *)safe_malloc((markers + 1) * (2 + E->tracers_add_flavors) * sizeof(int));
-	      
-	    }
-	  E->traces_leave_index = (int *)safe_malloc((markers + 1) * sizeof(int));
-	  been++;
-	}
-	
-	for(neighbor = 0; neighbor <= E->parallel.no_neighbors; neighbor++)
-		E->parallel.traces_transfer_number[neighbor] = 0;
-	if(on_off == 1)
-	{							// use XMC
-		for(i = 1; i <= E->advection.markers; i++)
-		{
-			E->traces_leave[i] = 0;
-			if(E->Element[E->CElement[i]] & SIDEE)
-			{
-				E->XMC[1][i] = min(E->XMC[1][i], E->XG2[1]);
-				E->XMC[1][i] = max(E->XMC[1][i], E->XG1[1]);
-				E->XMC[2][i] = min(E->XMC[2][i], E->XG2[2]);
-				E->XMC[2][i] = max(E->XMC[2][i], E->XG1[2]);
-				E->XMC[3][i] = min(E->XMC[3][i], E->XG2[3]);
-				E->XMC[3][i] = max(E->XMC[3][i], E->XG1[3]);
-
-				proc = locate_processor(E, E->XMC[1][i], E->XMC[2][i], E->XMC[3][i]);
-
-				if(proc != me)
-				{
-					E->traces_leave[i] = 1;
-					neighbor = E->parallel.neighbors_rev[proc];
-					E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
-					E->parallel.traces_transfer_number[neighbor]++;
-				}
-			}
-
-		}
-	}
-
-	else if(on_off == 0)
-	{							// use XMCpred
-
-		for(i = 1; i <= E->advection.markers; i++)
-		{
-			E->traces_leave[i] = 0;
-
-			if(E->Element[E->CElement[i]] & SIDEE)
-			{
-				E->XMCpred[1][i] = min(E->XMCpred[1][i], E->XG2[1]);
-				E->XMCpred[1][i] = max(E->XMCpred[1][i], E->XG1[1]);
-				E->XMCpred[2][i] = min(E->XMCpred[2][i], E->XG2[2]);
-				E->XMCpred[2][i] = max(E->XMCpred[2][i], E->XG1[2]);
-				E->XMCpred[3][i] = min(E->XMCpred[3][i], E->XG2[3]);
-				E->XMCpred[3][i] = max(E->XMCpred[3][i], E->XG1[3]);
-
-				proc = locate_processor(E, E->XMCpred[1][i], E->XMCpred[2][i], E->XMCpred[3][i]);
-
-				if(proc != me)
-				{
-					E->traces_leave[i] = 1;
-					neighbor = E->parallel.neighbors_rev[proc];
-					E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
-					E->parallel.traces_transfer_number[neighbor]++;
-				}
-
-			}
-		}
-	}
-
-	// prepare for transfer 
-	
-	no_transferred = 0;
-	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
-	{
-		no_transferred += E->parallel.traces_transfer_number[neighbor];
-	}
-
-	/* this is the bad routine!!! */
-	prepare_transfer_arrays(E);
-	
-
-	exchange_number_rec_markers(E);
-
-	no_received = 0;
-	for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++)
-	{
-		no_received += E->parallel.traces_receive_number[neighbor];
-	}
-
-	E->advection.markers1 = E->advection.markers + no_received - no_transferred;
-
-	if(E->advection.markers1 > E->advection.markers_uplimit)
-	{
-		fprintf(E->fp, "number of markers over the limit %d\n", E->advection.markers1);
-		fflush(E->fp);
-		parallel_process_termination();
-	}
-
-	exchange_markers(E);
-
-	unify_markers_array(E, no_transferred, no_received);
-
-
-	return;
+  no_received = 0;
+  for(neighbor = 1; neighbor <= E->parallel.no_neighbors; neighbor++){
+    no_received += E->parallel.traces_receive_number[neighbor];
+  }
+  
+  E->advection.markers1 = E->advection.markers + no_received - no_transferred;
+  
+  if(E->advection.markers1 > E->advection.markers_uplimit){
+    fprintf(E->fp, "number of markers over the limit %d\n", E->advection.markers1);
+    fflush(E->fp);
+    parallel_process_termination();
+  }
+  
+  exchange_markers(E);
+  
+  unify_markers_array(E, no_transferred, no_received);
+  
+  
+  return;
 }
+
+/* 
+   extracted move around the tracers routines 
+   for both periodic and reflective
+*/
+void move_tracers_to_neighbors(struct All_variables *E, int on_off)
+{
+
+  int neighbor,i,proc;
+  const int me = E->parallel.me;
+  CITCOM_XMC_PREC xloc,yloc,zloc;
+  static int been_here=0;
+  static CITCOM_XMC_PREC loc_xg1[3],loc_xg2[3],loc_xrange[3];
+  if(!been_here){
+    /* 
+       set up geometric bounds slightly differently for periodic BCs
+       the XG1/2 arrays have a CITCOM_TRACER_EPS_MARGIN margin by
+       default, seems like a bad idea for periodic BCs
+       
+     */
+    if(E->mesh.periodic_x){	/* use exact values */
+      if(E->control.CART3D){	
+	loc_xg1[1] = 0.0;
+	loc_xg2[1] = E->mesh.layer[1];
+      }else{
+	loc_xg1[1] = E->sphere.ti * M_PI/180.0; 
+	loc_xg2[1] = E->sphere.to * M_PI/180.0;
+      }
+    }else{			/* use the values that have a margin
+				   subtracted */
+      loc_xg1[1] = E->XG1[1];
+      loc_xg2[1] = E->XG2[1];
+    }
+    if(E->mesh.periodic_y){	/* use exact values */
+      if(E->control.CART3D){	
+	loc_xg1[2] = 0.0;
+	loc_xg2[2] = E->mesh.layer[2];
+      }else{
+	loc_xg1[2] = E->sphere.fi * M_PI/180.0; 
+	loc_xg2[2] = E->sphere.fo * M_PI/180.0;
+      }
+    }else{			/* use the values that have a margin
+				   subtracted */
+      loc_xg1[2] = E->XG1[2];
+      loc_xg2[2] = E->XG2[2];
+    }
+    /* range to shuffle, if needed */
+    loc_xrange[1] = loc_xg2[1]-loc_xg1[1];
+    loc_xrange[2] = loc_xg2[2]-loc_xg1[2];
+    been_here = 1;
+    /* end of init branch */
+  }
+  /* 
+     reset the number of transfers 
+  */
+  for(neighbor = 0; neighbor <= E->parallel.no_neighbors; neighbor++)
+    E->parallel.traces_transfer_number[neighbor] = 0;
+
+  if(E->mesh.periodic_x || E->mesh.periodic_y){
+    /* 
+       this branch allows for periodic boundary conditions 
+    */
+    if(on_off == 1){// use XMC
+      for(i = 1; i <= E->advection.markers; i++){
+	E->traces_leave[i] = 0;
+	
+	if(E->Element[E->CElement[i]] & SIDEE){
+	  if(E->mesh.periodic_x){ /* let's see if this works */
+	    if(E->XMC[1][i] > loc_xg2[1])
+	      E->XMC[1][i] -= loc_xrange[1];
+	    if(E->XMC[1][i] < loc_xg1[1])
+	      E->XMC[1][i] += loc_xrange[1];
+	  }else{
+	    E->XMC[1][i] = min(E->XMC[1][i], E->XG2[1]);
+	    E->XMC[1][i] = max(E->XMC[1][i], E->XG1[1]);
+	  }
+	  if(E->mesh.periodic_y){
+	    if(E->XMC[2][i] > loc_xg2[2])
+	      E->XMC[2][i] -= loc_xrange[2];
+	    if(E->XMC[2][i] < loc_xg1[2])
+	      E->XMC[2][i] += loc_xrange[2];
+	  }else{
+	    E->XMC[2][i] = min(E->XMC[2][i], E->XG2[2]);
+	    E->XMC[2][i] = max(E->XMC[2][i], E->XG1[2]);
+	  }
+	  E->XMC[3][i] = min(E->XMC[3][i], E->XG2[3]);
+	  E->XMC[3][i] = max(E->XMC[3][i], E->XG1[3]);
+	  
+	  proc = locate_processor(E, E->XMC[1][i], E->XMC[2][i], E->XMC[3][i]);
+	  
+	  if(proc != me){
+	    E->traces_leave[i] = 1;
+	    neighbor = E->parallel.neighbors_rev[proc];
+	    E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
+	    E->parallel.traces_transfer_number[neighbor]++;
+	  }
+	}
+      }	/* end marker loop */
+      /* end on_off == 1 */
+    }else if(on_off == 0){
+      //
+      // same as above, but use XMCpred
+      //
+      for(i = 1; i <= E->advection.markers; i++){
+	E->traces_leave[i] = 0;
+	if(E->Element[E->CElement[i]] & SIDEE){
+
+	  if(E->mesh.periodic_x){ // same as above
+	    if(E->XMCpred[1][i] > loc_xg2[1])
+	      E->XMCpred[1][i] -= loc_xrange[1];
+	    if(E->XMCpred[1][i] < loc_xg1[1])
+	      E->XMCpred[1][i] += loc_xrange[1];
+	  }else{
+	    E->XMCpred[1][i] = min(E->XMCpred[1][i], E->XG2[1]);
+	    E->XMCpred[1][i] = max(E->XMCpred[1][i], E->XG1[1]);
+	  }
+	  if(E->mesh.periodic_y){
+	    if(E->XMCpred[2][i] > loc_xg2[2])
+	      E->XMCpred[2][i] -= loc_xrange[2];
+	    if(E->XMCpred[2][i] < loc_xg1[2])
+	      E->XMCpred[2][i] += loc_xrange[2];
+	  }else{
+	    E->XMCpred[2][i] = min(E->XMCpred[2][i], E->XG2[2]);
+	    E->XMCpred[2][i] = max(E->XMCpred[2][i], E->XG1[2]);
+	  }
+	  E->XMCpred[3][i] = min(E->XMCpred[3][i], E->XG2[3]);
+	  E->XMCpred[3][i] = max(E->XMCpred[3][i], E->XG1[3]);
+	  
+	  proc = locate_processor(E, E->XMCpred[1][i], E->XMCpred[2][i], E->XMCpred[3][i]);
+	  
+	  if(proc != me){
+	    E->traces_leave[i] = 1;
+	    neighbor = E->parallel.neighbors_rev[proc];
+	    E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
+	    E->parallel.traces_transfer_number[neighbor]++;
+	  }
+	}
+      }	/* end marker loop */
+    } /* end on_off = 0 */
+    
+    /* end periodic branch */
+  }else{
+    /* 
+       this is the regular branch wihtout periodic BCs 
+    */
+    if(on_off == 1){// use XMC
+      for(i = 1; i <= E->advection.markers; i++){
+	E->traces_leave[i] = 0;
+	if(E->Element[E->CElement[i]] & SIDEE){
+	  
+	  E->XMC[1][i] = min(E->XMC[1][i], E->XG2[1]);
+	  E->XMC[1][i] = max(E->XMC[1][i], E->XG1[1]);
+	  E->XMC[2][i] = min(E->XMC[2][i], E->XG2[2]);
+	  E->XMC[2][i] = max(E->XMC[2][i], E->XG1[2]);
+	  E->XMC[3][i] = min(E->XMC[3][i], E->XG2[3]);
+	  E->XMC[3][i] = max(E->XMC[3][i], E->XG1[3]);
+	  
+	  proc = locate_processor(E, E->XMC[1][i], E->XMC[2][i], E->XMC[3][i]);
+	  
+	  if(proc != me){
+	    E->traces_leave[i] = 1;
+	    neighbor = E->parallel.neighbors_rev[proc];
+	    E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
+	    E->parallel.traces_transfer_number[neighbor]++;
+	  }
+	}
+      }
+    }else if(on_off == 0){// same as above, but use XMCpred
+      
+      for(i = 1; i <= E->advection.markers; i++){
+	E->traces_leave[i] = 0;
+	
+	if(E->Element[E->CElement[i]] & SIDEE){
+	  E->XMCpred[1][i] = min(E->XMCpred[1][i], E->XG2[1]);
+	  E->XMCpred[1][i] = max(E->XMCpred[1][i], E->XG1[1]);
+	  E->XMCpred[2][i] = min(E->XMCpred[2][i], E->XG2[2]);
+	  E->XMCpred[2][i] = max(E->XMCpred[2][i], E->XG1[2]);
+	  E->XMCpred[3][i] = min(E->XMCpred[3][i], E->XG2[3]);
+	  E->XMCpred[3][i] = max(E->XMCpred[3][i], E->XG1[3]);
+	  
+	  proc = locate_processor(E, E->XMCpred[1][i], E->XMCpred[2][i], E->XMCpred[3][i]);
+	  
+	  if(proc != me){
+	    E->traces_leave[i] = 1;
+	    neighbor = E->parallel.neighbors_rev[proc];
+	    E->parallel.traces_transfer_index[neighbor][E->parallel.traces_transfer_number[neighbor]] = i;
+	    E->parallel.traces_transfer_number[neighbor]++;
+	  }
+	  
+	}
+      }
+    }
+    /* end regular branch */
+  }
+}
+  
 
 void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
@@ -476,40 +606,46 @@ void prepare_transfer_arrays(struct All_variables *E)
 }
 
 // like get_element, assuming uniform mesh in x and y
-
-int locate_processor(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_PREC XMC2, CITCOM_XMC_PREC XMC3)
+int locate_processor(struct All_variables *E, 
+		     CITCOM_XMC_PREC XMC1, 
+		     CITCOM_XMC_PREC XMC2, 
+		     CITCOM_XMC_PREC XMC3)
 {
-	int proc, m1, m2, m3;
-	const int npx = E->parallel.nprocx - 1;
-	const int npy = E->parallel.nprocy - 1;
-	const int npz = E->parallel.nprocz - 1;
-
-	if(XMC1 > E->XP[1][E->lmesh.nox])
-		m1 = min(npx, E->parallel.me_loc[1] + 1);
-	else if(XMC1 < E->XP[1][1])
-		m1 = max(0, E->parallel.me_loc[1] - 1);
-	else
-		m1 = E->parallel.me_loc[1];
-
-	if(XMC2 > E->XP[2][E->lmesh.noy])
-		m2 = min(npy, E->parallel.me_loc[2] + 1);
-	else if(XMC2 < E->XP[2][1])
-		m2 = max(0, E->parallel.me_loc[2] - 1);
-	else
-		m2 = E->parallel.me_loc[2];
-
-	if(XMC3 > E->XP[3][E->lmesh.noz])
-		m3 = min(npz, E->parallel.me_loc[3] + 1);
-	else if(XMC3 < E->XP[3][1])
-		m3 = max(0, E->parallel.me_loc[3] - 1);
-	else
-		m3 = E->parallel.me_loc[3];
-
-	proc = m3 + m1 * E->parallel.nprocz + m2 * E->parallel.nprocxz;
-
-	return (proc);
+  int proc, m1, m2, m3;
+  const int npx = E->parallel.nprocx - 1;
+  const int npy = E->parallel.nprocy - 1;
+  const int npz = E->parallel.nprocz - 1;
+  
+  if(XMC1 > E->XP[1][E->lmesh.nox])
+    m1 = min(npx, E->parallel.me_loc[1] + 1);
+  else if(XMC1 < E->XP[1][1])
+    m1 = max(0, E->parallel.me_loc[1] - 1);
+  else
+    m1 = E->parallel.me_loc[1];
+  
+  if(XMC2 > E->XP[2][E->lmesh.noy])
+    m2 = min(npy, E->parallel.me_loc[2] + 1);
+  else if(XMC2 < E->XP[2][1])
+    m2 = max(0, E->parallel.me_loc[2] - 1);
+  else
+    m2 = E->parallel.me_loc[2];
+  
+  if(XMC3 > E->XP[3][E->lmesh.noz])
+    m3 = min(npz, E->parallel.me_loc[3] + 1);
+  else if(XMC3 < E->XP[3][1])
+    m3 = max(0, E->parallel.me_loc[3] - 1);
+  else
+    m3 = E->parallel.me_loc[3];
+  
+  proc = m3 + m1 * E->parallel.nprocz + m2 * E->parallel.nprocxz;
+#ifdef DEBUG
+  if((proc < 0) || (proc >= E->parallel.nproc)){
+    fprintf(stderr,"cpu %i m %i %i %i nproc %i loc %g %g %g\n",E->parallel.me,m1,m2,m3,proc,XMC1,XMC2,XMC3);
+    myerror("out of bounds in locate processor",E);
+  }
+#endif
+  return (proc);
 }
-
 
 
 /* 
@@ -745,7 +881,7 @@ void get_CF_from_markers(struct All_variables *E, int **CF)
 }
 /* 
 
-obtain total strain from markers and assign to nodes
+   obtain strain from markers and assign to all nodes
 
 */
 void get_strain_from_markers(struct All_variables *E, float *strain)
@@ -915,75 +1051,106 @@ for 2D, we do not want to implement this yet
 
 /* ================================================ 
   works for uniform mesh in x and y, but unlimited in z
+
+  (has to be in the right processor)
+
  ================================================ */
 
 int get_element(struct All_variables *E, CITCOM_XMC_PREC XMC1, CITCOM_XMC_PREC XMC2, CITCOM_XMC_PREC XMC3, double dX[4])
 {
-	int el;
-	int i, i1, j1;
-	//int done, i, i1, i2, ii, j, j1, j2, jj, el;
+  int el;
+  int i, i1, j1;
+  //int done, i, i1, i2, ii, j, j1, j2, jj, el;
+  
+  const int nox = E->lmesh.nox;
+  const int noy = E->lmesh.noy;
+  const int noz = E->lmesh.noz;
+  const int elx = E->lmesh.elx;
+  const int ely = E->lmesh.ely;
+  const int elz = E->lmesh.elz;
+  const int elz_elx =  E->lmesh.elz * E->lmesh.elx;
+  static int been_here = 0;
+  static double dx, dy, dzz;
+#ifdef DEBUG
+  i = locate_processor(E,XMC1, XMC2,XMC3);
+  if(i != E->parallel.me){
+    fprintf(stderr,"cpu %i: tracer at %g %g %g should be in processor %i\n",
+	    E->parallel.me, XMC1,XMC2,XMC3,i);
+    myerror("wrong processor error in get_element",E);
+  }
+#endif 
+  if(been_here++ == 0){
 
-	const int nox = E->lmesh.nox;
-	const int noy = E->lmesh.noy;
-	const int noz = E->lmesh.noz;
-	const int elx = E->lmesh.elx;
-	const int ely = E->lmesh.ely;
-	const int elz = E->lmesh.elz;
-	static int been_here = 0;
-	static double dx, dy, dzz;
+    dx = (E->XP[1][nox] - E->XP[1][1]) / elx;
+    dy = (E->XP[2][noy] - E->XP[2][1]) / ely;
+    dzz = (E->XP[3][noz] - E->XP[3][1]) / (E->lmesh.rnoz - 1);
 
-	if(been_here++ == 0)
-	{
-		dx = (E->XP[1][nox] - E->XP[1][1]) / elx;
-		dy = (E->XP[2][noy] - E->XP[2][1]) / ely;
-		dzz = (E->XP[3][noz] - E->XP[3][1]) / (E->lmesh.rnoz - 1);
-		for(i = 1; i <= nox; i++)
-			fprintf(E->fp, "%lf\n", E->XP[1][i]);
-		for(i = 1; i <= noy; i++)
-			fprintf(E->fp, "%lf\n", E->XP[2][i]);
-		for(i = 1; i <= noz; i++)
-			fprintf(E->fp, "%lf\n", E->XP[3][i]);
-		fprintf(E->fp, "%lf %lf\n", E->XG1[1], E->XG2[1]);
-		fprintf(E->fp, "%lf %lf\n", E->XG1[2], E->XG2[2]);
-		fprintf(E->fp, "%lf %lf\n", E->XG1[3], E->XG2[3]);
-		fflush(E->fp);
-	}
+    for(i = 1; i <= nox; i++)
+      fprintf(E->fp, "%lf\n", E->XP[1][i]);
 
-	E->advection.markerIX = min((XMC1 - E->XP[1][1]) / dx + 1, elx);
-	dX[1] = XMC1 - E->XP[1][E->advection.markerIX];
-	E->advection.markerIY = min((XMC2 - E->XP[2][1]) / dy + 1, ely);
-	dX[2] = XMC2 - E->XP[2][E->advection.markerIY];
+    for(i = 1; i <= noy; i++)
+      fprintf(E->fp, "%lf\n", E->XP[2][i]);
+    
+    for(i = 1; i <= noz; i++)
+      fprintf(E->fp, "%lf\n", E->XP[3][i]);
 
-	i1 = min((XMC3 - E->XP[3][1]) / dzz + 1, E->lmesh.rnoz - 1);
-	E->advection.markerIZ = E->RG[3][i1];
+    fprintf(E->fp, "%lf %lf\n", E->XG1[1], E->XG2[1]);
+    fprintf(E->fp, "%lf %lf\n", E->XG1[2], E->XG2[2]);
+    fprintf(E->fp, "%lf %lf\n", E->XG1[3], E->XG2[3]);
+    fflush(E->fp);
+  }
+#ifdef DEBUG
+  if((XMC1 < E->XP[1][1]) || (XMC1 > E->XP[1][nox]) || 
+     (XMC2 < E->XP[2][1]) || (XMC2 > E->XP[2][noy]) || 
+     (XMC3 < E->XP[3][1]) || (XMC3 > E->XP[3][noz])){
+    fprintf(stderr,"cpu %i: x %g < %g < %g y %g < %g < %g z %g < %g < %g \n",
+	    E->parallel.me,
+	    E->XP[1][1],XMC1,E->XP[1][nox],
+	    E->XP[2][1],XMC2,E->XP[2][noy],
+	    E->XP[3][1],XMC3,E->XP[3][noz]);
+    myerror("out of bounds error 1 in get_element",E);
+  }
+#endif
+ 
 
-	if(E->advection.markerIZ)
-	{
-		dX[3] = XMC3 - E->XP[3][E->advection.markerIZ];
-	}
-	else
-	{
-		for(i = 0; i <= 2; i = i + 2)
-		{
-			j1 = E->RG[3][i1 - 1 + i];
-			if(XMC3 >= E->XP[3][j1] && XMC3 <= E->XP[3][j1 + 1])
-			{
-				E->advection.markerIZ = j1;
-				dX[3] = XMC3 - E->XP[3][E->advection.markerIZ];
-			}
-		}
-	}
+  E->advection.markerIX = min((XMC1 - E->XP[1][1]) / dx + 1, elx);
+  dX[1] = XMC1 - E->XP[1][E->advection.markerIX];
+  E->advection.markerIY = min((XMC2 - E->XP[2][1]) / dy + 1, ely);
+  dX[2] = XMC2 - E->XP[2][E->advection.markerIY];
+  
+  i1 = min((XMC3 - E->XP[3][1]) / dzz + 1, E->lmesh.rnoz - 1);
+  E->advection.markerIZ = E->RG[3][i1];
+  
+  if(E->advection.markerIZ){
+    dX[3] = XMC3 - E->XP[3][E->advection.markerIZ];
+  }else{
+    for(i = 0; i <= 2; i = i + 2){
+      j1 = E->RG[3][i1 - 1 + i];
+      if(XMC3 >= E->XP[3][j1] && XMC3 <= E->XP[3][j1 + 1]){
+	E->advection.markerIZ = j1;
+	dX[3] = XMC3 - E->XP[3][E->advection.markerIZ];
+      }
+    }
+  }
 
-	el = E->advection.markerIZ + (E->advection.markerIX - 1) * elz + (E->advection.markerIY - 1) * elz * elx;
+  el = E->advection.markerIZ + (E->advection.markerIX - 1) * elz + (E->advection.markerIY - 1) * elz_elx;
+#ifdef DEBUG
+  if((el<1) || (el > E->lmesh.nel)){
+    fprintf(stderr,"cpu %i i: %i %i %i bounds: %i %i %i total %i el %i\n",
+	    E->parallel.me,E->advection.markerIX ,E->advection.markerIY,E->advection.markerIZ,
+	    E->lmesh.elx,E->lmesh.ely,E->lmesh.elz,
+	    E->lmesh.nel,el);
+    myerror("out of bounds error 2 in get_element",E);
+  }
+#endif
 
-	if(!E->advection.markerIZ)
-	{
-		fprintf(E->fp, "!!!overflow %g %g %g %d\n", XMC1, XMC2, XMC3, el);
-		fflush(E->fp);
-		parallel_process_termination();
-	}
-
-	return (el);
+  if(!E->advection.markerIZ){
+    fprintf(E->fp, "!!!overflow %g %g %g %d\n", XMC1, XMC2, XMC3, el);
+    fflush(E->fp);
+    parallel_process_termination();
+  }
+  
+  return (el);
 }
 
 

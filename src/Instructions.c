@@ -427,7 +427,9 @@ void global_default_values(struct All_variables *E)
 	E->control.verbose = 0;		/* debugging/profiles */
 	E->control.stokes = 0;
 	E->control.restart = 0;
-
+	E->control.add_init_t_gradient = 1;
+	E->control.force_initial_stokes_iteration = 0; /* 1 might be better setting.. */
+	
 	/* SECOND: values for which an obvious default setting is useful */
 
 	E->control.ORTHO = 1;		/* for orthogonal meshes by default */
@@ -455,6 +457,7 @@ void global_default_values(struct All_variables *E)
 
 	E->control.composition = 0;
 	E->control.composition_neutralize_buoyancy = 0;
+	E->control.composition_init_checkerboard = 0;
 
 	E->sphere.vtk_base_init = 0;
 
@@ -490,7 +493,10 @@ void global_default_values(struct All_variables *E)
 	E->control.vprecondition = 1;
 
 	E->mesh.toptbc = 1;			/* fixed t */
-	E->mesh.bottbc = 1;
+	E->mesh.bottbc = 1;			/* 1: temp 2: temp and ggrd override (?)
+						   0: flux 
+						   -1: variable flux
+						*/
 	E->mesh.topvbc = 0;			/* stress */
 	E->mesh.botvbc = 0;
 	E->mesh.sidevbc = 0;
@@ -525,7 +531,7 @@ void global_default_values(struct All_variables *E)
 	E->data.melt_density = 2800.0;
 	E->data.permeability = 3.0e-10;
 	E->data.density_above = 1030.0;	/* sea water */
-	E->data.gas_const = 8.3;
+	E->data.gas_const = 8.314;
 	E->data.surf_heat_flux = 4.4e-2;
 	E->data.grav_const = 6.673e-11;
 	E->data.surf_temp = 0.0;
@@ -787,7 +793,10 @@ void read_initial_settings(struct All_variables *E)
 	/* control of VTK type of gzdir output */
 	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"on",m);
 	input_boolean("vtk_e2_out",&(E->control.vtk_e2_out),"off",m);
-	input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
+	input_boolean("vtk_ddpart_out",&(E->control.vtk_ddpart_out),"off",m);
+        input_boolean("vtk_stress2_out",&(E->control.vtk_stress2_out),"on",m);	
+        input_boolean("vtk_stress_3D",&(E->control.vtk_stress_3D),"off",m);
+        input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
 	input_boolean("vtk_viscosity_out",&(E->control.vtk_viscosity_out),"on",m);
 
 	
@@ -816,6 +825,8 @@ void read_initial_settings(struct All_variables *E)
 	input_boolean("regular_grid", &(E->control.ORTHOZ), "off", m);
 
 	input_int("stokes_flow_only", &(E->control.stokes), "0", m);
+	input_boolean("force_initial_stokes_iteration", 
+		      &(E->control.force_initial_stokes_iteration), "off", m);
 
 	input_int("freeze_surface_at_step",&(E->control.freeze_surface_at_step),"-9999999",m);
 
@@ -831,6 +842,7 @@ void read_initial_settings(struct All_variables *E)
 	}
 
 	input_boolean("verbose", &(E->control.verbose), "off", m);
+	input_boolean("debug", &(E->debug), "off", m);
 	input_boolean("see_convergence", &(E->control.print_convergence), "off", m);
 	input_boolean("COMPRESS", &(E->control.COMPRESS), "on", m);
 	input_float("sobtol", &(E->control.sob_tolerance), "0.0001", m);
@@ -915,6 +927,10 @@ void read_initial_settings(struct All_variables *E)
 	input_string("ggrd_mat_file",E->control.ggrd.mat_file,"",m); /* file to read prefactors from */
 	input_string("ggrd_mat_depth_file",
 		     E->control.ggrd_mat_depth_file,"_i_do_not_exist_",m); 
+
+	input_int("ggrd_vtop_control",&(E->control.ggrd.vtop_control),"0",m); 
+	input_string("ggrd_vtop_dir",E->control.ggrd.vtop_dir,"",m); /* file to read prefactors from */
+	
 #endif
 
 	E->control.transT670 = 1500;
@@ -1077,7 +1093,7 @@ void read_initial_settings(struct All_variables *E)
 	input_float("permeability", &(E->data.permeability), "3.0e-10", m);
 
 	/* scaling */
-	E->monitor.time_scale = pow(E->monitor.length_scale, 2.0) /E->data.therm_diff;
+	E->monitor.time_scale = pow(E->monitor.length_scale, 2.0)/E->data.therm_diff;
 	/* million years */
 	E->monitor.time_scale_ma = E->monitor.time_scale/(3600.0 * 24.0 * 365.25 * 1.0e6);
 	

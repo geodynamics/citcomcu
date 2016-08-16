@@ -49,6 +49,173 @@
    Initialization of fields .....
    =============================== */
 
+
+/*  
+
+read surface boundary conditions from netcdf grd files
+
+if topvbc=1, will apply to velocities
+if topvbc=0, will apply to tractions
+
+*/
+
+void ggrd_read_vtop_from_file(struct All_variables *E, int is_geographic)
+{
+  MPI_Status mpi_stat;
+  int mpi_rc;
+  int mpi_inmsg, mpi_success_message = 1;
+  int m,el,i,k,ind,nodel,j,lv, verbose;
+  int nox,noz,noy,noxl,noyl,nozl,lselect,idim,noxnoz;
+  char gmt_string[10],char_dummy;
+  int shift_to_pos_lon = 0;
+  static int lc =0;			/* only for debugging */
+  double vin1[2],vin2[2],vscale,rout[3],cutoff,v[3],vx[4];
+  char tfilename1[1000],tfilename2[1000];
+  static int pole_warned = FALSE, mode_warned = FALSE;
+  ggrd_boolean use_nearneighbor;
+  const int dims=E->mesh.nsd;
+  FILE *in;
+#ifdef USE_GZDIR
+  gzFile *fp1;
+#else
+  myerror("ggrd_read_vtop_from_file needs to use GZDIR (set USE_GZDIR flag) because of code output",E);
+  if(!is_geographic)
+    myerror("ggrd_read_vtop_from_file: Cartesian not implemented",E);
+#endif
+
+  myerror("ggrd_read_vtop_from_file: not implemented/working yet",E);
+
+  lv = E->mesh.levmax;
+  /* number of nodes for this processor at highest MG level */
+  nox = E->lmesh.NOX[lv];
+  noz = E->lmesh.NOZ[lv];
+  noy = E->lmesh.NOY[lv];
+
+  noxnoz = nox*noz;
+
+  use_nearneighbor = FALSE;
+  
+  verbose = TRUE;
+
+  /* 
+     velocity scaling, assuming input is cm/yr
+  */
+  vscale = 1/(E->monitor.velo_scale*(100*365.25*24*3600));
+  if(verbose)
+    fprintf(stderr,"ggrd_read_vtop_from_file: CPU %i expecting velocity grids in cm/yr, scaling factor: %g\n",vscale,E->parallel.me);
+
+  /*
+    if we have not initialized the time history structure, do it now
+    if this file is not found, will use constant velocities
+  */
+  if(!E->control.ggrd.time_hist.init){/* init times, if available*/
+    ggrd_init_thist_from_file(&E->control.ggrd.time_hist,E->control.ggrd.time_hist.file,
+			      TRUE,(E->parallel.me == 0));
+    E->control.ggrd.time_hist.init = 1;
+  }
+  if(!E->control.ggrd.vtop_control_init){
+    /* 
+       read in grd files (only needed for top processors, really, but
+       leave as is for now
+    */
+    if(verbose)
+      fprintf(stderr,"ggrd_read_vtop_from_file: initializing ggrd velocities/tractions for %s setup\n",
+	      is_geographic?("geographic"):("Cartesian"));
+    if(is_geographic){		/* decide on GMT flag */
+      sprintf(gmt_string,GGRD_GMT_GEOGRAPHIC_STRING); /* geographic */
+    }else
+      sprintf(gmt_string,"");
+    /*
+      
+      initialization steps
+      
+    */
+    /*
+      read in the velocity/traction file(s)
+    */
+    E->control.ggrd.svt = (struct  ggrd_gt *)
+      calloc(E->control.ggrd.time_hist.nvtimes,sizeof(struct ggrd_gt));
+    E->control.ggrd.svp = (struct  ggrd_gt *)
+      calloc(E->control.ggrd.time_hist.nvtimes,sizeof(struct ggrd_gt));
+    /* for detecting the actual max of the velocities */
+    E->control.ggrd.svt->bandlim = E->control.ggrd.svp->bandlim = 1e6;
+    /* 
+       
+       by default, all velocity/traction grids will be stored in memory, this
+       may or may not be ideal
+       
+    */
+    sprintf(tfilename1,"%s/vt.grd",E->control.ggrd.vtop_dir);
+    sprintf(tfilename2,"%s/vp.grd",E->control.ggrd.vtop_dir);
+    
+    /* 
+       actual velocities  in grd form
+    */
+    if(ggrd_grdtrack_init_general(FALSE,tfilename1,&char_dummy, /* theta */
+				  gmt_string,(E->control.ggrd.svt),verbose,FALSE,
+				  use_nearneighbor))
+      myerror("ggrd init error vt",E);
+    if(ggrd_grdtrack_init_general(FALSE,tfilename2,&char_dummy, /* phi */
+				  gmt_string,(E->control.ggrd.svp),verbose,FALSE,
+				  use_nearneighbor))
+      myerror("ggrd init error vp",E); 
+    if(verbose){
+      fprintf(stderr,"ggrd_read_vtop_from_file: done with ggrd vtop BC init, %i timesteps, vp band lim max: %g\n",
+	      E->control.ggrd.time_hist.nvtimes,E->control.ggrd.svt->fmaxlim[0]);
+    }
+    /* 
+       
+       now loop through all nodes and assign velocity boundary
+       condition values
+       
+    */
+    
+    /* top level only */
+    for(i=1;i <= noy;i++)	{/* loop through surface nodes */
+      for(j=1;j <= nox;j++)    {
+	nodel =  noz + (j-1) * noz + (i-1)*noxnoz; 
+	/* top node =  nozg + (j-1) * nozg + (i-1)*noxgnozg; */	
+
+	rout[1] = E->SX[1][nodel]; /* theta,phi coordinates */
+	rout[2] = E->SX[2][nodel];
+	
+	if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],(E->control.ggrd.svt),
+					 vin1,FALSE,shift_to_pos_lon)){
+	  fprintf(stderr,"ggrd_read_vtop_from_file: interpolation error at %g, %g\n",
+		  rout[1],rout[2]);
+	  parallel_process_termination();
+	}
+	if(!ggrd_grdtrack_interpolate_tp(rout[1],rout[2],(E->control.ggrd.svp),
+					 (vin1+1),FALSE,shift_to_pos_lon)){
+	  fprintf(stderr,"ggrd_read_vtop_from_file: interpolation error at %g, %g\n",
+		  rout[1],rout[2]);
+	  parallel_process_termination();
+	}
+      }
+      /* single timestep */
+      v[1] = vin1[0]*vscale; /* theta */
+      v[2] = vin1[1]*vscale; /* phi */
+
+
+      E->VB[1][nodel] = v[1];	/* theta */
+      E->VB[2][nodel] = v[2];	/* phi */
+
+      
+      fprintf(stderr,"%g %g %g - %i -  ggrd - %g %g\n",
+	      E->SX[1][nodel],E->SX[2][nodel],E->SX[3][nodel],nodel,
+	      E->VB[1][nodel],E->VB[2][nodel]);
+    }
+  
+    if(!E->control.ggrd.vtop_control_init){			/* forget the grids */
+      ggrd_grdtrack_free_gstruc(E->control.ggrd.svt);
+      ggrd_grdtrack_free_gstruc(E->control.ggrd.svp);
+    }
+    E->control.ggrd.vtop_control_init = TRUE;
+  }
+
+}
+
+
 void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 {
   int ll, mm, i, j, k, p, node, ii,slice,hit;
@@ -58,7 +225,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
   FILE *fp;
   double  x1, y1, z1, con, top_t, bot_t;
 
-  int noz2, nfz, in1, in2, in3, instance, nox, noy, noz,nxs,setflag;
+  int noz2, nfz, in1, in2, in3, instance, nox, noy, noz,nxs,setflag,noxnoz;
   char input_s[200], output_file[255];
   float weight, para1, plate_velocity, delta_temp, age;
 
@@ -82,14 +249,14 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
   noy = E->lmesh.noy;
   noz = E->lmesh.noz;
   nox = E->lmesh.nox;
-
+  noxnoz = nox*noz;
 
   setflag = 0;
 
   /* top and bottom temperatures for initial assign (only use if
      temperatures are set, else defaults */
-  bot_t = (E->mesh.bottbc) ? E->control.TBCbotval : 1.0;
-  top_t = (E->mesh.toptbc) ? E->control.TBCtopval : 0.0;
+  bot_t = (E->mesh.bottbc>0) ? E->control.TBCbotval : 1.0;
+  top_t = (E->mesh.toptbc>0) ? E->control.TBCtopval : 0.0;
 
   for(i=1;i<=E->lmesh.nno;i++) {
     /* 
@@ -188,7 +355,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
       for(i=1;i <= noy;i++)  
 	for(j=1;j <= nox;j++) 
 	  for(k=1;k<=noz;k++)  {
-	    node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
+	    node=k+(j-1)*noz+(i-1)*noxnoz; /* offset */
 	    if(E->control.ggrd_t_slab_slice){
 	      /* 
 
@@ -429,9 +596,12 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
     if(E->control.composition){
 
       if(E->parallel.me==0)
-	fprintf(stderr,"assigned C>0.5 %i/%i times out of %i/%i, %.1f%%\n",
+	fprintf(stderr,"assigned C > 0.5 %i/%i times out of %i/%i, %.1f%%\n",
 		c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
-      convection_initial_markers(E,1);
+      if(E->control.composition_init_checkerboard) /* override */
+	convection_initial_markers(E,-1);
+      else
+	convection_initial_markers(E,1);
     }
   }							// end for restart==0
   else if(E->control.restart)
@@ -452,7 +622,6 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 
   temperatures_conform_bcs(E);
 
-
   thermal_buoyancy(E);
 
   return;
@@ -464,22 +633,23 @@ assign composition or flavors to nodes from grd files
 
 
 */
-void ggrd_deal_with_composition_input(struct All_variables *E, int assign_composition)
+void ggrd_deal_with_composition_input(struct All_variables *E, 
+				      int assign_composition)
 {
   MPI_Status mpi_stat;
   int mpi_rc, mpi_tag=1;  
   int mpi_inmsg, mpi_success_message = 1;
   char ingfile[1000],indfile[1000],pfile[1000];
-  int use_nearneighbor,i,j,nox, noy, noz,slice,node,hit,k;
+  int use_nearneighbor,i,j,nox, noy, noz,slice,node,hit,k,noxnoz;
   char *char_dummy="";
   double tadd;
   int *tmaxflavor;
 
-
   noy = E->lmesh.noy;
   noz = E->lmesh.noz;
   nox = E->lmesh.nox;
-
+  noxnoz = nox*noz;
+  
   if(E->parallel.me == 0){
     if(assign_composition)
       fprintf(stderr,"ggrd_deal_with_composition_input: using GMT grd files for composition\n");
@@ -538,7 +708,7 @@ void ggrd_deal_with_composition_input(struct All_variables *E, int assign_compos
   for(i=1;i<=noy;i++) {
     for(j=1;j<=nox;j++){
       for(k=1;k<=noz;k++)  {
-	node=k+(j-1)*noz+(i-1)*nox*noz; /* offset */
+	node=k+(j-1)*noz+(i-1)*noxnoz; /* offset */
 	if(E->control.ggrd_c_slab_slice){
 	  /* slab */
 	  for(hit = slice=0;(!hit) && (slice < E->control.ggrd_c_slab_slice);slice++){
@@ -1276,3 +1446,16 @@ void ggrd_read_anivisc_from_file_cu(struct All_variables *E)
 
 #endif	/* for ANISOTROPIC */
 
+float find_age_in_MY(struct All_variables *E)
+{
+  float age_in_MY, e_4;
+  e_4=1.e-4;
+  age_in_MY = E->monitor.elapsed_time*E->monitor.time_scale_ma;
+
+  if (((age_in_MY+e_4) < 0.0) && (E->monitor.solution_cycles < 1)) {
+    if (E->parallel.me == 0) fprintf(stderr,"Age = %g Ma, Initial age should not be negative!\n",age_in_MY);
+    exit(11);
+  }
+  
+  return(age_in_MY);
+}

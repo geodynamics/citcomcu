@@ -100,7 +100,10 @@ void velocity_boundary_conditions(struct All_variables *E)
 			horizontal_bc(E, E->VB, top, 2, 0.0, SBY, 0, lv);
 		}
 	}
-
+#ifdef USE_GGRD			/* velocities from grd */
+	if(E->control.ggrd.vtop_control)
+	  ggrd_read_vtop_from_file(E, (int)E->control.Rsphere);
+#endif	
 	if(E->mesh.periodic_pin_or_filter == 1){
 	  if(E->mesh.periodic_x || E->mesh.periodic_y){
 	    
@@ -186,49 +189,62 @@ void freeze_surface(struct All_variables *E)
 
 void temperature_boundary_conditions(struct All_variables *E)
 {
-	int node;
+  int node;
+  /* bottom */
+  if(E->mesh.bottbc == 3){	/* variable bottom temperature condition */
+    /* to left of domain */
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 1, E->mesh.levmax,0,E->control.TBCbotval_side_xapply,0,E->mesh.layer[2]);
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 0, E->mesh.levmax,0,E->control.TBCbotval_side_xapply,0,E->mesh.layer[2]);
+    /* to right of domain, override node at boundary */
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval_side, TBZ, 1, E->mesh.levmax,E->control.TBCbotval_side_xapply,E->mesh.layer[1],0,E->mesh.layer[2]);
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval_side, FBZ, 0, E->mesh.levmax,E->control.TBCbotval_side_xapply,E->mesh.layer[1],0,E->mesh.layer[2]);
+  }else if((E->mesh.bottbc == 1)||(E->mesh.bottbc == 2)){	
+    /* regular temp boundary condition and ggrd temp override */
+    horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 1, E->mesh.levmax);
+    horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 0, E->mesh.levmax);
+  }else if(E->mesh.bottbc == 0){ /* const flux */
+    horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 0, E->mesh.levmax);
+    horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 1, E->mesh.levmax);
+  }else if(E->mesh.bottbc == -1){ /* const flux and fixed T*/
+    /* flux on left */
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 0, E->mesh.levmax,0,E->control.TBCbotval_side_xapply,0,E->mesh.layer[2]);
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 1, E->mesh.levmax,0,E->control.TBCbotval_side_xapply,0,E->mesh.layer[2]);
+    /* temp on right */
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval_side, TBZ, 1, E->mesh.levmax,E->control.TBCbotval_side_xapply,E->mesh.layer[1],0,E->mesh.layer[2]);
+    horizontal_bc_range(E, E->TB, 1, 3, E->control.TBCbotval_side, FBZ, 0, E->mesh.levmax,E->control.TBCbotval_side_xapply,E->mesh.layer[1],0,E->mesh.layer[2]);
+  }
+  
+  /* top */
+  if(E->mesh.toptbc >= 1)	/* temp */
+    {
+      horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, TBZ, 1, E->mesh.levmax);
+      horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, FBZ, 0, E->mesh.levmax);
+    }
+  else if(E->mesh.toptbc == 0) /* flux */
+    {
+      horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, TBZ, 0, E->mesh.levmax);
+      horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, FBZ, 1, E->mesh.levmax);
+    }
+  
 
-	if(E->mesh.bottbc == 1)
-	{
-		horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 1, E->mesh.levmax);
-		horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 0, E->mesh.levmax);
-	}
-	else
-	{
-		horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, TBZ, 0, E->mesh.levmax);
-		horizontal_bc(E, E->TB, 1, 3, E->control.TBCbotval, FBZ, 1, E->mesh.levmax);
-	}
-
-	if(E->mesh.toptbc == 1)
-	{
-		horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, TBZ, 1, E->mesh.levmax);
-		horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, FBZ, 0, E->mesh.levmax);
-	}
-	else
-	{
-		horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, TBZ, 0, E->mesh.levmax);
-		horizontal_bc(E, E->TB, E->mesh.noz, 3, E->control.TBCtopval, FBZ, 1, E->mesh.levmax);
-	}
-
-
-
-	if(E->mesh.periodic_x || E->mesh.periodic_y)
-		temperature_apply_periodic_bcs(E);
-	else
-		temperature_refl_vert_bc(E);	/* default */
-
-
-	temperatures_conform_bcs(E);
-
-	if(E->control.verbose)
-	{
-		for(node = 1; node <= E->lmesh.nno; node++)
-			fprintf(E->fp, "TB== %d %g %g %g\n", node, E->TB[1][node], E->TB[2][node], E->TB[3][node]);
-		for(node = 1; node <= E->lmesh.nno; node++)
-			fprintf(E->fp, "TB== %d %u %u %u\n", node, E->node[node] & TBX, E->node[node] & TBY, E->node[node] & TBZ);
-	}
-
-	return;
+  
+  if(E->mesh.periodic_x || E->mesh.periodic_y)
+    temperature_apply_periodic_bcs(E);
+  else
+    temperature_refl_vert_bc(E);	/* default */
+  
+  
+  temperatures_conform_bcs(E);
+  
+  if(E->control.verbose)
+    {
+      for(node = 1; node <= E->lmesh.nno; node++)
+	fprintf(E->fp, "TB== %d %g %g %g\n", node, E->TB[1][node], E->TB[2][node], E->TB[3][node]);
+      for(node = 1; node <= E->lmesh.nno; node++)
+	fprintf(E->fp, "TB== %d %u %u %u\n", node, E->node[node] & TBX, E->node[node] & TBY, E->node[node] & TBZ);
+    }
+  
+  return;
 }
 
 /* ========================================== */
@@ -550,6 +566,74 @@ void horizontal_bc(struct All_variables *E, float *BC[], int ROW, int dirn, floa
 	return;
 }
 
+/* only apply the boundary condition between x1 <= x <= x2 y1 <= y <= y2 */
+void horizontal_bc_range(struct All_variables *E, float *BC[], int ROW, int dirn, float value, unsigned int mask, char onoff, int level,
+			 float x1, float x2, float y1, float y2)
+
+{
+	int i, j, node, rowl;
+	//const int dims = E->mesh.nsd;
+
+	/* safety feature */
+	if(dirn > E->mesh.nsd)
+		return;
+
+	if(ROW == 1)
+		rowl = 1;
+	else
+		rowl = E->lmesh.NOZ[level];
+
+	if(((ROW == 1) && (E->parallel.me_loc[3] == 0)) || ((ROW == E->mesh.NOZ[level]) && (E->parallel.me_loc[3] == E->parallel.nprocz - 1))) /* bottom or top processor */
+	{
+
+		/* turn bc marker to zero */
+		if(onoff == 0)
+			for(j = 1; j <= E->lmesh.NOY[level]; j++)
+				for(i = 1; i <= E->lmesh.NOX[level]; i++)
+				{
+					node = rowl + (i - 1) * E->lmesh.NOZ[level] + (j - 1) * E->lmesh.NOZ[level] * E->lmesh.NOX[level];
+					if(in_range_for_bc(x1,x2,y1,y2,E,node))
+					  E->NODE[level][node] = E->NODE[level][node] & (~mask);
+				}				/* end for loop i & j */
+
+		/* turn bc marker to one */
+		else
+			for(j = 1; j <= E->lmesh.NOY[level]; j++)
+				for(i = 1; i <= E->lmesh.NOX[level]; i++)
+				{
+					node = rowl + (i - 1) * E->lmesh.NOZ[level] + (j - 1) * E->lmesh.NOZ[level] * E->lmesh.NOX[level];
+					if(in_range_for_bc(x1,x2,y1,y2,E,node)){
+					  E->NODE[level][node] = E->NODE[level][node] | (mask);
+					  if(level == E->mesh.levmax)	/* NB */
+					    BC[dirn][node] = value;
+					}
+				}				/* end for loop i & j */
+
+	}							/* end for if */
+
+	return;
+}
+/* check if node within range */
+int in_range_for_bc(float x1,float x2,float y1,float y2,struct All_variables *E,
+		    int node)
+{
+
+  if(E->control.CART3D){
+    if((E->X[1][node] >= x1) && (E->X[1][node] <= x2) &&
+       (E->X[2][node] >= y1) && (E->X[2][node] <= y2))
+      return 1;
+    else
+      return 0;
+  }else{
+    if((E->SX[1][node] >= x1) && (E->SX[1][node] <= x2) && /* theta */
+       (E->SX[2][node] >= y1) && (E->SX[2][node] <= y2))   /* phi */
+      return 1;
+    else
+      return 0;
+  }
+
+}
+
 
 void velocity_apply_periodic_bcs(E)
     struct All_variables *E;
@@ -833,6 +917,15 @@ void velocities_conform_bcs(struct All_variables *E, double *U)
   const int nno = E->lmesh.nno;
 
   for(node = 1; node <= nno; node++){
+    /* if(E->SX[3][node] > .999){ */
+    /*   fprintf(stderr,"%g %g %g - %i - %i %i - %g %g\n", */
+    /* 	      E->SX[1][node],E->SX[2][node],E->SX[3][node], */
+    /* 	      node, */
+    /* 	      (E->node[node] & typex), */
+    /* 	      (E->node[node] & typey), */
+    /* 	      E->VB[1][node],E->VB[2][node]); */
+    /* } */
+
     if(E->node[node] & typex)
       U[E->id[node].doff[1]] = E->VB[1][node];
     if(E->node[node] & typey)

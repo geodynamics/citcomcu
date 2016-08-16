@@ -306,10 +306,56 @@ void get_CBF_topo(struct All_variables *E, float *H, float *HB)
 
 void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 {
-	//int i, j, k, e, nel2, snode, node;
-	int i, j, e, snode, node;
 
-	float *SZZ, *SXX, *SYY, *SXY, *SXZ, *SZY, VZ[9], VY[9], VX[9], Szz, Sxx, Syy, Sxy, Sxz, Szy;
+  int snode, node;
+  const int nno = E->lmesh.nno;
+  float *SZZ, *SXX, *SYY, *SXY, *SXZ, *SZY;
+
+  SXX = (float *)malloc((nno + 1) * sizeof(float));
+  SYY = (float *)malloc((nno + 1) * sizeof(float));
+  SXY = (float *)malloc((nno + 1) * sizeof(float));
+  SXZ = (float *)malloc((nno + 1) * sizeof(float));
+  SZY = (float *)malloc((nno + 1) * sizeof(float));
+  SZZ = (float *)malloc((nno + 1) * sizeof(float));
+  
+  /* really, we only need SZZ... */
+  get_stress(SXX,SXY,SXZ,SYY,SZY,SZZ,E);
+  
+  for(snode = 1; snode <= E->lmesh.nsf; snode++)
+    {
+      node = E->surf_node[snode];
+      tpg[snode] = -2 * SZZ[node] + SZZ[node - 1];
+      tpgb[snode] = 2 * SZZ[node - E->lmesh.noz + 1] - SZZ[node - E->lmesh.noz + 2];
+    }
+  
+  free((void *)SXX);
+  free((void *)SYY);
+  free((void *)SXY);
+  free((void *)SXZ);
+  free((void *)SZY);
+  free((void *)SZZ);
+  
+  return;
+}
+
+void remove_isotropic_component(float *sxx, float *syy, float *szz, int nno)
+{
+  int i;
+  float p;
+  for(i=1;i <= nno;i++){
+    p = (sxx[i]+syy[i]+szz[i])/3;
+    sxx[i] -= p;
+    syy[i] -= p;
+    szz[i] -= p;
+  }
+}
+void get_stress(float *SXX,float *SXY,float *SXZ,float *SYY,float *SZY,float *SZZ,
+		struct All_variables *E)
+{
+  
+	int i, j, e, node;
+
+	float VZ[9], VY[9], VX[9], Szz, Sxx, Syy, Sxy, Sxz, Szy;
 	float Vzz[9], Vxx[9], Vyy[9], Vxy[9], Vxz[9], Vzy[9];
 	//float pre[9], el_volume, tww[9], Visc, a, b;
 	float pre[9];
@@ -328,12 +374,6 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 	const int nel = E->lmesh.nel;
 	const int lev = E->mesh.levmax;
 
-	SXX = (float *)malloc((nno + 1) * sizeof(float));
-	SYY = (float *)malloc((nno + 1) * sizeof(float));
-	SXY = (float *)malloc((nno + 1) * sizeof(float));
-	SXZ = (float *)malloc((nno + 1) * sizeof(float));
-	SZY = (float *)malloc((nno + 1) * sizeof(float));
-	SZZ = (float *)malloc((nno + 1) * sizeof(float));
 
 	for(i = 1; i <= nno; i++)
 	{
@@ -476,19 +516,8 @@ void get_STD_topo(struct All_variables *E, float *tpg, float *tpgb, int ii)
 		SZY[i] = SZY[i] * E->Mass[i];
 	}
 
-	for(snode = 1; snode <= E->lmesh.nsf; snode++)
-	{
-		node = E->surf_node[snode];
-		tpg[snode] = -2 * SZZ[node] + SZZ[node - 1];
-		tpgb[snode] = 2 * SZZ[node - E->lmesh.noz + 1] - SZZ[node - E->lmesh.noz + 2];
-	}
-
-	free((void *)SXX);
-	free((void *)SYY);
-	free((void *)SXY);
-	free((void *)SXZ);
-	free((void *)SZY);
-	free((void *)SZZ);
 
 	return;
+
+
 }

@@ -16,17 +16,24 @@
 #	Individual Machine Variations
 ##############################################################################
 
-#COMPRESS=/usr/bin/compress
 COMPRESS=/bin/gzip
 GMT_DIR = $(GMTHOME)
 NETCDF_DIR = $(NETCDFHOME)
-HC_DIR = ../../../hc-svn/
-LIB_PATH= -L$(HC_DIR)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
-#LIB_LIST= -lmpi
+LIB_PATH= -L$(HC_HOME)/objects/x86_64/ -L$(GMT_DIR)/lib/ -L$(NETCDF_DIR)/lib/
 LIB_LIST= -lz -lggrd -lhc -lgmt -lnetcdf
-LIB= $(LIB_PATH) $(LIB_LIST) -lm
 
-DEFINES = -DUSE_GZDIR -DUSE_GGRD -I$(HC_DIR)/ -Werror \
+
+
+# use the expokit stuff?
+EXPO_DEFINE = -DCITCOM_USE_EXPOKIT
+EXPO_FILES = expokit/dgpadm.f
+EXPO_LIBS = $(EXPO_OBJS) $(MATHLIBS)
+
+LIB= $(LIB_PATH) $(LIB_LIST) $(EXPO_LIBS) $(FTRN_LIB) -lm
+
+DEFINES =  \
+	-DUSE_GZDIR -DUSE_GGRD  \
+	-I$(HC_HOME)/  $(EXPO_DEFINE) \
 	 -I$(GMT_DIR)/include/ -I$(NETCDF_DIR)/include/\
 	-DPREM_MODEL_FILE=\"$(PWD)/prem/prem.dat\"
 
@@ -34,12 +41,8 @@ DEFINES = -DUSE_GZDIR -DUSE_GGRD -I$(HC_DIR)/ -Werror \
 #	Operating System Variables
 ###################################################################
 
-#CC=/usr/local/mpich/bin/mpicc
-#CC=/opt/mpich/bin/mpicc
-#CC=/usr/lib/cmplrs/cc/gemc_cc
-#CC=$(HOME)/usr/local/mpich/bin/mpicc
 CC=mpicc
-F77=f77
+F77=mpif77
 CPP=
 
 CEXT=c
@@ -50,89 +53,17 @@ OBJFLAG=-c
 FOBJFLAG=-c
 
 
-###################################
-# Choose your machine from here.
-###################################
-
-####################################
-# Dec Alpha, OSF 1
-AXPFLAGS= -unsigned  -non_shared  \
-	-math_library=fast -prefix=all -reentrancy=none -assume=noaccuracy_sensitive \
-	-unsigned_char -extern=strict_refdef -trapuv #  -D_INTRINSICS 
-AXPLDFLAGS= -unsigned -assume=noaccuracy_sensitive -non_shared -D_INTRINSICS 
-AXPOPTIM= -O -Ublas -float -Olimit 1000 # -cord  -feedback citcom.feedback
-####################################
-
-####################################
-# CRAY Unicos systems
-CRAYFLAGS=
-CRAYLDFLAGS=
-CRAYOPTIM=
-####################################
-
-####################################
-#IBM AIX systems
-AIXFLAGS= -D__aix__
-AIXLDFLAGS=
-AIXOPTIM= -O2 -qarch=pwr -qopt=pwr -Ublas
-####################################
-
-####################################
-# SUNOS systems
-SUNFLAGS= -D__sunos__ -Dconst=""
-SUNLDFLAGS=
-SUNOPTIM=-O -fsingle
-####################################
-
-####################################
-# Solaris systems
-SOLARISFLAGS= -D__solaris -Dconst="" -I/opt/mpi/include
-SOLARISLDFLAGS=-fast -lsocket -lnsl -lthread
-SOLARISOPTIM=-fast -xO4 -dalign -xtarget=ultra -xarch=v8plus -fsingle
-####################################
-
-####################################
-#HP running HPUX
-HPUXFLAGS=-Dconst=""
-HPUXLDFLAGS=
-HPUXOPTIM=+O3 +Onolimit +Odataprefetch
-#HPUXOPTIM=+O4 +Onolimit +Odataprefetch +Ofastaccess
-#HPUXOPTIM3=+O3 +Onolimit +Odataprefetch
-####################################
-
-####################################
-# SGI with IRIX 
-SGIFLAGS=
-SGILDFLAGS=
-SGIOPTIM=-O -fsingle
-####################################
-
-#LinuxFLAGS=-I/usr/local/mpi/include
-#LinuxFLAGS=-I/opt/mpi/include
-#LinuxFLAGS=-I$(HOME)/usr/include
 LinuxFLAGS=
 LinuxLDFLAGS=
-#LinuxOPTIM=-g
-LinuxOPTIM=-O2 $(DEFINES)
+LinuxOPTIM=-O3  $(DEFINES) 
+#LinuxOPTIM=-O2  $(DEFINES) 
+#LinuxOPTIM=-g  $(DEFINES) -DDEBUG
 
-####################################
-#PARAGON 
-PARAGONFLAGS=-nx
-PARAGONLDFLAGS=
-PARAGONOPTIM=-O4
-####################################
 
-####################################################################
-#	Choose the actual flags for your machine here ...
-####################################################################
-
-FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
+FLAGS= $(LinuxFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\" -I/usr/include/
 LDFLAGS= $(LinuxLDFLAGS)
 OPTIM= $(LinuxOPTIM)
 
-#FLAGS= $(SOLARISFLAGS) -DCOMPRESS_BINARY=\"$(COMPRESS)\"
-#LDFLAGS= $(SOLARISLDFLAGS)
-#OPTIM= $(SOLARISOPTIM)
 
 ####################################################################
 #	CitcomCU's files .....
@@ -179,22 +110,24 @@ HEADER = element_definitions.h \
 	 prototypes.h
 
 
-FFILES=#Blas_lapack_interfaces.F
 
-OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o)
+FFILES=$(EXPO_FILES) #Blas_lapack_interfaces.F
+
+OBJFILES=$(CFILES:.c=.o) $(FFILES:.f=.o) 
 
 
 ####################################################################
 # Makefile rules follow
 ####################################################################
 
-default: citcom.mpi
+default: citcom.mpi 
 
 citcom.mpi: $(OBJFILES) $(HEADER) Makefile
-	$(CC) $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi $(OBJFILES)  $(FFTLIB)  $(LIB)
+	$(CC)  $(OPTIM) $(FLAGS) $(LDFLAGS) -o citcom.mpi \
+	$(OBJFILES)  $(FFTLIB)  $(LIB)
 
 clean:
-	rm -f *.o
+	rm -f $(OBJFILES)
 
 clean-all:
 	rm -f *.o citcom.mpi
@@ -204,6 +137,10 @@ smaller:
 
 larger:
 	uncompress $(CFILES)
+
+proto:
+	cproto $(DEFINES) -q -p -I. -f2 -I/share/apps/mpich2/1.4/intel12/include -I/usr/local/src/netcdf-4.0.1/ -I/usr/include/ -I$(HOME)/progs/src/cig/hc/ *.c > prototypes.h
+
 
 
 ####################################################################
@@ -216,6 +153,7 @@ global_defs.h: viscosity_descriptions.h advection.h Convection_variables.h
 
 Advection_diffusion.o: $(HEADER) Advection_diffusion.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Advection_diffusion.c
+
 #
 Boundary_conditions.o: $(HEADER) Boundary_conditions.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Boundary_conditions.c
@@ -312,4 +250,5 @@ Output_gzdir.o: $(HEADER) Output_gzdir.c
 Ggrd_handling.o: $(HEADER) Ggrd_handling.c
 	$(CC) $(OPTIM) $(FLAGS)  $(OBJFLAG)  Ggrd_handling.c
 
-
+expokit/dgpadm.o: expokit/dgpadm.f $(HEADER)
+	$(F77) $(OPTIM) $(FOPTIM)  -c expokit/dgpadm.f -o expokit/dgpadm.o

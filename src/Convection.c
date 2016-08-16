@@ -51,9 +51,13 @@ void convection_initial_markers(struct All_variables *,int );
 void set_convection_defaults(struct All_variables *E)
 {
 
+  /* 0: purely thermal 1: composition and temperature 2: purely compositional */
   input_boolean("composition", &(E->control.composition), "0", E->parallel.me);
+  input_boolean("composition_init_checkerboard", 
+		&(E->control.composition_init_checkerboard), "0", E->parallel.me);
 
-  input_boolean("composition_neutralize_buoyancy", &(E->control.composition_neutralize_buoyancy), "0", E->parallel.me);
+  input_boolean("composition_neutralize_buoyancy",
+		&(E->control.composition_neutralize_buoyancy), "0", E->parallel.me);
   if(E->control.composition_neutralize_buoyancy && E->parallel.me == 0)
     fprintf(stderr,"WARNING: reducing thermal buoyanyc to zero in composition=1 regions\n");
 
@@ -76,7 +80,8 @@ void set_convection_defaults(struct All_variables *E)
   }
   
 	if(E->control.composition)
-		E->next_buoyancy_field = PG_timestep_particle;
+		//E->next_buoyancy_field = PG_timestep_particle;
+		E->next_buoyancy_field = PG_timestep_only_particles;
 	else
 		E->next_buoyancy_field = PG_timestep;
 
@@ -199,7 +204,7 @@ void convection_allocate_memory(struct All_variables *E)
 void convection_initial_fields(struct All_variables *E)
 {
   int i,j;
-  if(E->parallel.me==0)fprintf(stderr,"ok16a\n");
+  force_report(E,"ok16a");
 	if(E->control.composition)
 	{
 
@@ -263,17 +268,17 @@ void convection_initial_fields(struct All_variables *E)
 			  }
 			}
 		}
-		if(E->parallel.me==0)fprintf(stderr,"ok16b\n");
+		force_report(E,"ok16b");
 	}
 
 	report(E, "convection, initial temperature");
 #ifdef USE_GGRD
-	if(E->parallel.me==0)fprintf(stderr,"ok16c\n");
+	force_report(E,"ok16c");
 	convection_initial_temperature_and_comp_ggrd(E);
-	if(E->parallel.me==0)fprintf(stderr,"ok16d1\n");
+	force_report(E,"ok16d1");
 #else
 	convection_initial_temperature(E);
-	if(E->parallel.me==0)fprintf(stderr,"ok16d2\n");
+	force_report(E,"ok16d2");
 #endif
 	return;
 }
@@ -337,8 +342,14 @@ void convection_initial_temperature(struct All_variables *E)
 						x1 = E->X[1][node];
 						z1 = E->X[3][node];
 						y1 = E->X[2][node];
-						E->T[node] = 1 - z1 + 
-						  E->convection.perturb_mag[p] * sin(M_PI * (1.0 - z1)) * cos(E->convection.perturb_k[p] * M_PI * x1) * ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * y1));
+						if(E->control.add_init_t_gradient) /* default gradient */
+						  E->T[node] = 1 - z1;
+						else
+						  E->T[node] = 0;
+						/* perturbation */
+						E->T[node] += E->convection.perturb_mag[p] * sin(M_PI * (1.0 - z1)) * 
+						  cos(E->convection.perturb_k[p] * M_PI * x1) * 
+						  ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * y1));
 
 //             E->T[node] = 1-z1 + E->convection.perturb_mag[p] *
 //                           sin(M_PI*(1.0-z1))*
@@ -370,8 +381,10 @@ void convection_initial_temperature(struct All_variables *E)
 						x1 = E->SX[1][node];
 						z1 = E->SX[3][node];
 						y1 = E->SX[2][node];
-						E->T[node] = 0.0;
-						E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * drand48();
+						/* those were overridden */
+						//E->T[node] = 0.0;
+						//E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * drand48();
+
 
 /*             if (ii==noz2)    {
                   E->T[node] = con*modified_plgndr_a(ll,mm,x1)*cos(mm*y1);
@@ -380,10 +393,15 @@ void convection_initial_temperature(struct All_variables *E)
                E->T[node] =
               0.01*modified_plgndr_a(ll,mm,x1);
  */
-
+						
 						//E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * modified_plgndr_a(ll, mm, x1) * cos(mm * y1) * sin(M_PI * (z1 - E->sphere.ri) / (E->sphere.ro - E->sphere.ri));
-
-						E->T[node] = beta * (1.0 - 1.0 / z1) + E->convection.perturb_mag[p] * sin(M_PI * (E->sphere.ro - z1) / (E->sphere.ro - E->sphere.ri)) * cos(E->convection.perturb_k[p] * M_PI * (x1 - E->XG1[1]) / (E->XG2[1] - E->XG1[1])) * ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * (y1 - E->XG1[2]) / (E->XG2[2] - E->XG1[2])));
+						if(E->control.add_init_t_gradient)
+						  E->T[node] = beta * (1.0 - 1.0 / z1) ;
+						else
+						  E->T[node] = 0;
+						E->T[node] += E->convection.perturb_mag[p] * sin(M_PI * (E->sphere.ro - z1) / (E->sphere.ro - E->sphere.ri)) * 
+						  cos(E->convection.perturb_k[p] * M_PI * (x1 - E->XG1[1]) / (E->XG2[1] - E->XG1[1])) * 
+						  ((E->mesh.nsd != 3) ? 1.0 : cos(E->convection.perturb_k[p] * M_PI * (y1 - E->XG1[2]) / (E->XG2[2] - E->XG1[2])));
 
 
 						E->C[node] = 0.0;
@@ -393,21 +411,30 @@ void convection_initial_temperature(struct All_variables *E)
 					}
 		}						// end for if else if of geometry
 
-
-		if(E->control.composition)
-		  convection_initial_markers(E,0);
+		if(E->control.composition){
+		  if(E->control.composition_init_checkerboard)
+		    convection_initial_markers(E,-1);
+		  else
+		    convection_initial_markers(E,0);
+		}
 
 	}							// end for restart==0
 
-	else if(E->control.restart)
-	{
+	else if(E->control.restart){ /* restart branch */
+	  
 #ifdef USE_GZDIR
 	  if(E->control.gzdir)
 	    process_restart_tc_gzdir(E);
-	  else
-#endif
+	  else{
+	    if(E->tracers_track_strain)
+	      force_report(E,"WARNING: strain init not implemented unless gzdir output is used");
 	    process_restart_tc(E);
-
+	  }
+#else
+	  if(E->tracers_track_strain)
+	    force_report(E,"WARNING: strain init not implemented unless USE_GZDIR is used");
+	  process_restart_tc(E);
+#endif
 	}
 
 	temperatures_conform_bcs(E);
@@ -537,7 +564,7 @@ void process_restart_tc(struct All_variables *E)
 		}
 	      fclose(fp);
 	      
-		convection_initial_markers1(E);
+	      convection_initial_markers1(E);
 	    }
 	  
 	  else if(E->control.restart == -1)
@@ -588,113 +615,129 @@ void process_restart_tc(struct All_variables *E)
 void convection_initial_markers1(struct All_variables *E)
 {
 	//int *element, el, i, j, k, p, node, ii, jj;
-	int *element, el, j, node;
-	double x, y, z, r, t, f, dX[4];
-	//char input_s[100], output_file[255];
-	//FILE *fp;
-
-	const int dims = E->mesh.nsd;
-	const int ends = enodes[dims];
-
-	element = (int *)malloc((E->lmesh.nel + 1) * sizeof(int));
-
-	for(el = 1; el <= E->lmesh.nel; el++)
+  int *element, el, j, node,el_node,itracer;
+  float *element_strain;
+  double x, y, z, r, t, f, dX[4];
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
+  
+  element = (int *)malloc((E->lmesh.nel + 1) * sizeof(int));
+  if(E->tracers_track_strain)
+    element_strain = (float *)calloc((E->lmesh.nel + 1), sizeof(float));
+  
+  for(el = 1; el <= E->lmesh.nel; el++){
+    /* assign composition and strain based on average over nodes
+       within element */
+    t = 0;
+    for(j = 1; j <= ends; j++){
+      el_node = E->ien[el].node[j];
+      t += E->C[el_node];
+      if(E->tracers_track_strain)
+	element_strain[el] += E->strain[el_node];
+    }
+    t = t / ends;
+    if(E->tracers_track_strain)
+      element_strain[el] /= ends;
+    
+    E->CE[el] = t;
+    element[el] = 0;
+  }
+  
+  if(E->control.CART3D)		/* assign new tracer locations */
+    {
+      node = 0;
+      do
 	{
-		t = 0;
-		for(j = 1; j <= ends; j++)
-		{
-			t += E->C[E->ien[el].node[j]];
-		}
-		t = t / ends;
-		E->CE[el] = t;
-		element[el] = 0;
-	}
-
-	if(E->control.CART3D)
+	  x = drand48() * (E->XG2[1] - E->XG1[1]);
+	  y = drand48() * (E->XG2[2] - E->XG1[2]);
+	  z = drand48() * (E->XG2[3] - E->XG1[3]);
+	  
+	  if((x >= E->XP[1][1] && x <= E->XP[1][E->lmesh.nox]) && (y >= E->XP[2][1] && y <= E->XP[2][E->lmesh.noy]) && (z >= E->XP[3][1] && z <= E->XP[3][E->lmesh.noz]))
+	    {
+	      node++;
+	      E->XMC[1][node] = x;
+	      E->XMC[2][node] = y;
+	      E->XMC[3][node] = z;
+	      
+	      el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
+	      E->CElement[node] = el;
+	      element[el]++;
+	    }
+	} while(node < E->advection.markers);
+    }
+  else if(E->control.Rsphere)
+    {
+      node = 0;
+      do
 	{
-		node = 0;
-		do
-		{
-			x = drand48() * (E->XG2[1] - E->XG1[1]);
-			y = drand48() * (E->XG2[2] - E->XG1[2]);
-			z = drand48() * (E->XG2[3] - E->XG1[3]);
+	  x = (drand48() - 0.5) * 2.0;
+	  y = drand48();
+	  //			y = (drand48() - 0.5) * 2.0;
+	  z = (drand48() - 0.5) * 2.0;
+	  r = sqrt(x * x + y * y + z * z);
+	  t = acos(z / r);
+	  f = myatan(y, x);
+	  if((t >= E->XP[1][1] && t <= E->XP[1][E->lmesh.nox]) && (f >= E->XP[2][1] && f <= E->XP[2][E->lmesh.noy]) && (r >= E->XP[3][1] && r <= E->XP[3][E->lmesh.noz]))
+	    {
+	      node++;
+	      E->XMC[1][node] = t;
+	      E->XMC[2][node] = f;
+	      E->XMC[3][node] = r;
+	      el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
+	      E->CElement[node] = el;
+	      element[el]++;
+	    }
+	} while(node < E->advection.markers);
+    }
+  
+  for(itracer = 1; itracer <= E->advection.markers; itracer++){
+      el = E->CElement[itracer];
 
-			if((x >= E->XP[1][1] && x <= E->XP[1][E->lmesh.nox]) && (y >= E->XP[2][1] && y <= E->XP[2][E->lmesh.noy]) && (z >= E->XP[3][1] && z <= E->XP[3][E->lmesh.noz]))
-			{
-				node++;
-				E->XMC[1][node] = x;
-				E->XMC[2][node] = y;
-				E->XMC[3][node] = z;
+      if(E->CE[el] < 0.5)
+	E->C12[itracer] = 0;
+      else
+	E->C12[itracer] = 1;
+      
+      /*	  if (E->CE[el]<dx)
+		  E->C12[itracer] = 0;
+		  else if (j>=1) {
+		  E->C12[itracer] = 0;
+		  E->CE[el] +=dx;
+		  }
+		  else {
+		  E->C12[itracer] = 1;
+		  }
+      */
+      if(E->tracers_track_strain) /* this will smooth quite a bit */
+	E->tracer_strain[itracer] = element_strain[el];
+  }
+  /* reassign to nodal values */
+  get_C_from_markers(E, E->C);
 
-				el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
-				E->CElement[node] = el;
-				element[el]++;
-			}
-		} while(node < E->advection.markers);
-	}
-	else if(E->control.Rsphere)
-	{
-		node = 0;
-		do
-		{
-			x = (drand48() - 0.5) * 2.0;
-			y = drand48();
-//			y = (drand48() - 0.5) * 2.0;
-			z = (drand48() - 0.5) * 2.0;
-			r = sqrt(x * x + y * y + z * z);
-			t = acos(z / r);
-			f = myatan(y, x);
-			if((t >= E->XP[1][1] && t <= E->XP[1][E->lmesh.nox]) && (f >= E->XP[2][1] && f <= E->XP[2][E->lmesh.noy]) && (r >= E->XP[3][1] && r <= E->XP[3][E->lmesh.noz]))
-			{
-				node++;
-				E->XMC[1][node] = t;
-				E->XMC[2][node] = f;
-				E->XMC[3][node] = r;
-				el = get_element(E, E->XMC[1][node], E->XMC[2][node], E->XMC[3][node], dX);
-				E->CElement[node] = el;
-				element[el]++;
-			}
-		} while(node < E->advection.markers);
-	}
-	
-	for(node = 1; node <= E->advection.markers; node++)
-	{
-		el = E->CElement[node];
-		// those were unused
-		//dx = 1.0 / ((double)element[el]);
-		//dr = 0.5 * dx;
-		//j = (1 - E->CE[el]) * element[el];
-		if(E->CE[el] < 0.5)
-			E->C12[node] = 0;
-		else
-			E->C12[node] = 1;
+  if(E->tracers_add_flavors)
+    get_CF_from_markers(E,E->CF);
 
-/*	  if (E->CE[el]<dx)
-             E->C12[node] = 0;
-	  else if (j>=1) {
-             E->C12[node] = 0;
-	     E->CE[el] +=dx;
-	  }
-	  else {
-             E->C12[node] = 1;
-	  }
-*/
+  if(E->tracers_track_strain){
+    /* reassign (?) */
+    get_strain_from_markers(E,E->strain);
+    free(element_strain);
+  }
 
-	}
-	
-	/* nodal values */
-	get_C_from_markers(E, E->C);
-	if(E->tracers_add_flavors)
-	  get_CF_from_markers(E,E->CF);
-
-	return;
+  return;
 }
+/* 
+   use_element_nodes_for_init_c: 
+   -1: use checkerboard
+   0:  use depth
+   1:  use the nodes to assign element properties, and from that tracer properties
+   
 
+*/
 void convection_initial_markers(struct All_variables *E,
 				int use_element_nodes_for_init_c)
 {
   //int el, i, j, k, p, node, ii, jj;
-  int el, ntracer,j,node,k;
+  int el, ntracer,j,node,k,i;
   //double x, y, z, r, t, f, dX[4], dx, dr;
   double x, y, z, r, t, f, dX[4];
   //char input_s[100], output_file[255];
@@ -781,7 +824,8 @@ void convection_initial_markers(struct All_variables *E,
 			  
 		el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
 		E->CElement[ntracer] = el;
-		if(use_element_nodes_for_init_c){
+		switch(use_element_nodes_for_init_c){
+		case 1: 	/* from nodes */
 		  for(temp=0.0,j = 1; j <= ends; j++)
 		    temp += E->C[E->ien[el].node[j]];
 		  temp /= ends;
@@ -789,11 +833,30 @@ void convection_initial_markers(struct All_variables *E,
 		    E->C12[ntracer] = 1;
 		  else
 		    E->C12[ntracer] = 0;
-		}else{ /* use depth */
+		  break;
+		case 0:		/* based on depth */
 		  if(E->XMC[3][ntracer] > E->viscosity.zcomp)
 		    E->C12[ntracer] = 0;
 		  else
 		    E->C12[ntracer] = 1;
+		  break;
+		case -1:	/* checker board with x and z */
+		  i = (int)(E->XMC[1][ntracer]/0.2+0.5);
+		  k = (int)(E->XMC[3][ntracer]/0.2+0.5);
+		  if(i%2==0){
+		    if(k%2==0)
+		      E->C12[ntracer] = 1;
+		    else
+		      E->C12[ntracer] = 0;
+		  }else{
+		    if(k%2==0)
+		      E->C12[ntracer] = 0;
+		    else
+		      E->C12[ntracer] = 1;
+		  }
+		  break;
+		default:
+		  myerror("use_element_nodes_for_init_c out of bounds in convection_initial_markers for Cartesian",E);
 		}
 	      }
 	  } while(ntracer < E->advection.markers);
@@ -818,7 +881,9 @@ void convection_initial_markers(struct All_variables *E,
 		E->XMC[3][ntracer] = r;
 		el = get_element(E, E->XMC[1][ntracer], E->XMC[2][ntracer], E->XMC[3][ntracer], dX);
 		E->CElement[ntracer] = el;
-		if(use_element_nodes_for_init_c){
+
+		switch(use_element_nodes_for_init_c){
+		case 1:		/* based on nodes */
 		  for(temp=0.0,j = 1; j <= ends; j++)
 		    temp += E->C[E->ien[el].node[j]];
 		  temp /= ends;
@@ -826,11 +891,15 @@ void convection_initial_markers(struct All_variables *E,
 		    E->C12[ntracer] = 1;
 		  else
 		    E->C12[ntracer] = 0;
-		}else{ /* use depth */
+		  break;
+		case 0:		/* based on depth */
 		  if(r > E->viscosity.zcomp)
 		    E->C12[ntracer] = 0;
 		  else
 		    E->C12[ntracer] = 1;
+		  break;
+		default:
+		  myerror("use_element_nodes_for_init_c out of bounds for spherical in convection_initial_markers",E);
 		}
 			
 			
@@ -860,7 +929,9 @@ void convection_initial_markers(struct All_variables *E,
 assign a flavor to this tracer based on proximity to a node
 
 */
-void assign_flavor_to_tracer_based_on_node(struct All_variables *E, int ntracer, int use_element_nodes_for_init_c)
+void assign_flavor_to_tracer_based_on_node(struct All_variables *E, 
+					   int ntracer, 
+					   int use_element_nodes_for_init_c)
 {
   int j,el,i;
   const int dims = E->mesh.nsd;
@@ -869,7 +940,8 @@ void assign_flavor_to_tracer_based_on_node(struct All_variables *E, int ntracer,
   int nmin,lnode;
 
   el = E->CElement[ntracer];	/* element we're in */
-  if(use_element_nodes_for_init_c){
+  switch(use_element_nodes_for_init_c){
+  case 1:
     for(dmin = 1e20,j = 1; j <= ends; j++){
       lnode = E->ien[el].node[j];
       dist = distance_to_node(E->XMC[1][ntracer],E->XMC[2][ntracer],E->XMC[3][ntracer],E,lnode);
@@ -880,15 +952,19 @@ void assign_flavor_to_tracer_based_on_node(struct All_variables *E, int ntracer,
     }
     for(i=0;i < E->tracers_add_flavors;i++)
       E->tflavors[ntracer][i] = E->CF[i][lnode];
-  }else{
+    break;
+  case 0:
     for(i=0;i < E->tracers_add_flavors;i++){
       if(E->XMC[3][ntracer] > E->viscosity.zcomp)
 	E->tflavors[ntracer][i] = 0;
       else
 	E->tflavors[ntracer][i] = 1;
     }
+    break;
+  default:
+    myerror("use_element_nodes_for_init_c out of bounds for flavors",E);
+    
   }
-
 }
 
 void setup_plume_problem(struct All_variables *E)

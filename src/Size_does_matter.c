@@ -729,9 +729,9 @@ void mass_matrix(struct All_variables *E)
 
 		}						/* over element */
 
-
+		force_report(E,"ok15a1");
 		exchange_node_f20(E, E->MASS[lv], lv);
-
+		force_report(E,"ok15a2");
 
 		for(node = 1; node <= E->lmesh.NNO[lv]; node++)
 		{

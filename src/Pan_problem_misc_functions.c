@@ -97,29 +97,29 @@ void thermal_buoyancy(struct All_variables *E)
 	    E->buoyancy[i] = (1.-E->C[i]) * E->control.Atemp * E->T[i] * E->expansivity[j] ;
 
 	  }
-	  
+	}else if(E->control.composition == 2){ /* purely compositional run, no depth dependence */
+	  for(i = 1; i <= E->lmesh.nno; i++){
+	    E->buoyancy[i] = -E->control.Acomp * E->C[i];
+	  }
 	}else{			/* default */
-	  for(i = 1; i <= E->lmesh.nno; i++)
-	    {
+	  for(i = 1; i <= E->lmesh.nno; i++){
 	      j = (i - 1) % (E->lmesh.noz) + 1;
 	      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
-	    }
+	  }
 	}
-	if(E->control.Ra_670 != 0.0 || E->control.Ra_410 != 0.0)
-	{
-
-		phase_change(E, E->Fas670, E->Fas670_b, E->Fas410, E->Fas410_b);
-
-		for(i = 1; i <= E->lmesh.nno; i++)
-		{
-			E->buoyancy[i] = E->buoyancy[i] - E->control.Ra_670 * E->Fas670[i] - E->control.Ra_410 * E->Fas410[i];
-		}
-
+	if(E->control.Ra_670 != 0.0 || E->control.Ra_410 != 0.0){
+	  
+	  phase_change(E, E->Fas670, E->Fas670_b, E->Fas410, E->Fas410_b);
+	  for(i = 1; i <= E->lmesh.nno; i++){
+	    E->buoyancy[i] = E->buoyancy[i] - E->control.Ra_670 * E->Fas670[i] - E->control.Ra_410 * E->Fas410[i];
+	  }
 	}
 	remove_horiz_ave(E, E->buoyancy, H, 0);
 	free((void *)H);
 	return;
 }
+
+
 
 double SIN_D(double x)
 {

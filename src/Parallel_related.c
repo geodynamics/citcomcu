@@ -264,48 +264,48 @@ void parallel_shuffle_ele_and_id_bc1(struct All_variables *E)
   return;
   }
 
+//
 // for periodic BC 
 //
 void parallel_shuffle_ele_and_id_bc2(struct All_variables *E)
-
-  {
+{
 
   int i,ii,j,k,l,node,node1,el,elt,lnode,llnode,jj,k1,k2;
   int lev,elx,elz,ely,nel,nno,nox,noz,noy;
 
   for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
-      nel = E->lmesh.NEL[lev];
-      elx = E->lmesh.ELX[lev];
-      elz = E->lmesh.ELZ[lev];
-      ely = E->lmesh.ELY[lev];
-      nox = E->lmesh.NOX[lev];
-      noy = E->lmesh.NOY[lev];
-      noz = E->lmesh.NOZ[lev];
-
-      ii = 0;
-
-      for(j=1;j<=2;j++)       {   /* do XOY boundary elements */
-         ii ++;
-         if ( (j==1&&E->parallel.me_loc[3]!=0) || (j==2&&E->parallel.me_loc[3]!=E->parallel.nprocz-1))        {
-             for(k=1;k<=noy;k++)
-               for(i=1;i<=nox;i++)   {
-                 node = ((j==1)?1:noz) + (i-1)*noz + (k-1)*noz*nox;
-                 llnode = i+(k-1)*nox;
-                 E->parallel.NODE[lev][llnode].bound[3][j] = node;
-                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                 node1 = node + ( ((j==1)?1:-1) );
-                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                 }
-                 }
-             E->parallel.NUM_NNO[lev].bound[3][j] = nox*noy;
-          }         /* end for j   */
-
+    nel = E->lmesh.NEL[lev];
+    elx = E->lmesh.ELX[lev];
+    elz = E->lmesh.ELZ[lev];
+    ely = E->lmesh.ELY[lev];
+    nox = E->lmesh.NOX[lev];
+    noy = E->lmesh.NOY[lev];
+    noz = E->lmesh.NOZ[lev];
+    
+    ii = 0;
+    
+    for(j=1;j<=2;j++)       {   /* do XOY boundary elements */
+      ii ++;
+      if ( (j==1&&E->parallel.me_loc[3]!=0) || (j==2&&E->parallel.me_loc[3]!=E->parallel.nprocz-1))        {
+	for(k=1;k<=noy;k++)
+	  for(i=1;i<=nox;i++)   {
+	    node = ((j==1)?1:noz) + (i-1)*noz + (k-1)*noz*nox;
+	    llnode = i+(k-1)*nox;
+	    E->parallel.NODE[lev][llnode].bound[3][j] = node;
+	    E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	    E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	    node1 = node + ( ((j==1)?1:-1) );
+	    E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	  }
+      }
+      E->parallel.NUM_NNO[lev].bound[3][j] = nox*noy;
+    }         /* end for j   */
+    
   }
-
-if (E->mesh.periodic_y && E->mesh.periodic_x)    {
-
-  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+  
+  if (E->mesh.periodic_y && E->mesh.periodic_x)    {
+    
+    for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
       nel = E->lmesh.NEL[lev];
       elx = E->lmesh.ELX[lev];
       elz = E->lmesh.ELZ[lev];
@@ -317,42 +317,38 @@ if (E->mesh.periodic_y && E->mesh.periodic_x)    {
       ii = 0;
 
       for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
-         ii ++;
-             for(k=1;k<=noy;k++)
-               for(j=1;j<=noz;j++)   {
-                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
-                 llnode = j+(k-1)*noz;
-                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
-                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                 node1 = node + ( ((i==1)?1:-1) )*noz;
-                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                 }
-             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
-         }         /* end for i   */
-
+	ii ++;
+	for(k=1;k<=noy;k++)
+	  for(j=1;j<=noz;j++)   {
+	    node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+	    llnode = j+(k-1)*noz;
+	    E->parallel.NODE[lev][llnode].bound[1][i] = node;
+	    E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	    E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	    node1 = node + ( ((i==1)?1:-1) )*noz;
+	    E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	  }
+	E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+      }         /* end for i   */
+      
       for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
-           ii ++;
-               for(j=1;j<=noz;j++)
-                 for(i=1;i<=nox;i++)   {
-                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
-                   llnode = j+(i-1)*noz;
-                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
-                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
-                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                   }
-               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
-             }       /* end for k */
-
-
-      }   /* end for level */
-   }
-
-else if (E->mesh.periodic_x)    {
-
-  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+	ii ++;
+	for(j=1;j<=noz;j++)
+	  for(i=1;i<=nox;i++)   {
+	    node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+	    llnode = j+(i-1)*noz;
+	    E->parallel.NODE[lev][llnode].bound[2][k] = node;
+	    E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	    E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	    node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+	    E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	  }
+	E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+      }       /* end for k */
+    }   /* end for level */
+  }  else if (E->mesh.periodic_x)    {
+    
+    for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
       nel = E->lmesh.NEL[lev];
       elx = E->lmesh.ELX[lev];
       elz = E->lmesh.ELZ[lev];
@@ -362,45 +358,43 @@ else if (E->mesh.periodic_x)    {
       noz = E->lmesh.NOZ[lev];
 
       ii = 0;
-
+      
       for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
-         ii ++;
-             for(k=1;k<=noy;k++)
-               for(j=1;j<=noz;j++)   {
-                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
-                 llnode = j+(k-1)*noz;
-                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
-                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                 node1 = node + ( ((i==1)?1:-1) )*noz;
-                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                 }
-             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
-         }         /* end for i   */
-
+	ii ++;
+	for(k=1;k<=noy;k++)
+	  for(j=1;j<=noz;j++)   {
+	    node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+	    llnode = j+(k-1)*noz;
+	    E->parallel.NODE[lev][llnode].bound[1][i] = node;
+	    E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	    E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	    node1 = node + ( ((i==1)?1:-1) )*noz;
+	    E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	  }
+	E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+      }         /* end for i   */
+      
       for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
-           ii ++;
-           if ( (k==1&&E->parallel.me_loc[2]!=0) || (k==2&&E->parallel.me_loc[2]!=E->parallel.nprocy-1))        {
-               for(j=1;j<=noz;j++)
-                 for(i=1;i<=nox;i++)   {
-                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
-                   llnode = j+(i-1)*noz;
-                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
-                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
-                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                   }
-                   }
-               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
-             }       /* end for k */
-
-      }   /* end for level */
-   }
-
-else if (E->mesh.periodic_y)    {
-
-  for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
+	ii ++;
+	if ( (k==1&&E->parallel.me_loc[2]!=0) || (k==2&&E->parallel.me_loc[2]!=E->parallel.nprocy-1))        {
+	  for(j=1;j<=noz;j++)
+	    for(i=1;i<=nox;i++)   {
+	      node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+	      llnode = j+(i-1)*noz;
+	      E->parallel.NODE[lev][llnode].bound[2][k] = node;
+	      E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	      E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	      node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+	      E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	    }
+	}
+	E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+      }       /* end for k */
+      
+    }   /* end for level */
+  } else if (E->mesh.periodic_y)    {
+    
+    for(lev=E->mesh.levmax;lev>=E->mesh.levmin;lev--){
       nel = E->lmesh.NEL[lev];
       elx = E->lmesh.ELX[lev];
       elz = E->lmesh.ELZ[lev];
@@ -410,45 +404,45 @@ else if (E->mesh.periodic_y)    {
       noz = E->lmesh.NOZ[lev];
 
       ii = 0;
-
+      
       for(i=1;i<=2;i++)       {       /* do the ZOY boundary elements first */
-         ii ++;
-           if ( (i==1&&E->parallel.me_loc[1]!=0) || (i==2&&E->parallel.me_loc[1]!=E->parallel.nprocx-1))        {
-             for(k=1;k<=noy;k++)
-               for(j=1;j<=noz;j++)   {
-                 node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
-                 llnode = j+(k-1)*noz;
-                 E->parallel.NODE[lev][llnode].bound[1][i] = node;
-                 E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                 E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                 node1 = node + ( ((i==1)?1:-1) )*noz;
-                 E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                 }
-                 }
-             E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
-         }         /* end for i   */
-
+	ii ++;
+	if ( (i==1&&E->parallel.me_loc[1]!=0) || (i==2&&E->parallel.me_loc[1]!=E->parallel.nprocx-1))        {
+	  for(k=1;k<=noy;k++)
+	    for(j=1;j<=noz;j++)   {
+	      node = j + ( ((i==1)?1:nox)-1 )*noz + (k-1)*noz*nox;
+	      llnode = j+(k-1)*noz;
+	      E->parallel.NODE[lev][llnode].bound[1][i] = node;
+	      E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	      E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	      node1 = node + ( ((i==1)?1:-1) )*noz;
+	      E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	    }
+	}
+	E->parallel.NUM_NNO[lev].bound[1][i] = noy*noz;
+      }         /* end for i   */
+      
       for(k=1;k<=2;k++)        {  /* do XOZ boundary elements for 3D */
-           ii ++;
-               for(j=1;j<=noz;j++)
-                 for(i=1;i<=nox;i++)   {
-                   node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
-                   llnode = j+(i-1)*noz;
-                   E->parallel.NODE[lev][llnode].bound[2][k] = node;
-                   E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
-                   E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
-                   node1 = node + ( ((k==1)?1:-1) )*noz*nox;
-                   E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
-                   }
-               E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
-             }       /* end for k */
-
-      }   /* end for level */
-   }
-
-
+	ii ++;
+	for(j=1;j<=noz;j++)
+	  for(i=1;i<=nox;i++)   {
+	    node = j + (i-1)*noz + (((k==1)?1:noy)-1)*noz*nox;
+	    llnode = j+(i-1)*noz;
+	    E->parallel.NODE[lev][llnode].bound[2][k] = node;
+	    E->NODE[lev][node] = E->NODE[lev][node] | OFFSIDE;
+	    E->NODE[lev][node] = E->NODE[lev][node] | LIDN;
+	    node1 = node + ( ((k==1)?1:-1) )*noz*nox;
+	    E->NODE[lev][node1] = E->NODE[lev][node1] | LIDN;
+	  }
+	E->parallel.NUM_NNO[lev].bound[2][k] = nox*noz;
+      }       /* end for k */
+      
+    }   /* end for level */
+  }
+  
+  
   return;
-  }
+}
 
 
 
@@ -469,13 +463,17 @@ void parallel_communication_routs(struct All_variables *E)
     {
       parallel_communication_routs1(E);
       if(E->control.composition)
-	parallel_communication_routs3(E);
+	parallel_communication_routs4(E);
     }
   
   return;
 }
 
+/* 
 
+   all sides are reflective
+
+*/
 void parallel_communication_routs1(struct All_variables *E)
 
   {
@@ -689,8 +687,9 @@ fprintf(E->fp,"proc %d and pass  %d to proc %d with %d eqn\n",E->parallel.me,k,E
   }
 
 
+//
 // periodic BC
-
+//
 void parallel_communication_routs2(struct All_variables *E)
 
   {
@@ -930,99 +929,133 @@ void parallel_communication_routs2(struct All_variables *E)
   return;
   }
 
-void parallel_communication_routs3(struct All_variables *E)
 
-  {
 
-  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
-  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
-  int m1,m2,m3,me, nprocz,nprocx, nprocy,proc;
+/* 
+   
+   general tracer setup for reflective or periodic boundary conditions
+   (should reproduce the old function for reflective)
 
-  me = E->parallel.me;
-  nprocx = E->parallel.nprocx;
-  nprocz = E->parallel.nprocz;
-  nprocy = E->parallel.nprocy;
+*/
+void parallel_communication_routs4(struct All_variables *E)
+{
+  
+  int i,ii,j,k,l,node,el,elt,lnode,jj,doff,x1p,x2p,y1p,y2p;
+  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk,elxelz;
+  int m1,m2,m3,proc,m1use,m2use;
 
+  /* 
+     bounds for OK processor numbers to consider
+  */
+  if(E->mesh.periodic_x){
+    x1p = -1;x2p = E->parallel.nprocx;
+  }else{
+    x1p =  0;x2p = E->parallel.nprocx-1;
+  }
+  if(E->mesh.periodic_y){
+    y1p = -1;y2p = E->parallel.nprocy;
+  }else{
+    y1p =  0;y2p = E->parallel.nprocy-1;
+  }
   
   E->parallel.no_neighbors  = 0;
-
   E->parallel.neighbors_rev = (int *)malloc((E->parallel.nproc+1)*sizeof(int));
 
   for (k=-1;k<=1;k++)  
-  for (i=-1;i<=1;i++)  
-  for (j=-1;j<=1;j++)   {
-
-    m1 = E->parallel.me_loc[1]+i; 
-    m2 = E->parallel.me_loc[2]+k; 
-    m3 = E->parallel.me_loc[3]+j; 
-    if (m1>=0 && m1<nprocx && m2>=0 && m2<nprocy && m3>=0 && m3<nprocz)  {
-      proc = m3 + m1*nprocz + m2*E->parallel.nprocxz;
-      if (proc!=me)  {
-        E->parallel.no_neighbors ++;
-        E->parallel.neighbors[E->parallel.no_neighbors] = proc;
-        E->parallel.neighbors_rev[proc] = E->parallel.no_neighbors;
-        }
+    for (i=-1;i<=1;i++)  
+      for (j=-1;j<=1;j++)   {
+	/* my neighbors  */
+	m1 = E->parallel.me_loc[1]+i; /* left-right */
+	m2 = E->parallel.me_loc[2]+k; /*  */
+	m3 = E->parallel.me_loc[3]+j; /* down-up */
+	if(m3 >= 0   && m3 <  E->parallel.nprocz && 
+	   m1 >= x1p && m1 <= x2p                && 
+	   m2 >= y1p && m2 <= y2p){
+	  /* this will allow neighbors to be assigned only within box
+	     for reflective, and wrap around for periodic */
+	  if(m1 == -1)
+	    m1use = E->parallel.nprocx-1;
+	  else if(m1 == E->parallel.nprocx)
+	    m1use = 0;                   
+	  else 
+	    m1use = m1;
+	  if(m2 == -1)                
+	    m2use = E->parallel.nprocy-1;
+	  else if(m2 == E->parallel.nprocy)
+	    m2use = 0;
+	  else 
+	    m2use = m2;
+	  add_processor_neighbor(m1use,m2use,m3,E);
+	}
       }
+  for (i=1;i <= E->parallel.no_neighbors;i++)   {
+    fprintf(E->fp,"aaa %d %d %d\n",
+	    i, 
+	    E->parallel.neighbors[i],
+	    E->parallel.neighbors_rev[E->parallel.neighbors[i]]);
   }
-
-
-  for (i=1;i<=E->parallel.no_neighbors;i++)   
-	  fprintf(E->fp,"aaa %d %d %d\n",i,E->parallel.neighbors[i],E->parallel.neighbors_rev[E->parallel.neighbors[i]]);
   fflush(E->fp);
 
-
-  lev=E->mesh.levmax;
+  lev = E->mesh.levmax;
 
   elx = E->lmesh.ELX[lev];
   elz = E->lmesh.ELZ[lev];
   ely = E->lmesh.ELY[lev];
+  elxelz = elx*elz;
 
-  for (el=1;el<=E->lmesh.nel;el++)
-      E->Element[el] = 0;
+  for (el=1;el <= E->lmesh.nel;el++) /* reset all element code flags */
+    E->Element[el] = 0;
+  
+  /* left and right (x) sides  */
+  for (k=1;k <= ely;k++)  
+    for (j=1;j <= elz;j++)  {
+      el = j +               (k-1)*elxelz; /* left */
+      E->Element[el] = E->Element[el] | SIDEE;
+      el = j + (elx-1)*elz + (k-1)*elxelz; /* right */
+      E->Element[el] = E->Element[el] | SIDEE;
+    }
 
-    for (k=1;k<=ely;k++)  
-    for (j=1;j<=elz;j++)  {
-      el = j + (k-1)*elx*elz;
+  /*  front and back (y) sides */
+  for (i=1;i <= elx;i++)  
+    for (j=1;j <= elz;j++)  {
+      el = j + (i-1)*elz;	             /* front */
       E->Element[el] = E->Element[el] | SIDEE;
-      el = j + (elx-1)*elz + (k-1)*elx*elz;
+      el = j + (i-1)*elz + (ely-1)*elxelz; /* back */
       E->Element[el] = E->Element[el] | SIDEE;
-      }
-
-    for (i=1;i<=elx;i++)  
-    for (j=1;j<=elz;j++)  {
-      el = j + (i-1)*elz;
+    }
+  /* top and bottom (z) sides */
+  for (k=1;k <= ely;k++)  
+    for (i=1;i <= elx;i++)  {
+      el = elz + (i-1)*elz + (k-1)*elxelz; /* top */
       E->Element[el] = E->Element[el] | SIDEE;
-      el = j + (i-1)*elz + (ely-1)*elx*elz;
+      el =   1 + (i-1)*elz + (k-1)*elxelz; /* bottom */
       E->Element[el] = E->Element[el] | SIDEE;
-      }
-
-    for (k=1;k<=ely;k++)  
-    for (i=1;i<=elx;i++)  {
-      el = elz + (i-1)*elz + (k-1)*elx*elz;
-      E->Element[el] = E->Element[el] | SIDEE;
-      el = 1 + (i-1)*elz + (k-1)*elx*elz;
-      E->Element[el] = E->Element[el] | SIDEE;
-      }
-
+    }
+  
 
   return;
+
+}
+/* for local counts m1,m2,m3, add this processor to the neighbor
+   list */
+void add_processor_neighbor(int m1, int m2, int m3, struct All_variables *E)
+{
+
+  int proc;
+  proc = m3 + m1*E->parallel.nprocz + m2*E->parallel.nprocxz; /* absolute processor number */
+#ifdef DEBUG
+  if((proc < 0) || (proc >= E->parallel.nproc)){
+    fprintf(stderr,"cpu %i m1 %i m2 %i m3 %i proc %i nproc %i\n",E->parallel.me,m1,m2,m3,proc,E->parallel.nproc);
+    myerror("out of bounds in add_processor_neighbor",E);
   }
-
-void parallel_communication_routs4(struct All_variables *E)
-
-  {
-  int i,ii,j,k,l,node,el,elt,lnode,jj,doff;
-  int lev,elx,elz,ely,nno,nox,noz,noy,p,kkk,kk;
-  int me, nprocz,nprocx, nprocy;
-
-  fprintf(stderr,"you are using periodic conditions with tracers, an option not being implemented at the moment!!!\n");
-  fprintf(stderr,"quit!!!\n");
-  fprintf(E->fp,"you are using periodic conditions with tracers, an option not being implemented at the moment!!!\n");
-  fprintf(E->fp,"quit!!!\n");
-
-  return;
+#endif
+  if (proc != E->parallel.me)  {
+    /* if this processor is not me, add it as a neighbor */
+    E->parallel.no_neighbors ++;
+    E->parallel.neighbors[E->parallel.no_neighbors] = proc;
+    E->parallel.neighbors_rev[proc] = E->parallel.no_neighbors;
   }
-
+}
 
 
 void exchange_number_rec_markers(struct All_variables *E)
@@ -1244,25 +1277,27 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 
 	MPI_Status status[CU_MPI_MSG_LIM];
 	MPI_Request request[CU_MPI_MSG_LIM];
-
+	//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok0 init %i\n",been_here);
 	if(been_here == 0)
 	{
-		sizeofk = 0;
-		for(i = 1; i <= E->mesh.nsd; i++)
-			for(k = 1; k <= 2; k++)
-			{
-				if(E->parallel.NUM_PASS[levmax].bound[i][k])
-					sizeofk = max(sizeofk, (1 + E->parallel.NUM_NODE[levmax].pass[i][k]) * sizeof(float));
-			}
+	  sizeofk = 0;
+	  for(i = 1; i <= E->mesh.nsd; i++)
+	    for(k = 1; k <= 2; k++)
+	      {
+		if(E->parallel.NUM_PASS[levmax].bound[i][k])
+		  sizeofk = max(sizeofk, (1 + E->parallel.NUM_NODE[levmax].pass[i][k]) * sizeof(float));
+		
+	      }
+	  for(k = 1; k <= 2; k++)
+	    {
+	      S[k] = (float *)malloc(sizeofk);
+	      R[k] = (float *)malloc(sizeofk);
+	    }
 
-		for(k = 1; k <= 2; k++)
-		{
-			S[k] = (float *)malloc(sizeofk);
-			R[k] = (float *)malloc(sizeofk);
-		}
-		been_here++;
+
+	  been_here++;
 	}
-	//if(E->parallel.me == 0)fprintf(stderr,"exchange_node_f20: ok1 \n");
+	//if(E->parallel.me == 0)fprintf(stderr,"%i: exchange_node_f20: ok1 \n",E->parallel.me);
 	for(i = 1; i <= E->mesh.nsd; i++)
 	{
 		idb = 0;

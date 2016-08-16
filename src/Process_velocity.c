@@ -61,10 +61,11 @@ void process_new_velocity(struct All_variables *E, int ii)
 
   if(E->control.stokes || ((ii % E->control.record_every) == 0))
     {
+      if(E->debug && (E->parallel.me==0))fprintf(stderr,"process new velocity: computing topo\n");
       /* get_CBF_topo(E,E->slice.tpg,E->slice.tpgb); */
       
       get_STD_topo(E, E->slice.tpg, E->slice.tpgb, ii);
-
+      if(E->debug && (E->parallel.me==0))fprintf(stderr,"process new velocity: computing averages\n");
       averages(E);
 
       /* 
@@ -73,6 +74,7 @@ void process_new_velocity(struct All_variables *E, int ii)
       */
       if((E->control.restart == 0) ||
 	 (E->monitor.solution_cycles !=  E->control.restart_timesteps)){
+	if(E->debug && (E->parallel.me==0))fprintf(stderr,"process new velocity: output...\n");
 #ifdef USE_GZDIR
 	if(E->control.gzdir)
 	  output_velo_related_gzdir(E, ii);	/* also topo */
@@ -81,6 +83,7 @@ void process_new_velocity(struct All_variables *E, int ii)
 #else
 	output_velo_related(E, ii);	/* also topo */
 #endif
+	if(E->debug && (E->parallel.me==0))fprintf(stderr,"process new velocity: output done\n");
       }
     }
 

@@ -44,6 +44,7 @@
 #ifdef USE_GGRD
 #include "hc.h"
 #endif
+#include "zlib.h"
 
 #if defined(__osf__)
 void *Malloc1();
@@ -86,6 +87,8 @@ void *Malloc1();
 #define SIDEE 0x800000
 
 #define LIDE 1
+
+#define CITCOM_TRACER_EPS_MARGIN 1.0e-6
 
 #ifndef COMPRESS_BINARY
 #define COMPRESS_BINARY "/usr/bin/compress"
@@ -739,6 +742,7 @@ struct CONTROL
 	char which_horiz_averages[1000];
 	char which_running_data[1000];
 	char which_observable_data[1000];
+  int add_init_t_gradient;
 
 	char PROBLEM_TYPE[20];		/* one of ... */
 	int KERNEL;
@@ -753,6 +757,7 @@ struct CONTROL
 	char SOLVER_TYPE[20];		/* one of ... */
 	int DIRECT;
 	int restart;
+  int force_initial_stokes_iteration;
 	int restart_frame;
   int restart_timesteps;
 	int CONJ_GRAD;
@@ -781,11 +786,13 @@ struct CONTROL
   struct ggrd_gt ggrd_ss_grd[4];
   int ggrd_mat_limit_prefactor,ggrd_mat_is_3d;
   char ggrd_mat_depth_file[1000],ggrd_flavor_gfile[1000],ggrd_flavor_dfile[1000];
+  
 #endif
 
 	int adi_heating, visc_heating;
 	int composition;
   int composition_neutralize_buoyancy;
+  int composition_init_checkerboard;
 	float z_comp;
 
 	int dfact;
@@ -814,6 +821,8 @@ struct CONTROL
 	float TBCtopval;
 	float TBCbotval;
 
+  float TBCbotval_side,TBCbotval_side_xapply;
+
 	float Q0, Q0ER;
 
 	int precondition;
@@ -841,7 +850,8 @@ struct CONTROL
 	int total_iteration_cycles;
 	int total_v_solver_calls;
 
-  int gzdir,vtk_pressure_out,vtk_vgm_out,vtk_viscosity_out,vtk_e2_out;
+  int gzdir,vtk_pressure_out,vtk_vgm_out,vtk_viscosity_out,vtk_e2_out,vtk_stress2_out,vtk_stress_3D,
+    vtk_ddpart_out;
   
 	int record_every;
 	int record_all_until;
@@ -953,8 +963,8 @@ struct All_variables
 	int *Node_map[MAX_LEVELS];
 	int *Node_eqn[MAX_LEVELS];
 	int *Node_k_id[MAX_LEVELS];
-
   
+  int debug;
 	float *RVV[MAX_NEIGHBORS], *PVV[MAX_NEIGHBORS];
 	CITCOM_XMC_PREC  *RXX[MAX_NEIGHBORS], *PXX[MAX_NEIGHBORS];
 	int *RINS[MAX_NEIGHBORS], *PINS[MAX_NEIGHBORS];
@@ -1015,7 +1025,7 @@ struct All_variables
 	float *EVI[MAX_LEVELS];		/* element viscosity has to soak down to all levels */
 	float *VB[4], *TB[4];		/* boundary conditions for V,T defined everywhere */
 	float *TW[MAX_LEVELS];		/* nodal weightings */
-
+  float *Vddpart;			/* onyl max level */
 
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
   float *VI2[MAX_LEVELS],*EVI2[MAX_LEVELS];

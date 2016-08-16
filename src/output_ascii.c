@@ -195,7 +195,7 @@ static bool output_ascii_temp( struct All_variables * E )
 
 		if( E -> monitor.solution_cycles % ( 20 * E -> control.record_every ) == 0 )
 		{
-			if( E -> control.composition == 0 )
+			if( !E -> control.composition)
 			{
 				for( i = 1; i <= E -> lmesh.nno; i++ )
 				{
@@ -203,7 +203,7 @@ static bool output_ascii_temp( struct All_variables * E )
 					fprintf( fd, "%.5e %.4e %.4e\n", E -> T[i], E -> heatflux[i], E -> heatflux_adv[i] );
 				}
 			}
-			else if( E -> control.composition )
+			else
 			{
 				for( i = 1; i <= E -> lmesh.nno; i++ )
 				{
@@ -214,14 +214,14 @@ static bool output_ascii_temp( struct All_variables * E )
 		}
 		else
 		{
-			if( E -> control.composition == 0 )
+		  if( !E -> control.composition )
 			{
 				for( i = 1; i <= E -> lmesh.nno; i++ )
 				{
 					fprintf( fd, "%.5e %.4e %.4e\n", E -> T[i], E -> V[3][i], E -> heatflux_adv[i] );
 				}
 			}
-			else if( E -> control.composition )
+		  else
 			{
 				for( i = 1; i <= E -> lmesh.nno; i++ )
 				{
