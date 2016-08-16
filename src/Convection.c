@@ -80,10 +80,9 @@ void set_convection_defaults(struct All_variables *E)
   }
   
 	if(E->control.composition)
-		//E->next_buoyancy_field = PG_timestep_particle;
-		E->next_buoyancy_field = PG_timestep_only_particles;
+	  E->next_buoyancy_field = PG_timestep_particle;
 	else
-		E->next_buoyancy_field = PG_timestep;
+	  E->next_buoyancy_field = PG_timestep;
 
 	E->special_process_new_velocity = PG_process;
 	E->special_process_new_buoyancy = twiddle_thumbs;

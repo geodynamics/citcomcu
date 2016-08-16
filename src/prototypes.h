@@ -8,7 +8,6 @@ void advection_diffusion_parameters(struct All_variables *);
 void advection_diffusion_allocate_memory(struct All_variables *);
 void PG_timestep_particle(struct All_variables *);
 void PG_timestep(struct All_variables *);
-void PG_timestep_only_particles(struct All_variables *);
 void predictor(struct All_variables *, float *, float *);
 void corrector(struct All_variables *, float *, float *, float *);
 void pg_solver(struct All_variables *, float *, float *, float *, float **, struct SOURCES, float, int, float **, unsigned int *);

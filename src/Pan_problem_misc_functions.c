@@ -75,7 +75,11 @@ void unique_copy_file(struct All_variables *E, char *name, char *comment)
 	return;
 }
 
-
+/* 
+   
+   thermo-chemical buoyancy computation
+   
+*/
 void thermal_buoyancy(struct All_variables *E)
 {
 	int i, j;
@@ -97,11 +101,13 @@ void thermal_buoyancy(struct All_variables *E)
 	    E->buoyancy[i] = (1.-E->C[i]) * E->control.Atemp * E->T[i] * E->expansivity[j] ;
 
 	  }
-	}else if(E->control.composition == 2){ /* purely compositional run, no depth dependence */
+	}else if(E->control.composition == 2){
+	  /* purely compositional run, no depth dependence */
 	  for(i = 1; i <= E->lmesh.nno; i++){
 	    E->buoyancy[i] = -E->control.Acomp * E->C[i];
 	  }
-	}else{			/* default */
+	}else{
+	  /* default */
 	  for(i = 1; i <= E->lmesh.nno; i++){
 	      j = (i - 1) % (E->lmesh.noz) + 1;
 	      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
