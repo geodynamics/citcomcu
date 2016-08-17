@@ -38,6 +38,7 @@
    as a function of the run, as an initial condition or as specified from
    a previous file */
 
+
 #include <mpi.h>
 #include <math.h>
 #include <malloc.h>
@@ -727,6 +728,11 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 	return;
 }
 
+/* 
+
+   only this routine's option 3 deals with compositional only 
+
+*/
 void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate)
 {
   static int visits = 0;
@@ -745,7 +751,7 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
   const int nel = E->lmesh.nel;
   const int ends = enodes[E->mesh.nsd];               /* AH ADDED */
   
-  const float fac_n = 3.5; /* power law expnent */
+  const double fac_n = 3.5; /* power law expnent */
   
   const double zero = 0.0;
   const double one = 1.0;
@@ -833,29 +839,40 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
     case 3:    // ARRHENIUS RHEOLOGY (parameters from Bina and Cizkova --> see Newtonian_NEW.m)
 
       eddpart = (float *)malloc((E->lmesh.nel + 3) * sizeof(float));
+      for (kk = 1; kk <= ends; kk++){
+	CC[kk] = TT[kk] = zero;
+      }
       // Viscosity calculated in dimensional world, and then non dimensionalized
       for(e = 1; e <= nel; e++){
-
         if(E->viscosity.sdepv_for_zero_comp){	
+	  /*  */
           for (kk = 1; kk <= ends; kk++){
              CC[kk] = E->C[E->ien[e].node[kk]];
              if(E->control.check_c_irange){
                if(CC[kk] < 0)
-                  CC[kk]=0.0;
+                  CC[kk]=zero;
                if(CC[kk] > 1)
-                  CC[kk]=1.0;
+                  CC[kk]=one;
              }
           }
         }
- 
+	if(E->control.composition != 2){
+	   for (kk = 1; kk <= ends; kk++)
+             TT[kk] = E->T[E->ien[e].node[kk]];
+	}else{			/* temp undefined/not advected */
+	  for (kk = 1; kk <= ends; kk++)
+	    TT[kk] = one;
+	}
+	  
         eddpart[e]=0;
 	for(jj = 1; jj <= vpts; jj++){ /* loop through integration points of element */
-          zzz = temp = zero;
-          temp_dim  = 273.0 + 1.0 * 1300.0;
-          comp = 0.0;
+          zzz = temp = comp = zero;
 	  for(kk = 1; kk <= ends; kk++){ /* loop through points in element */
-	     zzz += (1.0 - Xtmp[3][E->ien[e].node[kk]]) * E->N.vpt[GNVINDEX(kk, jj)]; /* depth, 1-z*/
-             comp += CC[kk] * E->N.vpt[GNVINDEX(kk,jj)];}
+	     zzz += (one - Xtmp[3][E->ien[e].node[kk]]) * E->N.vpt[GNVINDEX(kk, jj)]; /* depth, 1-z*/
+             comp += CC[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	     temp += TT[kk] * E->N.vpt[GNVINDEX(kk,jj)];
+	  }
+	  temp_dim = 273.0 + temp * 1300.0;
           zzz_dim   = zzz * E->monitor.length_scale;
 
 	  eedot_dim = eedot[e] / E->monitor.time_scale;  // dim strain rate 2nd invariant 
@@ -1526,6 +1543,9 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
 	  zz[kk] = (1.0 - E->X[3][node]); 
 	if(E->viscosity.plasticity_dimensional)
 	  zz[kk] *= ndz_to_m;	/* scale to meters */
+	/* 
+	   which property to use for tracers
+	*/
 	if(E->viscosity.pdepv_for_flavor)
 	  tfn[kk]= E->CF[0][node];
 	else if(E->viscosity.pdepv_for_zero_comp)
