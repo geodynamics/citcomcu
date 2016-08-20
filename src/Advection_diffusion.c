@@ -183,12 +183,12 @@ void PG_timestep_particle(struct All_variables *E)
 		      
 		      if(E->advection.ADVECTION)
 			{
-			  if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect predict\n");
+			  if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect temp predict\n");
 			  predictor(E, E->T, E->Tdot);
 			  
 			  for(psc_pass = 0; psc_pass < E->advection.temp_iterations; psc_pass++)
 			    {
-			      if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect correct\n");
+			      if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect temp correct\n");
 			      pg_solver(E, E->T, E->Tdot, DTdot, E->V, E->convection.heat_sources, 1.0, 1, E->TB, E->node);
 			      corrector(E, E->T, E->Tdot, DTdot);
 			    }

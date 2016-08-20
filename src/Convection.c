@@ -79,28 +79,28 @@ void set_convection_defaults(struct All_variables *E)
     E->tracers_assign_dense_only = 0;
   }
   
-	if(E->control.composition)
-	  E->next_buoyancy_field = PG_timestep_particle;
-	else
-	  E->next_buoyancy_field = PG_timestep;
-
-	E->special_process_new_velocity = PG_process;
-	E->special_process_new_buoyancy = twiddle_thumbs;
-	E->problem_settings = read_convection_settings;
-	E->problem_derived_values = convection_derived_values;
-	E->problem_allocate_vars = convection_allocate_memory;
-	E->problem_boundary_conds = convection_boundary_conditions;
-	E->problem_initial_fields = convection_initial_fields;
-	E->problem_node_positions = node_locations;
-	E->problem_update_node_positions = twiddle_thumbs;
-	E->problem_update_bcs = twiddle_thumbs;
-
-	sprintf(E->control.which_data_files, "Temp,Strf,Pres");
-	sprintf(E->control.which_horiz_averages, "Temp,Visc,Vrms");
-	sprintf(E->control.which_running_data, "Step,Time,");
-	sprintf(E->control.which_observable_data, "Shfl");
-
-	return;
+  if(E->control.composition)
+    E->next_buoyancy_field = PG_timestep_particle;
+  else
+    E->next_buoyancy_field = PG_timestep;
+  
+  E->special_process_new_velocity = PG_process;
+  E->special_process_new_buoyancy = twiddle_thumbs;
+  E->problem_settings = read_convection_settings;
+  E->problem_derived_values = convection_derived_values;
+  E->problem_allocate_vars = convection_allocate_memory;
+  E->problem_boundary_conds = convection_boundary_conditions;
+  E->problem_initial_fields = convection_initial_fields;
+  E->problem_node_positions = node_locations;
+  E->problem_update_node_positions = twiddle_thumbs;
+  E->problem_update_bcs = twiddle_thumbs;
+  
+  sprintf(E->control.which_data_files, "Temp,Strf,Pres");
+  sprintf(E->control.which_horiz_averages, "Temp,Visc,Vrms");
+  sprintf(E->control.which_running_data, "Step,Time,");
+  sprintf(E->control.which_observable_data, "Shfl");
+  
+  return;
 }
 
 void read_convection_settings(struct All_variables *E)
@@ -119,29 +119,7 @@ void read_convection_settings(struct All_variables *E)
 	input_boolean("halfspace", &(E->convection.half_space_cooling), "off", m);
 	input_float("halfspage", &(E->convection.half_space_age), "nodefault", m);
 
-	/*
-	input_int("temperature_blobs", &(E->convection.temp_blobs), "0", m);
-	input_float_vector("temperature_blobx", E->convection.temp_blobs, E->convection.temp_blob_x, m);
-	input_float_vector("temperature_bloby", E->convection.temp_blobs, E->convection.temp_blob_y, m);
-	input_float_vector("temperature_blobz", E->convection.temp_blobs, E->convection.temp_blob_z, m);
-	input_float_vector("temperature_blobsize", E->convection.temp_blobs, E->convection.temp_blob_radius, m);
-	input_float_vector("temperature_blobDT", E->convection.temp_blobs, E->convection.temp_blob_T, m);
-	input_float_vector("temperature_blobbg", E->convection.temp_blobs, E->convection.temp_blob_bg, m);
-	input_int_vector("temperature_blobsticky", E->convection.temp_blobs, E->convection.temp_blob_sticky, m);
 
-	input_int("temperature_zones", &(E->convection.temp_zones), "0", m);
-	input_float_vector("temperature_zonex1", E->convection.temp_zones, E->convection.temp_zonex1, m);
-	input_float_vector("temperature_zonex2", E->convection.temp_zones, E->convection.temp_zonex2, m);
-	input_float_vector("temperature_zonez1", E->convection.temp_zones, E->convection.temp_zonez1, m);
-	input_float_vector("temperature_zonez2", E->convection.temp_zones, E->convection.temp_zonez2, m);
-	input_float_vector("temperature_zoney1", E->convection.temp_zones, E->convection.temp_zoney1, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zonehw", E->convection.temp_zones, E->convection.temp_zonehw, m);
-	input_float_vector("temperature_zonemag", E->convection.temp_zones, E->convection.temp_zonemag, m);
-	input_int_vector("temperature_zonesticky", E->convection.temp_zones, E->convection.temp_zone_sticky, m);
-	*/
 
 	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32", m);
 	input_boolean("random_t_init",&E->convection.random_t_init,"off", m);

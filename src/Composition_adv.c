@@ -824,7 +824,7 @@ void get_CF_from_markers(struct All_variables *E, int **CF)
   }
   dmin = (float *)malloc((nno1) * sizeof(float));
   switch(method){
-  case 0:			
+   case 0:			
     /* determine nodal flavor based on the closest tracer */
     for(k=0;k < nno1;k++)
       dmin[k] = 1e10;

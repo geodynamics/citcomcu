@@ -174,6 +174,7 @@ void viscosity_parameters(struct All_variables *E)
         input_int("another_flavor",&(E->viscosity.another_flavor),"0",m);
         input_float("another_flavor_value",&(E->viscosity.another_flavor_value),"10",m);
         input_float("another_flavor_visc",&(E->viscosity.another_flavor_visc),"1.0",m);
+        input_float("another_flavor_buoyancy",&(E->viscosity.another_flavor_buoyancy),"0.0",m);
 
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
 	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	    /* make comp dep viscosity absolute  */
@@ -785,8 +786,8 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
   }else if(E->control.CART3D){
     for(i = 1; i <= E->mesh.nsd; i++)
       Xtmp[i] = E->X[i];
-    ztop = 1.0;
-    zbotm = 0.0;
+    ztop = one;
+    zbotm = zero;
   }
   
   if((!E->control.restart) && (visits == 0)){

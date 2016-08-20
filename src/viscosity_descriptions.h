@@ -180,6 +180,7 @@ struct VISC_OPT
   int another_flavor;
   float flavor_visc;
   float another_flavor_value;
+  float another_flavor_buoyancy;
   float another_flavor_visc;
    
 

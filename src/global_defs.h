@@ -58,6 +58,8 @@ void *Malloc1();
 #define CITCOM_XMC_PREC double
 #endif
 
+#define CITCOM_EPS 1e-7	/* for == 0 test */
+
 /* #define Malloc0 malloc */
 
 #define LIDN 0x1
