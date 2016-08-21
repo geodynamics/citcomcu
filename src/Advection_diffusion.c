@@ -443,7 +443,7 @@ void pg_solver(struct All_variables *E, float *T, float *Tdot, float *DTdot, flo
 
 void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, float **V, double rtf[4][9], float diffusion)
 {
-	int i, j;
+	int i, j, ih1, ih2;
 	int *ienmatrix;
 
 	//double xsi1, xsi2, xsi3;
@@ -480,9 +480,11 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 
 	for(i = 1; i <= ENODES3D; i++)
 	{
-		uc1 += E->N.ppt[GNPINDEX(i, 1)] * V[1][ienmatrix[i]];
-		uc2 += E->N.ppt[GNPINDEX(i, 1)] * V[2][ienmatrix[i]];
-		uc3 += E->N.ppt[GNPINDEX(i, 1)] * V[3][ienmatrix[i]];
+		ih1 = GNPINDEX(i, 1);
+		ih2 = ienmatrix[i];
+		uc1 += E->N.ppt[ih1] * V[1][ih2];
+		uc2 += E->N.ppt[ih1] * V[2][ih2];
+		uc3 += E->N.ppt[ih1] * V[3][ih2];
 	}
 
 	uxse = fabs(uc1 * size1);
@@ -507,9 +509,10 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 
 			for(j = 1; j <= ENODES3D; j++)	/* this line heavily used */
 			{
-				u1 += V[1][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
-				u2 += V[2][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
-				u3 += V[3][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
+				ih1 = ienmatrix[j];ih2 = GNVINDEX(j, i);
+				u1 += V[1][ih1] * E->N.vpt[ih2];
+				u2 += V[2][ih1] * E->N.vpt[ih2];
+				u3 += V[3][ih1] * E->N.vpt[ih2];
 			}
 
 			for(j = 1; j <= ENODES3D; j++)
@@ -528,9 +531,10 @@ void pg_shape_fn(struct All_variables *E, int el, struct Shape_function *PG, flo
 
 			for(j = 1; j <= ENODES3D; j++)	/* this line heavily used */
 			{
-				u1 += V[1][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
-				u2 += V[2][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
-				u3 += V[3][ienmatrix[j]] * E->N.vpt[GNVINDEX(j, i)];
+				ih1 = ienmatrix[j];ih2 = GNVINDEX(j, i);
+				u1 += V[1][ih1] * E->N.vpt[ih2];
+				u2 += V[2][ih1] * E->N.vpt[ih2];
+				u3 += V[3][ih1] * E->N.vpt[ih2];
 			}
 
 			for(j = 1; j <= ENODES3D; j++)
