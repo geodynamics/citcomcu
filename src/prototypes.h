@@ -267,7 +267,6 @@ void thermal_buoyancy(struct All_variables *);
 void compositional_buoyancy(struct All_variables *);
 double SIN_D(double);
 double COT_D(double);
-void *Malloc1(int, char *, int);
 int read_previous_field(struct All_variables *, float *, char *, char *);
 void fcopy_interpolating(struct All_variables *, float *, float *, float *, int, int, int, float *, float *);
 float cross2d(float, float, float, float, int);
@@ -279,7 +278,7 @@ void field_arbitrary_harmonic_file(struct All_variables *, int, struct Harm *, c
 void field_arbitrary_harmonic(struct All_variables *, struct Harm *, float *, int, unsigned int *, unsigned int, unsigned int);
 double myatan(double, double);
 FILE *safe_fopen(char *, char *);
-void *safe_malloc(size_t);
+void *safe_malloc_winfo(size_t,char *, unsigned long);
 void calc_cbase_at_tp(float, float, float *);
 void convert_pvec_to_cvec(float, float, float, float *, float *);
 void convert_cvec_to_pvec(float, float, float, float *, float *);

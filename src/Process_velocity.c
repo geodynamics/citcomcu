@@ -83,7 +83,8 @@ void process_new_velocity(struct All_variables *E, int ii)
 #else
 	output_velo_related(E, ii);	/* also topo */
 #endif
-	if(E->debug && (E->parallel.me==0))fprintf(stderr,"process new velocity: output done\n");
+	if(E->debug && (E->parallel.me==0))
+	  fprintf(stderr,"process new velocity: output done\n");
       }
     }
 

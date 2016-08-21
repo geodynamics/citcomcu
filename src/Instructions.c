@@ -172,111 +172,111 @@ void allocate_common_vars(struct All_variables *E)
 	E->mesh.feqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2) * sizeof(float);
 	E->mesh.deqn_malloc_size = (E->mesh.nsd * E->lmesh.nno + 2) * sizeof(double);
 
-	E->P = (double *)malloc((E->lmesh.npno + 1) * sizeof(double));
-	E->S = (double *)malloc((E->lmesh.npno + 1) * sizeof(double));
+	E->P = (double *)safe_malloc((E->lmesh.npno + 1) * sizeof(double));
+	E->S = (double *)safe_malloc((E->lmesh.npno + 1) * sizeof(double));
 
-	E->Have.f = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.F = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.T = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.C = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.Vi = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.Rho = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.vrms = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
-	E->Have.Tadi = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.f = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.F = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.T = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.C = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.Vi = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.Rho = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.vrms = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
+	E->Have.Tadi = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
 
-	E->segment.Tz = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-	E->segment.Vx = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
+	E->segment.Tz = (float *)safe_malloc((E->lmesh.noz + 1) * sizeof(float));
+	E->segment.Vx = (float *)safe_malloc((E->lmesh.noz + 1) * sizeof(float));
 
-	E->F = (double *)malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
-	E->U = (double *)malloc((E->lmesh.neq + 2) * sizeof(double));
-	E->T = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->C = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->CE = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-	E->buoyancy = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->NP = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->heatflux = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->heatflux_adv = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->edot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->F = (double *)safe_malloc((E->mesh.nsd * E->lmesh.nnov + 1) * sizeof(double));
+	E->U = (double *)safe_malloc((E->lmesh.neq + 2) * sizeof(double));
+	E->T = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->C = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->CE = (float *)safe_malloc((E->lmesh.nel + 1) * sizeof(float));
+	E->buoyancy = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->NP = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->heatflux = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->heatflux_adv = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->edot = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
 
-	E->heating_adi = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-	E->heating_visc = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-	E->heating_latent = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
+	E->heating_adi = (float *)safe_malloc((E->lmesh.nel + 1) * sizeof(float));
+	E->heating_visc = (float *)safe_malloc((E->lmesh.nel + 1) * sizeof(float));
+	E->heating_latent = (float *)safe_malloc((E->lmesh.nel + 1) * sizeof(float));
 
-	E->Fas670 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->Fas670_b = (float *)malloc((E->lmesh.nsf + 1) * sizeof(float));
-	E->Fas410 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	E->Fas410_b = (float *)malloc((E->lmesh.nsf + 1) * sizeof(float));
+	E->Fas670 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->Fas670_b = (float *)safe_malloc((E->lmesh.nsf + 1) * sizeof(float));
+	E->Fas410 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	E->Fas410_b = (float *)safe_malloc((E->lmesh.nsf + 1) * sizeof(float));
 
 
-	E->diffusivity = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-	E->expansivity = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
+	E->diffusivity = (float *)safe_malloc((E->lmesh.noz + 1) * sizeof(float));
+	E->expansivity = (float *)safe_malloc((E->lmesh.noz + 1) * sizeof(float));
 
 
 	for(i = 1; i <= E->mesh.nsd; i++)
 	{
-		E->TB[i] = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-		E->V[i] = (float *)malloc((E->lmesh.nnov + 1) * sizeof(float));
-		E->VB[i] = (float *)malloc((E->lmesh.nnov + 1) * sizeof(float));
+		E->TB[i] = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+		E->V[i] = (float *)safe_malloc((E->lmesh.nnov + 1) * sizeof(float));
+		E->VB[i] = (float *)safe_malloc((E->lmesh.nnov + 1) * sizeof(float));
 	}
 
-	E->stress = (float *)malloc((E->lmesh.nsf * 12 + 12) * sizeof(float));
-	E->slice.tpg = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.tpgb = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.vline = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.vlinek = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.shflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.bhflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.cen_mflux = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.vxsurf[1] = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
-	E->slice.vxsurf[2] = (float *)malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->stress = (float *)safe_malloc((E->lmesh.nsf * 12 + 12) * sizeof(float));
+	E->slice.tpg = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.tpgb = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.vline = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.vlinek = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.shflux = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.bhflux = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.cen_mflux = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.vxsurf[1] = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
+	E->slice.vxsurf[2] = (float *)safe_malloc((E->lmesh.nsf + 2) * sizeof(float));
 
-	E->mat = (int *)malloc((E->lmesh.nel + 2) * sizeof(int));
+	E->mat = (int *)safe_malloc((E->lmesh.nel + 2) * sizeof(int));
 
-	E->XP[1] = (double *)malloc((E->lmesh.nox + 1) * sizeof(double));
-	E->XP[2] = (double *)malloc((E->lmesh.noy + 1) * sizeof(double));
-	E->XP[3] = (double *)malloc((E->lmesh.noz + 1) * sizeof(double));
+	E->XP[1] = (double *)safe_malloc((E->lmesh.nox + 1) * sizeof(double));
+	E->XP[2] = (double *)safe_malloc((E->lmesh.noy + 1) * sizeof(double));
+	E->XP[3] = (double *)safe_malloc((E->lmesh.noz + 1) * sizeof(double));
 	E->lmesh.rnoz = 50 * E->lmesh.elz + 1;
-	E->XRG[3] = (double *)malloc((E->lmesh.rnoz + 1) * sizeof(double));
-	E->RG[3] = (int *)malloc((E->lmesh.rnoz + 1) * sizeof(int));
+	E->XRG[3] = (double *)safe_malloc((E->lmesh.rnoz + 1) * sizeof(double));
+	E->RG[3] = (int *)safe_malloc((E->lmesh.rnoz + 1) * sizeof(int));
 
 	/* set up memory for different grids  */
 	for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
 	{
 		for(j = 1; j <= E->mesh.nsd; j++)
-			E->XX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+			E->XX[i][j] = (float *)safe_malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
 		if(E->control.Rsphere)
 			for(j = 1; j <= E->mesh.nsd; j++)
-				E->SXX[i][j] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+				E->SXX[i][j] = (float *)safe_malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
 
-		E->MASS[i] = (float *)malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
+		E->MASS[i] = (float *)safe_malloc((E->lmesh.NNO[i] + 1) * sizeof(float));
 
-		E->ECO[i] = (struct COORD *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct COORD));
-		E->IEN[i] = (struct IEN *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct IEN));
-		E->ID[i] = (struct ID *)malloc((E->lmesh.NNO[i] + 2) * sizeof(struct ID));
-		E->GNX[i] = (struct Shape_function_dx *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dx));
-		E->GDA[i] = (struct Shape_function_dA *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dA));
-		E->EL[i] = (struct SUBEL *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct SUBEL));
-		E->LMD[i] = (struct LM *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct LM));
+		E->ECO[i] = (struct COORD *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(struct COORD));
+		E->IEN[i] = (struct IEN *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(struct IEN));
+		E->ID[i] = (struct ID *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(struct ID));
+		E->GNX[i] = (struct Shape_function_dx *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dx));
+		E->GDA[i] = (struct Shape_function_dA *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(struct Shape_function_dA));
+		E->EL[i] = (struct SUBEL *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(struct SUBEL));
+		E->LMD[i] = (struct LM *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(struct LM));
 
-		E->EVI[i] = (float *)malloc((E->lmesh.NEL[i] + 2) * vpoints[E->mesh.nsd] * sizeof(float));
+		E->EVI[i] = (float *)safe_malloc((E->lmesh.NEL[i] + 2) * vpoints[E->mesh.nsd] * sizeof(float));
 #ifdef USE_GGRD
 		if(i==E->mesh.levmax)
-		  E->VIP = (float *)malloc((E->lmesh.NEL[i] + 2) * sizeof(float));
+		  E->VIP = (float *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(float));
 #endif
 
-		E->TW[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
-		E->VI[i] = (float *)malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
-		E->NODE[i] = (unsigned int *)malloc((E->lmesh.NNO[i] + 2) * sizeof(unsigned int));
-		E->TWW[i] = (struct FNODE *)malloc((E->lmesh.NEL[i] + 2) * sizeof(struct FNODE));
+		E->TW[i] = (float *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
+		E->VI[i] = (float *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(float));
+		E->NODE[i] = (unsigned int *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(unsigned int));
+		E->TWW[i] = (struct FNODE *)safe_malloc((E->lmesh.NEL[i] + 2) * sizeof(struct FNODE));
 
-		E->NEI[i].nels = (int *)malloc((E->lmesh.NNO[i] + 2) * sizeof(int));
-		E->NEI[i].lnode = (int *)malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
-		E->NEI[i].element = (int *)malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
+		E->NEI[i].nels = (int *)safe_malloc((E->lmesh.NNO[i] + 2) * sizeof(int));
+		E->NEI[i].lnode = (int *)safe_malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
+		E->NEI[i].element = (int *)safe_malloc((E->lmesh.NNO[i] + 2) * enodes[E->mesh.nsd] * sizeof(int));
 
-		E->elt_del[i] = (struct EG *)malloc((E->lmesh.NEL[i] + 1) * sizeof(struct EG));
+		E->elt_del[i] = (struct EG *)safe_malloc((E->lmesh.NEL[i] + 1) * sizeof(struct EG));
 
-		E->BI[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-		E->BPI[i] = (double *)malloc((E->lmesh.NPNO[i] + 1) * sizeof(double));
+		E->BI[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+		E->BPI[i] = (double *)safe_malloc((E->lmesh.NPNO[i] + 1) * sizeof(double));
 		E->control.B_is_good[i] = 0;
 	}
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
@@ -285,16 +285,16 @@ void allocate_common_vars(struct All_variables *E)
 	  for(i=E->mesh.levmin;i<=E->mesh.levmax;i++){
 	    nel  = E->lmesh.NEL[i];
 	    nno  = E->lmesh.NNO[i];
-	    E->EVI2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
-	    E->avmode[i] = (unsigned char *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(unsigned char));
-	    E->EVIn1[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
-	    E->EVIn2[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
-	    E->EVIn3[i] = (float *) malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVI2[i] = (float *) safe_malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->avmode[i] = (unsigned char *) safe_malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(unsigned char));
+	    E->EVIn1[i] = (float *) safe_malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVIn2[i] = (float *) safe_malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
+	    E->EVIn3[i] = (float *) safe_malloc((nel+1)*vpoints[E->mesh.nsd]*sizeof(float));
 	    
-	    E->VI2[i]  = (float *)        malloc((nno+1)*sizeof(float));
-	    E->VIn1[i]  = (float *)        malloc((nno+1)*sizeof(float));
-	    E->VIn2[i]  = (float *)        malloc((nno+1)*sizeof(float));
-	    E->VIn3[i]  = (float *)        malloc((nno+1)*sizeof(float));
+	    E->VI2[i]  = (float *)        safe_malloc((nno+1)*sizeof(float));
+	    E->VIn1[i]  = (float *)        safe_malloc((nno+1)*sizeof(float));
+	    E->VIn2[i]  = (float *)        safe_malloc((nno+1)*sizeof(float));
+	    E->VIn3[i]  = (float *)        safe_malloc((nno+1)*sizeof(float));
 	    if((!(E->EVI2[i]))||(!(E->VI2[i]))||
 	       (!(E->EVIn1[i]))||(!(E->EVIn2[i]))||(!(E->EVIn3[i]))||
 	       (!(E->VIn1[i]))||(!(E->VIn2[i]))||(!(E->VIn3[i]))){
@@ -308,8 +308,8 @@ void allocate_common_vars(struct All_variables *E)
 
 #endif
 
-	E->temp = (double *)malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(double));
-	E->Element = (unsigned int *)malloc((E->lmesh.nel + 2) * sizeof(unsigned int));
+	E->temp = (double *)safe_malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(double));
+	E->Element = (unsigned int *)safe_malloc((E->lmesh.nel + 2) * sizeof(unsigned int));
 
 
 	for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
@@ -327,17 +327,17 @@ void allocate_common_vars(struct All_variables *E)
 			nxyz = max(nxyz, noz * noy);
 		}
 
-		E->parallel.IDD[i] = (int *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(int));
-		E->parallel.NODE[i] = (struct BOUND *)malloc((nxyz + 2) * sizeof(struct BOUND));
-		E->parallel.IDPASS[i] = (struct BOUND *)malloc((10) * sizeof(struct BOUND));
-		E->parallel.EXCHANGE_NODE[i] = (struct PASS *)malloc((nxyz + 2) * sizeof(struct PASS));
-		E->parallel.EXCHANGE_ID[i] = (struct PASS *)malloc((nxyz * E->mesh.nsd + 3) * sizeof(struct PASS));
+		E->parallel.IDD[i] = (int *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(int));
+		E->parallel.NODE[i] = (struct BOUND *)safe_malloc((nxyz + 2) * sizeof(struct BOUND));
+		E->parallel.IDPASS[i] = (struct BOUND *)safe_malloc((10) * sizeof(struct BOUND));
+		E->parallel.EXCHANGE_NODE[i] = (struct PASS *)safe_malloc((nxyz + 2) * sizeof(struct PASS));
+		E->parallel.EXCHANGE_ID[i] = (struct PASS *)safe_malloc((nxyz * E->mesh.nsd + 3) * sizeof(struct PASS));
 
 		if(i == E->mesh.levmax)
 		{
-			E->sien = (struct SIEN *)malloc((nxyz + 2) * sizeof(struct SIEN));
-			E->surf_element = (int *)malloc((nxyz + 2) * sizeof(int));
-			E->surf_node = (int *)malloc((E->lmesh.nsf + 2) * sizeof(int));
+			E->sien = (struct SIEN *)safe_malloc((nxyz + 2) * sizeof(struct SIEN));
+			E->surf_element = (int *)safe_malloc((nxyz + 2) * sizeof(int));
+			E->surf_node = (int *)safe_malloc((E->lmesh.nsf + 2) * sizeof(int));
 		}
 
 	}
@@ -791,10 +791,10 @@ void read_initial_settings(struct All_variables *E)
 	input_boolean("gzdir",&(E->control.gzdir),"on",m);
 #endif
 	/* control of VTK type of gzdir output */
-	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"on",m);
+	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"off",m);
 	input_boolean("vtk_e2_out",&(E->control.vtk_e2_out),"off",m);
 	input_boolean("vtk_ddpart_out",&(E->control.vtk_ddpart_out),"off",m);
-        input_boolean("vtk_stress2_out",&(E->control.vtk_stress2_out),"on",m);	
+        input_boolean("vtk_stress2_out",&(E->control.vtk_stress2_out),"off",m);	
         input_boolean("vtk_stress_3D",&(E->control.vtk_stress_3D),"off",m);
         input_boolean("vtk_vgm_out",&(E->control.vtk_vgm_out),"off",m);
 	input_boolean("vtk_viscosity_out",&(E->control.vtk_viscosity_out),"on",m);

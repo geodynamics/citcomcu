@@ -74,12 +74,12 @@ double **dmatrix(int nrl, int nrh, int ncl, int nch)
 	double **m;
 
 	/* allocate pointer to rows  */
-	m = (double **)malloc((nrow + 1) * sizeof(double *));
+	m = (double **)safe_malloc((nrow + 1) * sizeof(double *));
 	m += 1;
 	m -= nrl;
 
 	/*  allocate rows and set the pointers accordingly   */
-	m[nrl] = (double *)malloc((nrow * ncol + 1) * sizeof(double));
+	m[nrl] = (double *)safe_malloc((nrow * ncol + 1) * sizeof(double));
 	m[nrl] += 1;
 	m[nrl] -= ncl;
 
@@ -96,12 +96,12 @@ float **fmatrix(int nrl, int nrh, int ncl, int nch)
 	float **m;
 
 	/* allocate pointer to rows  */
-	m = (float **)malloc((unsigned)((nrow + 1) * sizeof(float *)));
+	m = (float **)safe_malloc((unsigned)((nrow + 1) * sizeof(float *)));
 	m += 1;
 	m -= nrl;
 
 	/*  allocate rows and set the pointers accordingly   */
-	m[nrl] = (float *)malloc((unsigned)((nrow * ncol + 1) * sizeof(float)));
+	m[nrl] = (float *)safe_malloc((unsigned)((nrow * ncol + 1) * sizeof(float)));
 	m[nrl] += 1;
 	m[nrl] -= ncl;
 
@@ -137,14 +137,14 @@ void ffree_matrix(float **m, int nrl, int nrh, int ncl, int nch)
 double *dvector(int nl, int nh)
 {
 	double *v;
-	v = (double *)malloc((unsigned)(nh - nl + 1) * sizeof(double));
+	v = (double *)safe_malloc((unsigned)(nh - nl + 1) * sizeof(double));
 	return (v - nl);
 }
 
 float *fvector(int nl, int nh)
 {
 	float *v;
-	v = (float *)malloc((unsigned)(nh - nl + 1) * sizeof(float));
+	v = (float *)safe_malloc((unsigned)(nh - nl + 1) * sizeof(float));
 	return (v - nl);
 }
 
@@ -161,7 +161,7 @@ void ffree_vector(float *v, int nl, int nh)
 int *sivector(int nl, int nh)
 {
 	int *v;
-	v = (int *)malloc((unsigned)(nh - nl + 1) * sizeof(int));
+	v = (int *)safe_malloc((unsigned)(nh - nl + 1) * sizeof(int));
 	return (v - nl);
 }
 
@@ -382,9 +382,9 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F,
 
 	if(been_here == 0)
 	{
-		r = (double *)malloc((neq + 10) * sizeof(double));
-		D1 = (double *)malloc((neq + 10) * sizeof(double));
-		Au = (double *)malloc((neq + 10) * sizeof(double));
+		r = (double *)safe_malloc((neq + 10) * sizeof(double));
+		D1 = (double *)safe_malloc((neq + 10) * sizeof(double));
+		Au = (double *)safe_malloc((neq + 10) * sizeof(double));
 		E->control.total_iteration_cycles = 0;
 		E->control.total_v_solver_calls = 0;
 		for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
@@ -543,12 +543,12 @@ double multi_grid(struct All_variables *E, double *d1, double *F, double *Au, do
 	{
 		for(i = E->mesh.levmin; i <= E->mesh.levmax; i++)
 		{
-			vel[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-			res[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-			rhs[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-			fl[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-			del_vel[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
-			AU[i] = (double *)malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			vel[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			res[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			rhs[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			fl[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			del_vel[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
+			AU[i] = (double *)safe_malloc((E->lmesh.NEQ[i] + 2) * sizeof(double));
 		}
 	}
 	been_here = 1;
@@ -681,14 +681,14 @@ double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, dou
 
 	if(0 == been_here)			/* only used at low level (even if low=high) */
 	{
-		r0 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		r1 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		r2 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		z0 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		z1 = (double *)malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		p1 = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		p2 = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
-		Ap = (double *)malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		r0 = (double *)safe_malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		r1 = (double *)safe_malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		r2 = (double *)safe_malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		z0 = (double *)safe_malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		z1 = (double *)safe_malloc((1 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		p1 = (double *)safe_malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		p2 = (double *)safe_malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
+		Ap = (double *)safe_malloc((2 + E->lmesh.NEQ[mem_lev]) * sizeof(double));
 		been_here++;
 	}
 
@@ -791,7 +791,7 @@ void jacobi(struct All_variables *E, double *d0, double *F, double *Ad, double a
 
 	if(0 == been_here)
 	{
-		r1 = (double *)malloc((neq + 1) * sizeof(double));
+		r1 = (double *)safe_malloc((neq + 1) * sizeof(double));
 		been_here++;
 	}
 
@@ -911,9 +911,9 @@ void element_gauss_seidel(struct All_variables *E, double *d0, double *F, double
 
 	if(0 == been_here)
 	{
-		dd = (double *)malloc((neq + 1) * sizeof(double));
-		vis = (int *)malloc((nno + 1) * sizeof(int));
-		elt_k = (double *)malloc((24 * 24) * sizeof(double));
+		dd = (double *)safe_malloc((neq + 1) * sizeof(double));
+		vis = (int *)safe_malloc((nno + 1) * sizeof(int));
+		elt_k = (double *)safe_malloc((24 * 24) * sizeof(double));
 		been_here++;
 	}
 
@@ -1105,7 +1105,7 @@ void gauss_seidel1(struct All_variables *E, double *d0, double *F, double *Ad, d
 		}
 
 
-	temp = (higher_precision *) malloc((neq + 2) * sizeof(higher_precision));
+	temp = (higher_precision *) safe_malloc((neq + 2) * sizeof(higher_precision));
 
 	count = 0;
 
@@ -1198,8 +1198,8 @@ void gauss_seidel(struct All_variables *E, double *d0, double *F, double *Ad, do
 
 	if(been_here == 0)
 	{
-		temp = (higher_precision *) malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(higher_precision));
-		temp1 = (higher_precision *) malloc((E->lmesh.NEQ[E->mesh.levmax] + 1) * sizeof(higher_precision));
+		temp = (higher_precision *) safe_malloc((E->lmesh.NEQ[E->mesh.levmax] + 2) * sizeof(higher_precision));
+		temp1 = (higher_precision *) safe_malloc((E->lmesh.NEQ[E->mesh.levmax] + 1) * sizeof(higher_precision));
 		been_here++;
 	}
 

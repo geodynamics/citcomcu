@@ -52,7 +52,7 @@ void set_sphere_harmonics(struct All_variables *E)
 	double dth, dfi;
 
 	for(i = 0; i <= E->sphere.llmax; i++)
-		E->sphere.hindex[i] = (int *)malloc((E->sphere.llmax + 3) * sizeof(int));
+		E->sphere.hindex[i] = (int *)safe_malloc((E->sphere.llmax + 3) * sizeof(int));
 
 	E->sphere.elx = E->sphere.nox - 1;
 	E->sphere.ely = E->sphere.noy - 1;
@@ -69,8 +69,8 @@ void set_sphere_harmonics(struct All_variables *E)
 	E->sphere.leys = E->sphere.lely * E->parallel.nprocy;
 
 
-	E->sphere.sx[1] = (double *)malloc((E->sphere.nsf + 1) * sizeof(double));
-	E->sphere.sx[2] = (double *)malloc((E->sphere.nsf + 1) * sizeof(double));
+	E->sphere.sx[1] = (double *)safe_malloc((E->sphere.nsf + 1) * sizeof(double));
+	E->sphere.sx[2] = (double *)safe_malloc((E->sphere.nsf + 1) * sizeof(double));
 
 	i = 0;
 	for(ll = 0; ll <= E->sphere.llmax; ll++)
@@ -81,37 +81,37 @@ void set_sphere_harmonics(struct All_variables *E)
 		}
 	E->sphere.hindice = i;
 
-	E->sphere.con = (double *)malloc((E->sphere.hindice + 3) * sizeof(double));
+	E->sphere.con = (double *)safe_malloc((E->sphere.hindice + 3) * sizeof(double));
 
 	for(i = 1; i <= E->sphere.lelx; i++)
-		E->sphere.tableplm[i] = (double *)malloc((E->sphere.hindice + 3) * sizeof(double));
+		E->sphere.tableplm[i] = (double *)safe_malloc((E->sphere.hindice + 3) * sizeof(double));
 	for(i = 1; i <= E->sphere.lely; i++)
 	{
-		E->sphere.tablecosf[i] = (double *)malloc((E->sphere.llmax + 3) * sizeof(double));
-		E->sphere.tablesinf[i] = (double *)malloc((E->sphere.llmax + 3) * sizeof(double));
+		E->sphere.tablecosf[i] = (double *)safe_malloc((E->sphere.llmax + 3) * sizeof(double));
+		E->sphere.tablesinf[i] = (double *)safe_malloc((E->sphere.llmax + 3) * sizeof(double));
 	}
 
 	for(i = 1; i <= E->sphere.lnox; i++)
-		E->sphere.tableplm_n[i] = (double *)malloc((E->sphere.hindice + 3) * sizeof(double));
+		E->sphere.tableplm_n[i] = (double *)safe_malloc((E->sphere.hindice + 3) * sizeof(double));
 	for(i = 1; i <= E->sphere.lnoy; i++)
 	{
-		E->sphere.tablecosf_n[i] = (double *)malloc((E->sphere.llmax + 3) * sizeof(double));
-		E->sphere.tablesinf_n[i] = (double *)malloc((E->sphere.llmax + 3) * sizeof(double));
+		E->sphere.tablecosf_n[i] = (double *)safe_malloc((E->sphere.llmax + 3) * sizeof(double));
+		E->sphere.tablesinf_n[i] = (double *)safe_malloc((E->sphere.llmax + 3) * sizeof(double));
 	}
-	E->sphere.sien = (struct SIEN *)malloc((E->sphere.lsnel + 1) * sizeof(struct SIEN));
+	E->sphere.sien = (struct SIEN *)safe_malloc((E->sphere.lsnel + 1) * sizeof(struct SIEN));
 
 
 
 	for(i = 0; i <= 1; i++)
 	{
-		E->sphere.harm_tpgt[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_tpgb[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_velp[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_velt[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_divg[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_vort[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_visc[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
-		E->sphere.harm_geoid[i] = (float *)malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_tpgt[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_tpgb[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_velp[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_velt[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_divg[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_vort[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_visc[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
+		E->sphere.harm_geoid[i] = (float *)safe_malloc((E->sphere.hindice + 2) * sizeof(float));
 	}
 
 
@@ -166,7 +166,7 @@ void sphere_harmonics_layer(struct All_variables *E, float **T, float *sphc, flo
 	if(E->parallel.me_loc[3] == 0 && iprint == 0)
 		printt = 1;
 
-	TG = (float *)malloc((E->sphere.nsf + 1) * sizeof(float));
+	TG = (float *)safe_malloc((E->sphere.nsf + 1) * sizeof(float));
 
 	proc_loc = E->parallel.me_loc[3];
 

@@ -53,7 +53,6 @@
 
 static void visc_from_B(struct All_variables *, float *, float *, int );
 static void visc_from_C(struct All_variables *, float *, float *, int );
-void *safe_malloc (size_t );
 
 void viscosity_parameters(struct All_variables *E)
 {
@@ -174,6 +173,7 @@ void viscosity_parameters(struct All_variables *E)
         input_int("another_flavor",&(E->viscosity.another_flavor),"0",m);
         input_float("another_flavor_value",&(E->viscosity.another_flavor_value),"10",m);
         input_float("another_flavor_visc",&(E->viscosity.another_flavor_visc),"1.0",m);
+        input_float("another_flavor_buoyancy",&(E->viscosity.another_flavor_buoyancy),"0.0",m);
 
 	input_boolean("CDEPV",&(E->viscosity.CDEPV),"off",m);
 	input_boolean("cdepv_absolute",&(E->viscosity.cdepv_absolute),"off",m);	    /* make comp dep viscosity absolute  */
@@ -441,7 +441,7 @@ void apply_viscosity_smoother(struct All_variables *E, float *visc, float *evisc
 	double *ViscCentre;
 	int i;
 
-	ViscCentre = (double *)malloc((E->lmesh.nno + 10) * sizeof(double));
+	ViscCentre = (double *)safe_malloc((E->lmesh.nno + 10) * sizeof(double));
 
 	for(i = 1; i <= E->viscosity.smooth_cycles; i++)
 	{
@@ -775,7 +775,7 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
   }
 
 
-  eedot = (float *)malloc((2 + nel) * sizeof(float));
+  eedot = (float *)safe_malloc((2 + nel) * sizeof(float));
   
   if(E->control.Rsphere){
     for(i = 1; i <= E->mesh.nsd; i++)
@@ -785,8 +785,8 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
   }else if(E->control.CART3D){
     for(i = 1; i <= E->mesh.nsd; i++)
       Xtmp[i] = E->X[i];
-    ztop = 1.0;
-    zbotm = 0.0;
+    ztop = one;
+    zbotm = zero;
   }
   
   if((!E->control.restart) && (visits == 0)){
@@ -838,7 +838,7 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
       break;
     case 3:    // ARRHENIUS RHEOLOGY (parameters from Bina and Cizkova --> see Newtonian_NEW.m)
 
-      eddpart = (float *)malloc((E->lmesh.nel + 3) * sizeof(float));
+      eddpart = (float *)safe_malloc((E->lmesh.nel + 3) * sizeof(float));
       for (kk = 1; kk <= ends; kk++){
 	CC[kk] = TT[kk] = zero;
       }

@@ -693,7 +693,8 @@ void ggrd_deal_with_composition_input(struct All_variables *E,
     }
   }else{
     /* 3-D  */
-    if(ggrd_grdtrack_init_general(TRUE,ingfile,indfile,"",E->control.ggrd.comp.d,FALSE,FALSE,use_nearneighbor))
+    if(ggrd_grdtrack_init_general(TRUE,ingfile,
+				  indfile,"",E->control.ggrd.comp.d,(E->parallel.me==0),FALSE,use_nearneighbor))
       myerror("grdtrack init error",E);
   }
   if(E->parallel.me <  E->parallel.nproc-1){

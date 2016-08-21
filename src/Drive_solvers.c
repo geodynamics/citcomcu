@@ -77,7 +77,7 @@ void general_stokes_solver(struct All_variables *E)
 	damp = 0;
       }
       /* allocate oldU only if iterations are needed */
-      oldU = (double *)malloc(neq * sizeof(double));
+      oldU = (double *)safe_malloc(neq * sizeof(double));
       if(!E->control.restart){
 	for(i = 0; i < neq; i++)
 	  oldU[i] = 0.0;
@@ -91,7 +91,7 @@ void general_stokes_solver(struct All_variables *E)
   
   dUdot_mag = 0.0;
   if(iterate){			/* init each time if iterations are needed */
-    delta_U = (double *)malloc(neq * sizeof(double));
+    delta_U = (double *)safe_malloc(neq * sizeof(double));
   }
   
   /* FIRST store the old velocity field */

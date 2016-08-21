@@ -959,7 +959,7 @@ void parallel_communication_routs4(struct All_variables *E)
   }
   
   E->parallel.no_neighbors  = 0;
-  E->parallel.neighbors_rev = (int *)malloc((E->parallel.nproc+1)*sizeof(int));
+  E->parallel.neighbors_rev = (int *)safe_malloc((E->parallel.nproc+1)*sizeof(int));
 
   for (k=-1;k<=1;k++)  
     for (i=-1;i<=1;i++)  
@@ -1073,8 +1073,8 @@ void exchange_number_rec_markers(struct All_variables *E)
 	{
 		for(k = 1; k <= E->parallel.no_neighbors; k++)
 		{
-			S[k] = (int *)malloc(2 * sizeof(int));
-			R[k] = (int *)malloc(2 * sizeof(int));
+			S[k] = (int *)safe_malloc(2 * sizeof(int));
+			R[k] = (int *)safe_malloc(2 * sizeof(int));
 		}
 		been_here++;
 	}
@@ -1201,8 +1201,8 @@ void exchange_id_d20(struct All_variables *E, double *U, int lev)
 
 		for(k = 1; k <= 2; k++)
 		{
-			S[k] = (double *)malloc(sizeofk);
-			R[k] = (double *)malloc(sizeofk);
+			S[k] = (double *)safe_malloc(sizeofk);
+			R[k] = (double *)safe_malloc(sizeofk);
 		}
 		been_here++;
 	}
@@ -1290,8 +1290,8 @@ void exchange_node_f20(struct All_variables *E, float *U, int lev)
 	      }
 	  for(k = 1; k <= 2; k++)
 	    {
-	      S[k] = (float *)malloc(sizeofk);
-	      R[k] = (float *)malloc(sizeofk);
+	      S[k] = (float *)safe_malloc(sizeofk);
+	      R[k] = (float *)safe_malloc(sizeofk);
 	    }
 
 
@@ -1375,8 +1375,8 @@ void exchange_node_int(struct All_variables *E, int *U, int lev)
 	      sizeofk = max(sizeofk, (1 + E->parallel.NUM_NODE[levmax].pass[i][k]) * sizeof(int));
 	}
       for(k = 1; k <= 2; k++){
-	S[k] = (int *)malloc(sizeofk);
-	R[k] = (int *)malloc(sizeofk);
+	S[k] = (int *)safe_malloc(sizeofk);
+	R[k] = (int *)safe_malloc(sizeofk);
       }
       been_here++;
   }

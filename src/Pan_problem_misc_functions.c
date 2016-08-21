@@ -82,47 +82,62 @@ void unique_copy_file(struct All_variables *E, char *name, char *comment)
 */
 void thermal_buoyancy(struct All_variables *E)
 {
-	int i, j;
-	float *H;
-	//const double zeroo = 0.0;
-	//const int i1 = 670;
-	//const int i2 = 670;
+  int i, j;
+  float *H;
+  static int init=0,
+    flavor_buoyancy=0,
+    phase_change_buoyancy=0;
+  if(!init){
+    if(fabs(E->viscosity.another_flavor_buoyancy) > CITCOM_EPS)
+      flavor_buoyancy = 1;
+    if((fabs(E->control.Ra_670) > CITCOM_EPS) || (fabs(E->control.Ra_410) > CITCOM_EPS))
+      phase_change_buoyancy = 1;
+    init = 1;
+  }
 
-	H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
-	if(E->control.composition_neutralize_buoyancy){
-
-	  for(i = 1; i <= E->lmesh.nno; i++){ /* for testing purposes,
-						 have unity
-						 composition reset the
-						 buoyancy  */
-	    if(E->C[i]>1)E->C[i] = 1;
-	    if(E->C[i]<0)E->C[i] = 0;
-	    j = (i - 1) % (E->lmesh.noz) + 1;
-	    E->buoyancy[i] = (1.-E->C[i]) * E->control.Atemp * E->T[i] * E->expansivity[j] ;
-
-	  }
-	}else if(E->control.composition == 2){
-	  /* purely compositional run, no depth dependence */
-	  for(i = 1; i <= E->lmesh.nno; i++){
-	    E->buoyancy[i] = -E->control.Acomp * E->C[i];
-	  }
-	}else{
-	  /* default */
-	  for(i = 1; i <= E->lmesh.nno; i++){
-	      j = (i - 1) % (E->lmesh.noz) + 1;
-	      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
-	  }
-	}
-	if(E->control.Ra_670 != 0.0 || E->control.Ra_410 != 0.0){
-	  
-	  phase_change(E, E->Fas670, E->Fas670_b, E->Fas410, E->Fas410_b);
-	  for(i = 1; i <= E->lmesh.nno; i++){
-	    E->buoyancy[i] = E->buoyancy[i] - E->control.Ra_670 * E->Fas670[i] - E->control.Ra_410 * E->Fas410[i];
-	  }
-	}
-	remove_horiz_ave(E, E->buoyancy, H, 0);
-	free((void *)H);
-	return;
+  H = (float *)malloc((E->lmesh.noz + 1) * sizeof(float));
+  if(E->control.composition_neutralize_buoyancy){
+    
+    for(i = 1; i <= E->lmesh.nno; i++){ /* for testing purposes,
+					   have unity
+					   composition reset the
+					   buoyancy  */
+      if(E->C[i]>1)E->C[i] = 1;
+      if(E->C[i]<0)E->C[i] = 0;
+      j = (i - 1) % (E->lmesh.noz) + 1;
+      E->buoyancy[i] = (1.-E->C[i]) * E->control.Atemp * E->T[i] * E->expansivity[j] ;
+    }
+  }else if(E->control.composition == 2){
+    /* purely compositional run, no depth dependence */
+    for(i = 1; i <= E->lmesh.nno; i++){
+      E->buoyancy[i] = -E->control.Acomp * E->C[i];
+    }
+  }else if(E->control.composition == 1){ /* thermo-chemical */
+    for(i = 1; i <= E->lmesh.nno; i++){
+      j = (i - 1) % (E->lmesh.noz) + 1;
+      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j] - E->control.Acomp * E->C[i];
+    }
+  }else{/* thermal only */
+    for(i = 1; i <= E->lmesh.nno; i++){
+      j = (i - 1) % (E->lmesh.noz) + 1;
+      E->buoyancy[i] = E->control.Atemp * E->T[i] * E->expansivity[j];
+    }
+  }
+  if(phase_change_buoyancy){
+    phase_change(E, E->Fas670, E->Fas670_b, E->Fas410, E->Fas410_b);
+    for(i = 1; i <= E->lmesh.nno; i++){
+      E->buoyancy[i] -= E->control.Ra_670 * E->Fas670[i] + E->control.Ra_410 * E->Fas410[i];
+    }
+  }
+  if(flavor_buoyancy){
+    for(i = 1; i <= E->lmesh.nno; i++){
+      if(E->CF[0][i] == E->viscosity.another_flavor_value)
+	E->buoyancy[i] += E->viscosity.another_flavor_buoyancy;
+    }
+  }
+  remove_horiz_ave(E, E->buoyancy, H, 0);
+  free((void *)H);
+  return;
 }
 
 
@@ -146,20 +161,6 @@ double COT_D(double x)
 }
 
 
-/* non-runaway malloc */
-void *Malloc1(int bytes, char *file, int line)
-{
-	void *ptr;
-
-	ptr = malloc((size_t) bytes);
-	if(ptr == (void *)NULL)
-	{
-		fprintf(stderr, "Memory: cannot allocate another %d bytes \n(line %d of file %s)\n", bytes, line, file);
-		exit(0);
-	}
-
-	return ptr;
-}
 
 
 /* Read in a file containing previous values of a field. The input in the parameter
@@ -873,13 +874,13 @@ FILE *safe_fopen(char *name,char *mode)
 /* 
    like malloc, but with test 
 */
-void *safe_malloc (size_t size)
+void *safe_malloc_winfo(size_t size, char *call_file, unsigned long call_line)
 {
   void *tmp;
 
   if ((tmp = malloc(size)) == NULL) {
-    fprintf(stderr, "safe_malloc: could not allocate memory, n = %i, exiting\n", 
-	    (int)size);
+    fprintf(stderr, "safe_malloc: [%s:%ul], could not allocate memory, n = %ul\n", 
+	    call_file, call_line, (unsigned long)size);
     parallel_process_termination();
   }
   return (tmp);

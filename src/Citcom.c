@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	process_temp_field(&E, E.monitor.solution_cycles);
 	if(E.debug && (E.parallel.me==0))fprintf(stderr,"processing vel\n");
 	process_new_velocity(&E, E.monitor.solution_cycles);
-	if(E.debug && (E.parallel.me==0))fprintf(stderr,"vel done\n");
+	if(E.debug && (E.parallel.me==0))fprintf(stderr,"process new vel done\n");
 
 	if(E.control.stokes)
 	{
@@ -111,13 +111,16 @@ int main(int argc, char **argv)
 	while(E.control.keep_going && (Emergency_stop == 0))
 	{
 	  
-	  
-		//process_heating(&E);
-		//if(E.debug && (E.parallel.me==0))fprintf(stderr,"process heating done\n");
-		
+	  	if(E.debug && (E.parallel.me==0))fprintf(stderr,"starting time loop\n");
+		if(E.control.composition != 2){
+			process_heating(&E);
+			if(E.debug && (E.parallel.me==0))fprintf(stderr,"process heating done\n");
+		}
+
 		E.monitor.solution_cycles++;
 		if(E.monitor.solution_cycles > E.control.print_convergence)
 			E.control.print_convergence = 1;
+		
 		 /**/ report(&E, "Update buoyancy for further `timesteps'");
 		(E.next_buoyancy_field) (&E);
 		if(E.debug && (E.parallel.me==0))fprintf(stderr,"buoyancy field done\n");
@@ -141,17 +144,17 @@ int main(int argc, char **argv)
 		process_new_velocity(&E, E.monitor.solution_cycles);
 		if(E.debug && (E.parallel.me==0))fprintf(stderr,"process new velocity done\n");
 
-//		if(E.monitor.T_interior > E.monitor.T_interior_max)
-//		{
-//			fprintf(stderr, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, E.advection.last_sub_iterations);
-//			fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, E.advection.last_sub_iterations);
-//			parallel_process_termination();
-//		}
+		if((E.control.composition !=2) && (E.monitor.T_interior > E.monitor.T_interior_max))
+		{
+			fprintf(stderr, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, 					E.advection.last_sub_iterations);
+			fprintf(E.fp, "quit due to maxT = %.4e sub_iteration%d\n", E.monitor.T_interior, 					E.advection.last_sub_iterations);
+			parallel_process_termination();
+		}
 		if(E.parallel.me == 0)
 		{
 			fprintf(E.fp, "CPU total = %g & CPU = %g for step %d time = %.4e dt = %.4e  maxT = %.4e sub_iteration%d markers=%d\n", 
 				CPU_time0() - start_time, CPU_time0() - time, E.monitor.solution_cycles, 
-				E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, E.advection.last_sub_iterations, E.advection.markers_g);
+				E.monitor.elapsed_time, E.advection.timestep, E.monitor.T_interior, 					E.advection.last_sub_iterations, E.advection.markers_g);
 			time = CPU_time0();
 		}
 

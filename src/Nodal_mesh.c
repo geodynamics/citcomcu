@@ -71,8 +71,8 @@ void node_locations(struct All_variables *E)
 
 	for(d = 1; d <= E->mesh.nsd; d++)
 	{
-		XX[d] = (float *)malloc((2 + E->mesh.nnx[d]) * sizeof(float));
-		XG[d] = (float *)malloc((2 + 1) * sizeof(float));
+		XX[d] = (float *)safe_malloc((2 + E->mesh.nnx[d]) * sizeof(float));
+		XG[d] = (float *)safe_malloc((2 + 1) * sizeof(float));
 	}
 
 	if(E->control.CART3D)

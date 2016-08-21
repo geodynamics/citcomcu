@@ -92,7 +92,7 @@ void return_horiz_sum(struct All_variables *E, float *X, float *H, int nn)
 	MPI_Comm world, horizon_p;
 	MPI_Group world_g, horizon_g;
 
-	processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
+	processors = (int *)safe_malloc((E->parallel.nprocxy + 2) * sizeof(int));
 
 	/* determine which processors should get the message from me for 
 	 * computing the layer averages */
@@ -148,11 +148,11 @@ void return_horiz_ave(struct All_variables *E, float *X, float *H)
 	MPI_Group world_g, horizon_g;
 
 
-	processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
+	processors = (int *)safe_malloc((E->parallel.nprocxy + 2) * sizeof(int));
 //  Have = (float *)malloc((2*E->lmesh.noz+2)*sizeof(float));
 //  temp = (float *)malloc((2*E->lmesh.noz+2)*sizeof(float));
-	Have = (double *)malloc((2 * E->lmesh.noz + 2) * sizeof(double));
-	temp = (double *)malloc((2 * E->lmesh.noz + 2) * sizeof(double));
+	Have = (double *)safe_malloc((2 * E->lmesh.noz + 2) * sizeof(double));
+	temp = (double *)safe_malloc((2 * E->lmesh.noz + 2) * sizeof(double));
 
 	noz = E->lmesh.noz;
 	noy = E->lmesh.noy;
@@ -434,9 +434,9 @@ void sum_across_depth_sph1(struct All_variables *E, float *sphc, float *sphs)
 
 	if(been_here == 0)
 	{
-		processors = (int *)malloc((E->parallel.nprocz + 2) * sizeof(int));
-		temp = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
-		sphcs = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		processors = (int *)safe_malloc((E->parallel.nprocz + 2) * sizeof(int));
+		temp = (float *)safe_malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		sphcs = (float *)safe_malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
 
 		nproc = 0;
 		for(j = 0; j < E->parallel.nprocz; j++)
@@ -494,7 +494,7 @@ void sum_across_surface(struct All_variables *E, float *data, int total)
 
 	if(been_here == 0)
 	{
-		processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
+		processors = (int *)safe_malloc((E->parallel.nprocxy + 2) * sizeof(int));
 
 		nproc = 0;
 		for(j = 0; j < E->parallel.nprocxy; j++)
@@ -518,7 +518,7 @@ void sum_across_surface(struct All_variables *E, float *data, int total)
 	if(nproc > 0)
 	{
 
-		temp = (float *)malloc((total + 1) * sizeof(float));
+		temp = (float *)safe_malloc((total + 1) * sizeof(float));
 		MPI_Allreduce(data, temp, total, MPI_FLOAT, MPI_SUM, horizon_p);
 
 		for(j = 0; j < total; j++)
@@ -546,9 +546,9 @@ void sum_across_surf_sph1(struct All_variables *E, float *sphc, float *sphs)
 
 	if(been_here == 0)
 	{
-		processors = (int *)malloc((E->parallel.nprocxy + 2) * sizeof(int));
-		temp = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
-		sphcs = (float *)malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		processors = (int *)safe_malloc((E->parallel.nprocxy + 2) * sizeof(int));
+		temp = (float *)safe_malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
+		sphcs = (float *)safe_malloc((E->sphere.hindice * 2 + 3) * sizeof(float));
 
 		nproc = 0;
 		for(j = 0; j < E->parallel.nprocxy; j++)
@@ -616,7 +616,7 @@ void gather_TG_to_me0(struct All_variables *E, float *TG)
 		been_here++;
 		for(i = 1; i < E->parallel.nprocxy; i++)
 		{
-			RG[i] = (float *)malloc((E->sphere.nsf + 1) * sizeof(float));
+			RG[i] = (float *)safe_malloc((E->sphere.nsf + 1) * sizeof(float));
 			RG[i][0] = 0.0;
 		}
 	}
@@ -691,10 +691,10 @@ void propogator_down_process(struct All_variables *E, float *Tadi)
 		been_here++;
 		for(i = 0; i < E->parallel.nprocz; i++)
 		{
-			RG[i] = (float *)malloc((4) * sizeof(float));
+			RG[i] = (float *)safe_malloc((4) * sizeof(float));
 			RG[i][0] = 0.0;
 		}
-		SD = (float *)malloc((4) * sizeof(float));
+		SD = (float *)safe_malloc((4) * sizeof(float));
 		SD[0] = 0.0;
 	}
 
@@ -772,7 +772,7 @@ double sum_across_depth(struct All_variables *E, double temp1)
 
 	if(been_here == 0)
 	{
-		processors = (int *)malloc((E->parallel.nprocz + 2) * sizeof(int));
+		processors = (int *)safe_malloc((E->parallel.nprocz + 2) * sizeof(int));
 
 		for(j = 0; j < E->parallel.nprocz; j++)
 		{

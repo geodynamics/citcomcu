@@ -62,7 +62,6 @@
 
 gzFile safe_gzopen(char *,char *);
 FILE *safe_fopen(char *,char *);
-void *safe_malloc (size_t );
 void calc_cbase_at_tp(float , float , float *);
 void convert_pvec_to_cvec(float ,float , float , float *,float *);
 void convert_cvec_to_pvec(float ,float , float , float *,float *);
@@ -105,7 +104,6 @@ void output_velo_related_gzdir(E, file_number)
     vtk_comp_out = 1;
   else
     vtk_comp_out = 0;
-  if(E->debug)fprintf(stderr,"output_velo_related_gzdir: starting CPU %i\n",E->parallel.me);
   
   /* make a directory */
   if(E->parallel.me == 0){
@@ -211,13 +209,12 @@ void output_velo_related_gzdir(E, file_number)
 	}
       }else{			/* cartesian */
 	if(E->parallel.me == 0)
-	  fprintf(stderr, "writing cartesian  vtk coords to %s \n",output_file);
+	  fprintf(stderr, "writing cartesian vtk coords to %s \n",output_file);
 	for(i=1;i <= E->lmesh.nno;i++){
 	  gzprintf(gzout,"%9.6f %9.6f %9.6f\n",E->X[1][i],E->X[2][i],E->X[3][i]);
 	}
       }
       gzclose(gzout);
-
       
       /* 
 	 connectivity 
@@ -243,6 +240,9 @@ void output_velo_related_gzdir(E, file_number)
     }
     /* end init loop */
     been_here++;
+    if(E->debug && E->parallel.me==0)
+      fprintf(stderr,"initial coord out done\n");
+  
   }
   
   if(E->parallel.me < E->parallel.nprocz)
@@ -272,7 +272,11 @@ void output_velo_related_gzdir(E, file_number)
 	}
       }
       fclose(E->filed[10]);
+      if(E->debug && E->parallel.me==0)
+	fprintf(stderr,"averages  done\n");
+
     }
+  
 
 
   if((file_number % E->control.record_every) == 0)
@@ -293,8 +297,12 @@ void output_velo_related_gzdir(E, file_number)
 	for(i=1;i<=E->lmesh.nno;i++)           
 	  gzprintf(gzout,"%.6e\n",E->T[i]);
 	gzclose(gzout);
+	if(E->debug && E->parallel.me==0)
+	  fprintf(stderr,"temp out done\n");
+
 	/* velocities */
 	if(E->control.Rsphere && (!E->sphere.vtk_base_init)){ 
+	  force_report(E,"constructing basis function");
 	  /* need to init spherical/cartesian conversion vectors */
 	  E->sphere.vtk_base = (float *)safe_malloc(sizeof(float)*E->lmesh.nno*9);
 	  for(k=0,i=1;i<=E->lmesh.nno;i++,k+=9)
@@ -324,6 +332,9 @@ void output_velo_related_gzdir(E, file_number)
 	  }
 	}
 	gzclose(gzout);
+	if(E->debug && E->parallel.me==0)
+	  fprintf(stderr,"vel out done\n");
+
 	if(E->control.vtk_pressure_out){
 	  /* 
 	     pressure at nodes 
@@ -339,6 +350,7 @@ void output_velo_related_gzdir(E, file_number)
 	}
 	
         if(E->control.vtk_stress2_out){    
+	  force_report(E,"stress output, large mem demand...");
 	  /* begin Adam style stress output */
 	  SXX = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
 	  SYY = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
@@ -408,6 +420,7 @@ void output_velo_related_gzdir(E, file_number)
 	  /* 
 	     second invariant 
 	  */
+	  force_report(E,"second invariant output...");
 	  e2n = (float *)malloc((E->lmesh.nno + 10) * sizeof(float));
 	  e2 = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
 	  strain_rate_2_inv(E, e2, 1); /* compute strain rate for every element */
@@ -763,7 +776,6 @@ void output_velo_related_gzdir(E, file_number)
       }
     }
 
-  //if(E->parallel.me==0)fprintf(stderr,"vel output done\n");
   
   return;
 }

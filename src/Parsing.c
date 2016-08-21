@@ -214,7 +214,7 @@ void add_to_parameter_list(name,value)
   if(NLIST >= LISTMAX)
     { LISTMAX += LISTINC;
       if(ARGLIST == NULL)
-	ARGLIST= (AL *)malloc(LISTMAX * sizeof(AL));
+	ARGLIST= (AL *)safe_malloc(LISTMAX * sizeof(AL));
       else
 	ARGLIST= (AL *)realloc(ARGLIST,LISTMAX * sizeof(AL));
     }
@@ -223,7 +223,7 @@ void add_to_parameter_list(name,value)
   if(NBUF+len >= BUFMAX)
     { BUFMAX += BUFINC;
       if(ARGBUF == NULL)
-	ARGBUF= (char *)malloc(BUFMAX);
+	ARGBUF= (char *)safe_malloc(BUFMAX);
       else	ARGBUF= (char *)realloc(ARGBUF,BUFMAX);
     }
   if(ARGBUF == NULL || ARGLIST == NULL)

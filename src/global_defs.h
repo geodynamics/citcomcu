@@ -46,17 +46,18 @@
 #endif
 #include "zlib.h"
 
-#if defined(__osf__)
-void *Malloc1();
-#endif
 
-#define Malloc0(a) Malloc1((a),__FILE__,__LINE__)
+
+
+#define safe_malloc(n) safe_malloc_winfo((n),__FILE__,__LINE__)
 
 #ifdef CITCOM_XMC_LOW_PREC
 #define CITCOM_XMC_PREC float
 #else
 #define CITCOM_XMC_PREC double
 #endif
+
+#define CITCOM_EPS 1e-7	/* for == 0 test */
 
 /* #define Malloc0 malloc */
 

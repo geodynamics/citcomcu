@@ -134,10 +134,11 @@ void PG_timestep_particle(struct All_variables *E)
 	static int been_here = 0;
 	static int on_off = 0;
 	static int step_debug = 0;
+	if(E->debug && (E->parallel.me == 0))fprintf(stderr,"PGp: starting\n");
 
-	DTdot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	Tdot1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	T1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+	DTdot = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	Tdot1 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	T1 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
 
 	if(been_here++ == 0)
 	{
@@ -183,12 +184,12 @@ void PG_timestep_particle(struct All_variables *E)
 		      
 		      if(E->advection.ADVECTION)
 			{
-			  if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect predict\n");
+			  if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect temp predict\n");
 			  predictor(E, E->T, E->Tdot);
 			  
 			  for(psc_pass = 0; psc_pass < E->advection.temp_iterations; psc_pass++)
 			    {
-			      if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect correct\n");
+			      if(step_debug && (E->parallel.me == 0))fprintf(stderr,"PGp: advect temp correct\n");
 			      pg_solver(E, E->T, E->Tdot, DTdot, E->V, E->convection.heat_sources, 1.0, 1, E->TB, E->node);
 			      corrector(E, E->T, E->Tdot, DTdot);
 			    }
@@ -237,7 +238,7 @@ void PG_timestep_particle(struct All_variables *E)
 	free((void *)DTdot);		/* free memory for vel solver */
 	free((void *)Tdot1);		/* free memory for vel solver */
 	free((void *)T1);			/* free memory for vel solver */
-
+	if(E->debug && (E->parallel.me == 0))fprintf(stderr,"PGp: done\n");
 	return;
 }
 
@@ -255,9 +256,9 @@ void PG_timestep(struct All_variables *E)
 	//static int loops_since_new_eta = 0;
 	static int been_here = 0;
 
-	DTdot = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	Tdot1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
-	T1 = (float *)malloc((E->lmesh.nno + 1) * sizeof(float));
+	DTdot = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	Tdot1 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
+	T1 = (float *)safe_malloc((E->lmesh.nno + 1) * sizeof(float));
 
 	if(been_here++ == 0)
 	{

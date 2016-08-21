@@ -79,28 +79,28 @@ void set_convection_defaults(struct All_variables *E)
     E->tracers_assign_dense_only = 0;
   }
   
-	if(E->control.composition)
-	  E->next_buoyancy_field = PG_timestep_particle;
-	else
-	  E->next_buoyancy_field = PG_timestep;
-
-	E->special_process_new_velocity = PG_process;
-	E->special_process_new_buoyancy = twiddle_thumbs;
-	E->problem_settings = read_convection_settings;
-	E->problem_derived_values = convection_derived_values;
-	E->problem_allocate_vars = convection_allocate_memory;
-	E->problem_boundary_conds = convection_boundary_conditions;
-	E->problem_initial_fields = convection_initial_fields;
-	E->problem_node_positions = node_locations;
-	E->problem_update_node_positions = twiddle_thumbs;
-	E->problem_update_bcs = twiddle_thumbs;
-
-	sprintf(E->control.which_data_files, "Temp,Strf,Pres");
-	sprintf(E->control.which_horiz_averages, "Temp,Visc,Vrms");
-	sprintf(E->control.which_running_data, "Step,Time,");
-	sprintf(E->control.which_observable_data, "Shfl");
-
-	return;
+  if(E->control.composition)
+    E->next_buoyancy_field = PG_timestep_particle;
+  else
+    E->next_buoyancy_field = PG_timestep;
+  
+  E->special_process_new_velocity = PG_process;
+  E->special_process_new_buoyancy = twiddle_thumbs;
+  E->problem_settings = read_convection_settings;
+  E->problem_derived_values = convection_derived_values;
+  E->problem_allocate_vars = convection_allocate_memory;
+  E->problem_boundary_conds = convection_boundary_conditions;
+  E->problem_initial_fields = convection_initial_fields;
+  E->problem_node_positions = node_locations;
+  E->problem_update_node_positions = twiddle_thumbs;
+  E->problem_update_bcs = twiddle_thumbs;
+  
+  sprintf(E->control.which_data_files, "Temp,Strf,Pres");
+  sprintf(E->control.which_horiz_averages, "Temp,Visc,Vrms");
+  sprintf(E->control.which_running_data, "Step,Time,");
+  sprintf(E->control.which_observable_data, "Shfl");
+  
+  return;
 }
 
 void read_convection_settings(struct All_variables *E)
@@ -119,29 +119,7 @@ void read_convection_settings(struct All_variables *E)
 	input_boolean("halfspace", &(E->convection.half_space_cooling), "off", m);
 	input_float("halfspage", &(E->convection.half_space_age), "nodefault", m);
 
-	/*
-	input_int("temperature_blobs", &(E->convection.temp_blobs), "0", m);
-	input_float_vector("temperature_blobx", E->convection.temp_blobs, E->convection.temp_blob_x, m);
-	input_float_vector("temperature_bloby", E->convection.temp_blobs, E->convection.temp_blob_y, m);
-	input_float_vector("temperature_blobz", E->convection.temp_blobs, E->convection.temp_blob_z, m);
-	input_float_vector("temperature_blobsize", E->convection.temp_blobs, E->convection.temp_blob_radius, m);
-	input_float_vector("temperature_blobDT", E->convection.temp_blobs, E->convection.temp_blob_T, m);
-	input_float_vector("temperature_blobbg", E->convection.temp_blobs, E->convection.temp_blob_bg, m);
-	input_int_vector("temperature_blobsticky", E->convection.temp_blobs, E->convection.temp_blob_sticky, m);
 
-	input_int("temperature_zones", &(E->convection.temp_zones), "0", m);
-	input_float_vector("temperature_zonex1", E->convection.temp_zones, E->convection.temp_zonex1, m);
-	input_float_vector("temperature_zonex2", E->convection.temp_zones, E->convection.temp_zonex2, m);
-	input_float_vector("temperature_zonez1", E->convection.temp_zones, E->convection.temp_zonez1, m);
-	input_float_vector("temperature_zonez2", E->convection.temp_zones, E->convection.temp_zonez2, m);
-	input_float_vector("temperature_zoney1", E->convection.temp_zones, E->convection.temp_zoney1, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zoney2", E->convection.temp_zones, E->convection.temp_zoney2, m);
-	input_float_vector("temperature_zonehw", E->convection.temp_zones, E->convection.temp_zonehw, m);
-	input_float_vector("temperature_zonemag", E->convection.temp_zones, E->convection.temp_zonemag, m);
-	input_int_vector("temperature_zonesticky", E->convection.temp_zones, E->convection.temp_zone_sticky, m);
-	*/
 
 	input_int("num_perturbations", &(E->convection.number_of_perturbations), "0,0,32", m);
 	input_boolean("random_t_init",&E->convection.random_t_init,"off", m);
@@ -223,26 +201,26 @@ void convection_initial_fields(struct All_variables *E)
 		if(E->parallel.me == 0)fprintf(stderr, "amarkers: %d lmesh.volume %g volume %g\n", E->advection.markers, E->lmesh.volume, E->mesh.volume);
 		for(i = 1; i <= E->mesh.nsd; i++)
 		{
-			E->VO[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
+			E->VO[i] = (float *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(float));
 			if(!(E->VO[i]))myerror("Convection: mem error: E->V0",E);
 
-			E->Vpred[i] = (float *)malloc((E->advection.markers_uplimit + 1) * sizeof(float));
+			E->Vpred[i] = (float *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(float));
 			if(!(E->Vpred[i]))myerror("Convection: mem error: E->Vpred",E);
 
-			E->XMCpred[i] = (CITCOM_XMC_PREC *)malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
+			E->XMCpred[i] = (CITCOM_XMC_PREC *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
 			if(!(E->XMCpred[i]))myerror("Convection: mem error: E->XMCpred",E);
 
-			E->XMC[i] = (CITCOM_XMC_PREC *)malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
+			E->XMC[i] = (CITCOM_XMC_PREC *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(CITCOM_XMC_PREC));
 			if(!(E->XMC[i]))myerror("Convection: mem error: E->XMC",E);
 
 			if(i==1){ /* those should only get allocated once */
-			  E->C12 = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  E->C12 = (int *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(int));
 			  if(!(E->C12))myerror("Convection: mem error: E->C12",E);
 			  
-			  E->traces_leave = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  E->traces_leave = (int *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(int));
 			  if(!(E->traces_leave))myerror("Convection: mem error: E->traces_leave",E);
 
-			  E->CElement = (int *)malloc((E->advection.markers_uplimit + 1) * sizeof(int));
+			  E->CElement = (int *)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(int));
 			  if(!(E->CElement))myerror("Convection: mem error: E->CElement",E);
 			  if(E->tracers_track_strain){
 			    /* strain */
@@ -255,13 +233,13 @@ void convection_initial_fields(struct All_variables *E)
 			  }
 			  if(E->tracers_add_flavors){
 			    /* nodal compotional flavors */
-			    E->CF = (int **)malloc( E->tracers_add_flavors * sizeof(int *));
+			    E->CF = (int **)safe_malloc( E->tracers_add_flavors * sizeof(int *));
 			    /* maximum flavor value */
 			    E->tmaxflavor = (int *)calloc(E->tracers_add_flavors,sizeof(int ));
 			    for(j=0;j<E->tracers_add_flavors;j++)
 			      E->CF[j] = (int *)calloc((E->lmesh.nno + 1), sizeof(int));
 			    /* tracer flavor value */
-			    E->tflavors = (int **)malloc((E->advection.markers_uplimit + 1) * sizeof(int *));
+			    E->tflavors = (int **)safe_malloc((E->advection.markers_uplimit + 1) * sizeof(int *));
 			    for(j = 0; j < E->advection.markers_uplimit + 1;j++)
 			      E->tflavors[j] = (int *)calloc(E->tracers_add_flavors,sizeof(int));
 			  }
@@ -467,7 +445,7 @@ void process_restart_tc(struct All_variables *E)
 	float temp1, temp2, *temp;
 	char input_s[200], output_file[255];
 
-	temp = (float *)malloc((E->mesh.noz + 1) * sizeof(float));
+	temp = (float *)safe_malloc((E->mesh.noz + 1) * sizeof(float));
 
 	if(E->control.restart == 1 || E->control.restart == 3)
 	{
@@ -620,7 +598,7 @@ void convection_initial_markers1(struct All_variables *E)
   const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
   
-  element = (int *)malloc((E->lmesh.nel + 1) * sizeof(int));
+  element = (int *)safe_malloc((E->lmesh.nel + 1) * sizeof(int));
   if(E->tracers_track_strain)
     element_strain = (float *)calloc((E->lmesh.nel + 1), sizeof(float));
   
@@ -1057,8 +1035,8 @@ void PG_process(struct All_variables *E, int ii)
 	//float x1, x2, int1, int2;
 	float int1, int2;
 
-	P = (float *)malloc((1 + E->lmesh.nno) * sizeof(double));
-	P2 = (float *)malloc((1 + E->lmesh.nel) * vpts * sizeof(double));
+	P = (float *)safe_malloc((1 + E->lmesh.nno) * sizeof(double));
+	P2 = (float *)safe_malloc((1 + E->lmesh.nel) * vpts * sizeof(double));
 
 	/* This is an ideal point to calculate the energy consistency integral that
 	 * Slava suggested to me.. NOTE, the buoyancy and velocity are most closely in step
