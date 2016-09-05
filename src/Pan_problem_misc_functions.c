@@ -88,10 +88,18 @@ void thermal_buoyancy(struct All_variables *E)
     flavor_buoyancy=0,
     phase_change_buoyancy=0;
   if(!init){
-    if(fabs(E->viscosity.another_flavor_buoyancy) > CITCOM_EPS)
+    if(fabs(E->viscosity.another_flavor_buoyancy) > CITCOM_EPS){
       flavor_buoyancy = 1;
-    if((fabs(E->control.Ra_670) > CITCOM_EPS) || (fabs(E->control.Ra_410) > CITCOM_EPS))
+      if(E->parallel.me == 0)
+	fprintf(stderr,"using flavor buoyancy Ra_f/Ra_c: %g Ra_f/Ra_t: %g flavor value: %i visc: %e\n",
+		E->viscosity.another_flavor_buoyancy/E->control.Acomp,
+		E->viscosity.another_flavor_buoyancy/E->control.Atemp,
+		E->viscosity.another_flavor_value,E->viscosity.another_flavor_visc);
+    }if((fabs(E->control.Ra_670) > CITCOM_EPS) || (fabs(E->control.Ra_410) > CITCOM_EPS)){
+      fprintf(stderr,"using phase change buoyancy Ra_410: %g Ra_660: %g\n",
+	      E->control.Ra_410, E->control.Ra_670);
       phase_change_buoyancy = 1;
+    }
     init = 1;
   }
 
@@ -110,7 +118,7 @@ void thermal_buoyancy(struct All_variables *E)
   }else if(E->control.composition == 2){
     /* purely compositional run, no depth dependence */
     for(i = 1; i <= E->lmesh.nno; i++){
-      E->buoyancy[i] = -E->control.Acomp * E->C[i];
+      E->buoyancy[i] =                                                - E->control.Acomp * E->C[i];
     }
   }else if(E->control.composition == 1){ /* thermo-chemical */
     for(i = 1; i <= E->lmesh.nno; i++){
@@ -130,10 +138,13 @@ void thermal_buoyancy(struct All_variables *E)
     }
   }
   if(flavor_buoyancy){
-    for(i = 1; i <= E->lmesh.nno; i++){
-      if(E->CF[0][i] == E->viscosity.another_flavor_value)
+    for(j=0,i = 1; i <= E->lmesh.nno; i++){
+      if(E->CF[0][i] == E->viscosity.another_flavor_value){
 	E->buoyancy[i] += E->viscosity.another_flavor_buoyancy;
+	j++;
+      }
     }
+    //fprintf(stderr,"added flavor buyancy to %g%% of the nodes\n",(float)j/(float)E->lmesh.nno*100);
   }
   remove_horiz_ave(E, E->buoyancy, H, 0);
   free((void *)H);

@@ -179,7 +179,7 @@ struct VISC_OPT
   int sdepv_for_zero_comp;
   int another_flavor;
   float flavor_visc;
-  float another_flavor_value;
+  int   another_flavor_value;
   float another_flavor_buoyancy;
   float another_flavor_visc;
    

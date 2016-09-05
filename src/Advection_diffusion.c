@@ -174,7 +174,7 @@ void PG_timestep_particle(struct All_variables *E)
 		E->advection.last_sub_iterations = 1;
 
 		count = 0;
-		if(E->control.composition != 2){ /* 2 = purely thermal */
+		if(E->control.composition != 2){ /* 2 = purely compositional */
 		  do
 		    {
 		      
