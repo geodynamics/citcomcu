@@ -141,12 +141,12 @@ void viscosity_parameters(struct All_variables *E)
 	    E->viscosity.zbase_layer[3] = 0.;
 	}
 
-	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T),m);	/* redundant */
+	input_float_vector("viscT", E->viscosity.num_mat, (E->viscosity.T),m); 
 	input_float_vector("viscT1", E->viscosity.num_mat, (E->viscosity.T),m);
 	input_float_vector("viscZ", E->viscosity.num_mat, (E->viscosity.Z),m);
 	input_float_vector("viscE", E->viscosity.num_mat, (E->viscosity.E),m);
-	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0),m);	/* redundant */
-	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0),m);
+	input_float_vector("visc0", E->viscosity.num_mat, (E->viscosity.N0),m);
+	input_float_vector("viscN0", E->viscosity.num_mat, (E->viscosity.N0),m); /* should probably remove */
 	
 	input_boolean("strain_dep_plasticity",&(E->viscosity.strain_dep_plasticity),"off",m);
 	input_float_vector("plastic_strain_func",3,E->viscosity.plastic_strain_func,m); /* high/low/strain */
@@ -507,7 +507,8 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 
 		for(l = 1; l <= E->viscosity.num_mat; l++)
 		{
-			fprintf(E->fp, "\tlayer %d/%d: E=%g T1=%g N0=%g Z0=%g\n", l, E->viscosity.num_mat, E->viscosity.E[l - 1], E->viscosity.T[l - 1], E->viscosity.N0[l - 1], E->viscosity.Z[l - 1]);
+			fprintf(E->fp, "\tlayer %d/%d: E=%g T1=%g N0=%g Z0=%g\n", l, E->viscosity.num_mat, E->viscosity.E[l - 1], 
+				E->viscosity.T[l - 1], E->viscosity.N0[l - 1], E->viscosity.Z[l - 1]);
 		}
 		fflush(E->fp);
 
@@ -631,8 +632,7 @@ void visc_from_T(struct All_variables *E, float *Eta, float *EEta, int propogate
 			temp += max(zero, TT[kk]) * E->N.vpt[GNVINDEX(kk, jj)];;
 		      }
 		    EEta[(i - 1) * vpts + jj] = tempa * exp(E->viscosity.E[l] * (E->viscosity.T[l]  - temp ));
-                    if(EEta[(i - 1) * vpts + jj] > E->viscosity.max_value){
-                       EEta[(i - 1) * vpts + jj] = E->viscosity.max_value;}
+
 		  }
 	      }
 	    break;

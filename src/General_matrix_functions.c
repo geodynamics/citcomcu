@@ -414,6 +414,7 @@ int solve_del2_u(struct All_variables *E, double *d0, double *F,
 
 	if(!(E->control.NMULTIGRID || E->control.EMULTIGRID))
 	{
+	  /* congjugate gradient */
 		valid = (residual < acc) ? 0 : 1;
 		cycles = E->control.v_steps_low;
 		time = CPU_time0();
@@ -756,6 +757,9 @@ double conj_grad(struct All_variables *E, double *d0, double *F, double *Au, dou
 		/* end of while-loop */
 
 	}
+	if((count >= steps)&&(E->parallel.me==0))
+	  fprintf(stderr,"conj_grad: WARNING: res: %.3e > acc: %.3e (%6.1f %%) for %i max steps\n",
+		  residual, acc, residual/acc*100,steps);
 
 	*cycles = count;
 
