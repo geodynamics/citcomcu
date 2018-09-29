@@ -409,14 +409,18 @@ void move_tracers_to_neighbors(struct All_variables *E, int on_off)
 
 void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 {
-  int i, j,k;
+  int i, j,k,l;
 	int ii, jj, kk;
-	int nsd2, nsd2t, neighbor, no_trans1;
-	int rioff;
-	nsd2 = E->mesh.nsd * 2;	/*  */
-	nsd2t = nsd2 + E->tracers_track_strain; /* for those arrays that have strain in them */
-	
-	rioff = 2 + E->tracers_add_flavors;
+	int neighbor, no_trans1;
+	static int been_here = 0,tscol,nsd2,nsd2t,rioff;
+	if(!been_here){
+	  tscol = (E->tracers_track_fse)?(10):(1);
+	  nsd2 = E->mesh.nsd * 2;	/*  */
+	  nsd2t = nsd2 + tscol; /* for those arrays that have strain in them */
+	  rioff = 2 + E->tracers_add_flavors;
+	  been_here = 1;
+	}
+
 
 	ii = 0;
 	for(i = 1; i <= E->advection.markers; i++)
@@ -455,8 +459,11 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2t + 4];
 				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2t + 5];
 				if(E->tracers_track_strain)
-				  E->tracer_strain[ii] = E->RVV[neighbor][j * nsd2t + 6];
-
+				  E->tracer_strain[ii*tscol] = E->RVV[neighbor][j * nsd2t + 6];
+				if(E->tracers_track_fse)
+				  for(l=0;l<9;l++)
+				    E->tracer_strain[ii*tscol+1+l] = E->RVV[neighbor][j * nsd2t + 7 + l];
+				
 				E->XMC[1][ii] = E->RXX[neighbor][j * nsd2];
 				E->XMC[2][ii] = E->RXX[neighbor][j * nsd2 + 1];
 				E->XMC[3][ii] = E->RXX[neighbor][j * nsd2 + 2];
@@ -487,8 +494,10 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 				E->Vpred[2][ii] = E->RVV[neighbor][j * nsd2t + 4];
 				E->Vpred[3][ii] = E->RVV[neighbor][j * nsd2t + 5];
 				if(E->tracers_track_strain)
-				  E->tracer_strain[ii] = E->RVV[neighbor][j * nsd2t + 6];
-
+				  E->tracer_strain[ii*tscol] = E->RVV[neighbor][j * nsd2t + 6];
+				if(E->tracers_track_fse)
+				  for(l=0;l<9;l++)
+				    E->tracer_strain[ii*tscol+1+l] = E->RVV[neighbor][j * nsd2t + 7 + l];
 
 				E->XMC[1][ii] = E->RXX[neighbor][j * nsd2];
 				E->XMC[2][ii] = E->RXX[neighbor][j * nsd2 + 1];
@@ -533,6 +542,13 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 					E->CElement[ii] = E->CElement[i];
 					for(k=0;k < E->tracers_add_flavors;k++)
 					  E->tflavors[ii][k] = E->tflavors[i][k];
+					if(E->tracers_track_strain)
+					  E->tracer_strain[ii] = E->tracer_strain[i];
+					if(E->tracers_track_fse)
+					  for(k=0;k<9;k++)
+					    E->tracer_strain[ii*tscol+1+k] =  E->tracer_strain[i*tscol+1+k];
+
+					
 					E->traces_leave[ii] = 0;
 				}
 			}
@@ -553,13 +569,17 @@ void unify_markers_array(struct All_variables *E, int no_tran, int no_recv)
 
 void prepare_transfer_arrays(struct All_variables *E)
 {
-  int j, part, neighbor, k1, k2, k3,k;
-  static int asize, asizet,markers,bsize,been_here = 0;
+  int j, part, neighbor, k1, k2, k3,k,l;
+  static int asize, asizet,markers,bsize,tscol,been_here = 0;
   if(!been_here){
     markers = E->advection.markers / 10;
     asize = (markers + 1) * (E->mesh.nsd * 2 );
-    asizet = (markers + 1) * (E->mesh.nsd * 2 + E->tracers_track_strain);
+    /*  */
+    /* strain entries per tracer */
+    tscol = (E->tracers_track_fse)?(10):(1);
+    asizet = (markers + 1) * (E->mesh.nsd * 2 + tscol);
     bsize = (markers + 1) * (2 + E->tracers_add_flavors);
+   
     been_here = 1;
   }
   parallel_process_sync();
@@ -582,8 +602,11 @@ void prepare_transfer_arrays(struct All_variables *E)
 			E->PVV[neighbor][k1++] = E->Vpred[2][part];
 			E->PVV[neighbor][k1++] = E->Vpred[3][part];
 			if(E->tracers_track_strain)
-			  E->PVV[neighbor][k1++] = E->tracer_strain[part];
-
+			  E->PVV[neighbor][k1++] = E->tracer_strain[part*tscol];
+			if(E->tracers_track_fse)
+			  for(l=0;l<9;l++)
+			    E->PVV[neighbor][k1++] = E->tracer_strain[part*tscol+1+l];
+			     
 			//if(k2+6 >= asize){fprintf(stderr,"k2 %i asize %i out of bounds\n",k2,asize);myerror("exit",E);};
 			E->PXX[neighbor][k2++] = E->XMC[1][part];
 			E->PXX[neighbor][k2++] = E->XMC[2][part];
@@ -886,16 +909,19 @@ void get_CF_from_markers(struct All_variables *E, int **CF)
 */
 void get_strain_from_markers(struct All_variables *E, float *strain)
 {
-   int el, itracer, imark, jnode, node,i,j;
+  int el, itracer, imark, jnode, node,i,j;
    float *element_strain;
    int *element_count;
-   
+   static int been_here = 0,tscol;
    const int nno = E->lmesh.nno;
    const int nel = E->lmesh.nel;
    const int dims = E->mesh.nsd;
    const int ends = enodes[dims];
    const int lev = E->mesh.levmax;
-   
+   if(!been_here){
+     tscol = (E->tracers_track_fse)?(10):(1);
+     been_here = 1;
+   }
  
    element_strain = (float *)calloc((nel + 1), sizeof(float));
    element_count = (int *)calloc((nel + 1),sizeof(int));
@@ -907,12 +933,13 @@ void get_strain_from_markers(struct All_variables *E, float *strain)
    }
    for(imark = 1; imark <= E->advection.markers; imark++){
      el = E->CElement[imark];
-     element_strain[el] += E->tracer_strain[imark];
-     element_count[el] ++;
+     element_strain[el] += E->tracer_strain[imark*tscol];
+     element_count[el] += 1;
    }
    for(el = 1; el <= nel; el++){
      if(element_count[el])
        element_strain[el] /= (float)element_count[el];
+     /* got average element strain */
      for(j = 1; j <= ends; j++){
        node = E->ien[el].node[j];
        strain[node] += E->TWW[lev][el].node[j] * element_strain[el];

@@ -61,10 +61,18 @@ void set_convection_defaults(struct All_variables *E)
   if(E->control.composition_neutralize_buoyancy && E->parallel.me == 0)
     fprintf(stderr,"WARNING: reducing thermal buoyanyc to zero in composition=1 regions\n");
 
+  /* sphere */
+  input_boolean("cinit_sphere",&(E->control.cinit_sphere),"off", E->parallel.me);
+  input_float_vector("cinit_sphere_par",CINIT_SPHERE_PAR_N,E->control.cinit_sphere_par, E->parallel.me);
+  
+	
   input_int("tracers_add_flavors", &(E->tracers_add_flavors), "0", E->parallel.me);
 
   /* should be zero or one */
-  input_int("tracers_track_strain",&(E->tracers_track_strain), "0", E->parallel.me);
+  input_boolean("tracers_track_strain",&(E->tracers_track_strain), "0", E->parallel.me);
+  input_boolean("tracers_track_fse",&(E->tracers_track_fse), "0", E->parallel.me); /* keep track of full tensor */
+  if(E->tracers_track_fse && (!E->tracers_track_strain)) /*  */
+    myerror("need basic strain tracking for FSE tracking",E);
 
   input_float("tracers_assign_dense_fraction",&(E->tracers_assign_dense_fraction),"1.0",E->parallel.me);
 
@@ -105,7 +113,7 @@ void set_convection_defaults(struct All_variables *E)
 
 void read_convection_settings(struct All_variables *E)
 {
-	char tmp_string[100], tmp1_string[100];
+	char tmp_string[500], tmp1_string[500];
 
 	/* parameters */
 	int m;
@@ -113,8 +121,8 @@ void read_convection_settings(struct All_variables *E)
 	m = E->parallel.me;
 
 	input_float("rayleigh", &(E->control.Atemp), "essential", m);
-
-	input_float("rayleigh_comp", &(E->control.Acomp), "essential", m);
+	if(E->control.composition)
+	  input_float("rayleigh_comp", &(E->control.Acomp), "essential", m);
 
 	input_boolean("halfspace", &(E->convection.half_space_cooling), "off", m);
 	input_float("halfspage", &(E->convection.half_space_age), "nodefault", m);
@@ -180,7 +188,7 @@ void convection_allocate_memory(struct All_variables *E)
 
 void convection_initial_fields(struct All_variables *E)
 {
-  int i,j;
+  int i,j,lim,need_space;
   force_report(E,"ok16a");
 	if(E->control.composition)
 	{
@@ -225,9 +233,22 @@ void convection_initial_fields(struct All_variables *E)
 			  if(E->tracers_track_strain){
 			    /* strain */
 			    report(E, "tracking total strain");
-			    E->tracer_strain = (CITCOM_XMC_PREC *)calloc((E->advection.markers_uplimit + 1),
+			    /* scalar strain or FSE ?*/
+			    need_space = (E->tracers_track_fse)?(10):(1);
+			    E->tracer_strain = (CITCOM_XMC_PREC *)calloc((E->advection.markers_uplimit + 1) * 
+									 need_space,
 									 sizeof(CITCOM_XMC_PREC));
-			    if(!E->tracer_strain)myerror("Convection: mem error: tracer_strain",E);
+			    if(!E->tracer_strain)
+			      myerror("Convection: mem error: tracer_strain",E);
+			    if(E->tracers_track_fse){
+			    /* if FSE tracking, init as unity matrix */
+			       lim = E->advection.markers_uplimit + 1;
+			       for(j=0;j < lim;j++){
+			         E->tracer_strain[j*need_space + 1] = E->tracer_strain[j*need_space + 5] = 
+				   E->tracer_strain[j*need_space + 9] =  1.0;
+			       }
+ 			    }
+			    /* element strain (scalar) */
 			    E->strain = (float *)calloc((E->lmesh.nno + 1), sizeof(float));
 
 			  }
@@ -391,6 +412,8 @@ void convection_initial_temperature(struct All_variables *E)
 		if(E->control.composition){
 		  if(E->control.composition_init_checkerboard)
 		    convection_initial_markers(E,-1);
+		  else if(E->control.cinit_sphere)
+		    convection_initial_markers(E,-2);
 		  else
 		    convection_initial_markers(E,0);
 		}
@@ -595,9 +618,14 @@ void convection_initial_markers1(struct All_variables *E)
   int *element, el, j, node,el_node,itracer;
   float *element_strain;
   double x, y, z, r, t, f, dX[4];
+  static int been_here = 0,tscol;
   const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
-  
+  if(!been_here){
+    tscol = (E->tracers_track_fse)?(10):(1);
+    been_here = 1;
+  }
+
   element = (int *)safe_malloc((E->lmesh.nel + 1) * sizeof(int));
   if(E->tracers_track_strain)
     element_strain = (float *)calloc((E->lmesh.nel + 1), sizeof(float));
@@ -686,7 +714,7 @@ void convection_initial_markers1(struct All_variables *E)
 		  }
       */
       if(E->tracers_track_strain) /* this will smooth quite a bit */
-	E->tracer_strain[itracer] = element_strain[el];
+	E->tracer_strain[itracer*tscol] = element_strain[el];
   }
   /* reassign to nodal values */
   get_C_from_markers(E, E->C);
@@ -704,6 +732,7 @@ void convection_initial_markers1(struct All_variables *E)
 }
 /* 
    use_element_nodes_for_init_c: 
+   -2: use sphere
    -1: use checkerboard
    0:  use depth
    1:  use the nodes to assign element properties, and from that tracer properties
@@ -719,7 +748,7 @@ void convection_initial_markers(struct All_variables *E,
   double x, y, z, r, t, f, dX[4];
   //char input_s[100], output_file[255];
   //FILE *fp;
-  float temp,frac,locx[3],locp[3];
+  float temp,frac,locx[3],locp[3],dist;
 
   const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
@@ -803,13 +832,15 @@ void convection_initial_markers(struct All_variables *E,
 		E->CElement[ntracer] = el;
 		switch(use_element_nodes_for_init_c){
 		case 1: 	/* from nodes */
-		  for(temp=0.0,j = 1; j <= ends; j++)
+		  for(temp=0.0,j = 1; j <= ends; j++){
 		    temp += E->C[E->ien[el].node[j]];
+		  }
 		  temp /= ends;
-		  if(temp > 0.5)
+		  if(temp >= 0.5)
 		    E->C12[ntracer] = 1;
 		  else
 		    E->C12[ntracer] = 0;
+		  //fprintf(stderr,"%g %i\n",temp,E->C12[ntracer]);
 		  break;
 		case 0:		/* based on depth */
 		  if(E->XMC[3][ntracer] > E->viscosity.zcomp)
@@ -831,6 +862,16 @@ void convection_initial_markers(struct All_variables *E,
 		    else
 		      E->C12[ntracer] = 1;
 		  }
+		  break;
+		case -2:	/* from sphere */
+		  dist  = pow(E->XMC[1][ntracer] - E->control.cinit_sphere_par[0],2);
+		  dist += pow(E->XMC[2][ntracer] - E->control.cinit_sphere_par[1],2);
+		  dist += pow(E->XMC[3][ntracer] - E->control.cinit_sphere_par[2],2);
+		  dist = sqrt(dist);
+		  if(dist <= E->control.cinit_sphere_par[3])
+		    E->C12[ntracer] = E->control.cinit_sphere_par[4];
+		  else
+		    E->C12[ntracer] = E->control.cinit_sphere_par[5];
 		  break;
 		default:
 		  myerror("use_element_nodes_for_init_c out of bounds in convection_initial_markers for Cartesian",E);
@@ -875,6 +916,10 @@ void convection_initial_markers(struct All_variables *E,
 		  else
 		    E->C12[ntracer] = 1;
 		  break;
+		case -1:
+		case -2:
+		  myerror("checkerboard or sphere not yet implemented for spherical",E);
+		  break;
 		default:
 		  myerror("use_element_nodes_for_init_c out of bounds for spherical in convection_initial_markers",E);
 		}
@@ -894,7 +939,7 @@ void convection_initial_markers(struct All_variables *E,
 #endif
   }
   /* 
-     get nodal values 
+     get nodal values, reassign to nodes
   */
   get_C_from_markers(E, E->C);
   if(E->tracers_add_flavors)
@@ -1017,7 +1062,7 @@ void setup_plume_problem(struct All_variables *E)
 
 void PG_process(struct All_variables *E, int ii)
 {
-	float *P, *P2;
+  float *P, *P2,*fdummy;
 	//float visc[9];
 
 	//int i, j, k, p, a1, nint, n, el;
@@ -1042,7 +1087,7 @@ void PG_process(struct All_variables *E, int ii)
 	 * Slava suggested to me.. NOTE, the buoyancy and velocity are most closely in step
 	 * at this point, before advection. */
 
-	strain_rate_2_inv(E, P2, 0);	/* strain rate invariant squared */
+	strain_rate_2_inv(E, P2, 0,0,fdummy);	/* strain rate invariant squared */
 	v_to_nodes(E, P2, P, E->mesh.levmax);
 
 	int1 = 0.0;

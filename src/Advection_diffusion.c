@@ -98,8 +98,12 @@ void advection_diffusion_parameters(struct All_variables *E)
 
 	input_int("markers_per_ele", &(E->advection.markers_per_ele), "0",m);
 	input_float("comp_depth", &(E->viscosity.zcomp), "0.0",m);
-	input_float("Q0_enriched", &(E->control.Q0ER), "0.0",m);
 
+	input_float("Q0_enriched", &(E->control.Q0ER), "-999",m);
+	/* default should be Q0 */
+	if(E->control.Q0ER == -999)
+	  E->control.Q0ER = E->control.Q0;
+	
 	E->viscosity.zcomp = 1.0 - E->viscosity.zcomp;
 
 
@@ -815,6 +819,7 @@ void process_heating(struct All_variables *E)
 	double temp1, temp2, temp3, temp4, temp5, temp6;
 	FILE *fp;
 	char filename[250];
+	float *fdummy;
 
 	const int dims = E->mesh.nsd;
 	const int ends = enodes[dims];
@@ -838,7 +843,7 @@ void process_heating(struct All_variables *E)
 	if(E->control.visc_heating)
 	{
 
-		strain_rate_2_inv(E, E->heating_visc, 0);
+	  strain_rate_2_inv(E, E->heating_visc, 0,0,fdummy);
 
 		for(e = 1; e <= E->lmesh.nel; e++)
 		{
@@ -939,10 +944,11 @@ void process_heating(struct All_variables *E)
 	if(E->monitor.solution_cycles % 1000 == 0)
 	{
 #ifdef USE_GZDIR
-	  if(E->control.gzdir)
+	  if(E->control.gzdir){
 		sprintf(filename, "%s/heating.%d", E->control.data_file2, E->parallel.me);
-	  else
+	  }else
 #endif
+	    {
 		sprintf(filename, "%s.heating.%d", E->control.data_file2, E->parallel.me);
 	  
 		fp = fopen(filename, "w");
@@ -950,6 +956,7 @@ void process_heating(struct All_variables *E)
 		for(e = 1; e <= E->lmesh.nel; e++)
 			fprintf(fp, "%d %g %g %g\n", e, E->heating_adi[e], E->heating_visc[e], E->heating_latent[e]);
 		fclose(fp);
+	    }
 	}
 /*
 */

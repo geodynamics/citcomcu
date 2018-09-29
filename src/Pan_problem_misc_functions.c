@@ -119,6 +119,7 @@ void thermal_buoyancy(struct All_variables *E)
     /* purely compositional run, no depth dependence */
     for(i = 1; i <= E->lmesh.nno; i++){
       E->buoyancy[i] =                                                - E->control.Acomp * E->C[i];
+      //fprintf(stderr,"%g %g %g\n",E->C[i],E->control.Acomp,E->buoyancy[i]);
     }
   }else if(E->control.composition == 1){ /* thermo-chemical */
     for(i = 1; i <= E->lmesh.nno; i++){
@@ -1045,6 +1046,30 @@ void matmul_3x3(double a[3][3],double b[3][3],double c[3][3])
     }
 }
 
+void matmul_9(float *a,float *b,float *c)
+{
+  int i,j,k;
+  float tmp;
+  for(i=0;i < 3;i++)
+    for(j=0;j < 3;j++){
+      tmp = 0.;
+      for(k=0;k < 3;k++)
+	tmp += a[i*3+k] * b[k*3+j];
+      c[i*3+j] = tmp;
+    }
+}
+void matmul_9_xmc(float *a,CITCOM_XMC_PREC *b,CITCOM_XMC_PREC *c)
+{
+  int i,j,k;
+  double tmp;
+  for(i=0;i < 3;i++)
+    for(j=0;j < 3;j++){
+      tmp = 0.;
+      for(k=0;k < 3;k++)
+	tmp += (double)a[i*3+k] * (double)b[k*3+j];
+      c[i*3+j] = (CITCOM_XMC_PREC)tmp;
+    }
+}
 void assign_to_3x3(double a[3][3],double val)
 {
   a[0][0]=a[0][1]=a[0][2]=

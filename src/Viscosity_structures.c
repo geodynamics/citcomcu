@@ -89,9 +89,9 @@ void viscosity_parameters(struct All_variables *E)
 		  
 		  E->viscosity.lbyerlee[i]=.1;
 		}else{
-		  /* for plasticity: t_y = min (a + (1-x) * b, l) */
-		  E->viscosity.abyerlee[i]=0.0;
-		  E->viscosity.bbyerlee[i]=1.0;
+		  /* for plasticity: t_y = min (a * (1-z) + b, l) */
+		  E->viscosity.abyerlee[i]=1.0;
+		  E->viscosity.bbyerlee[i]=0.0;
 		  
 		  E->viscosity.lbyerlee[i]=1e20;
 		}
@@ -740,7 +740,7 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
   float ztop, zbotm, P_660, add_T_660;
   float zzz, zz[9], zzz_dim,*eddpart,edd_add;
   float *eedot,eedot_dim;
-  float temp_dim, tempa, tempc;
+  float temp_dim, tempa, tempc,*fdummy;
   double  EEta_diff, EEta_dis;
   double  EEta_diff_dim, EEta_dis_dim;
   float *Xtmp[4];
@@ -793,7 +793,7 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
     for(e = 1; e <= nel; e++)
       eedot[e] = one;
   }else{
-    strain_rate_2_inv(E, eedot, 1);
+    strain_rate_2_inv(E, eedot, 1,0,fdummy);
   }
   
   if((!E->viscosity.sdepv_start_from_newtonian)||
@@ -964,16 +964,18 @@ void visc_from_S(struct All_variables *E, float *Eta, float *EEta, int propogate
 /* 
    
    compute the second invariant for every element
-
- */
+   if save_vgm is set, will store velocity gradient matrix in vgm
+   vgm needs to be 9 * nel
+   
+*/
 void strain_rate_2_inv(struct All_variables *E, float *EEDOT, 
-		       int SQRT)
+		       int SQRT, int save_vgm, float *vgm)
 {
   double edot[4][4], dudx[4][4], rtf[4][9];
   float VV[4][9], Vxyz[9][9];
   
   //int e, i, j, p, q, n, nel, k;
-  int e, i, j, p, q, n, nel;
+  int e, i, j, p, q, n, nel,l;
   
   const int dims = E->mesh.nsd;
   const int ends = enodes[dims];
@@ -1004,7 +1006,9 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT,
 	Vxyz[5][j] = 0.0;
 	Vxyz[6][j] = 0.0;
       }
-
+      if(save_vgm)
+	myerror("save VGM not implemented yet for spherical",E);
+      /* remember to add for spherical!!! */
       for(j = 1; j <= ppts; j++){ /* only makes "sense" for ppts = 1 */
 	for(i = 1; i <= ends; i++){
 	  Vxyz[1][j] += (VV[1][i] * E->gNX[e].ppt[GNPXINDEX(0, i, j)] + VV[3][i] * E->N.ppt[GNPINDEX(i, j)]) * rtf[3][j]; /* tt */
@@ -1046,9 +1050,13 @@ void strain_rate_2_inv(struct All_variables *E, float *EEDOT,
 	  for(q = 1; q <= dims; q++)
 	    dudx[p][q] += VV[p][i] * E->gNX[e].ppt[GNPXINDEX(q - 1, i, 1)];
       
-      for(p = 1; p <= dims; p++)
+      for(l=0,p = 1; p <= dims; p++)
 	for(q = 1; q <= dims; q++){/* adam wants to add a factor of 0.5 here.. */
 	  edot[p][q] = 0.5 * (dudx[p][q] + dudx[q][p]);
+	  if(save_vgm){
+	    vgm[e*9+l] = dudx[p][q]; /* check! */
+	    l++;
+	  }
 	}
       
       if(dims == 2)
@@ -1462,6 +1470,7 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
   float tau,tau2,ettby,ettnew;
   int m,l,z,jj,kk,i,node,tepoints,epoints,npc,tnpc;
   static float ndz_to_m;
+  float *fdummy;
 #ifdef DEBUG
   FILE *out;
 #endif
@@ -1525,9 +1534,9 @@ static void visc_from_B(struct All_variables *E, float *Eta, float *EEta,
   }else{
     /* either second time or restart with velocities */
     if(E->viscosity.psrw)
-      strain_rate_2_inv(E,eedot,0);
+      strain_rate_2_inv(E,eedot,0,0,fdummy);
     else
-      strain_rate_2_inv(E,eedot,1);
+      strain_rate_2_inv(E,eedot,1,0,fdummy);
   }
   
   if(E->viscosity.psrw){
@@ -1936,13 +1945,22 @@ static void visc_from_C(struct All_variables *E, float *Eta, float *EEta, int pr
 void evolve_tracer_strain(struct All_variables *E)
 
 {
-  float *eedot,min_strain,max_strain;
-  int i,imark;
+  float *eedot,min_strain,max_strain,*evgm;
+  CITCOM_XMC_PREC avgm[9];
+  int i,imark,inel,l;
   const int nel = E->lmesh.nel;
-  
+  static int been_here = 0,tscol;
+  if(!been_here){
+    tscol = (E->tracers_track_fse)?(10):(1);
+    been_here = 1;
+  }
+
   eedot = (float *) safe_malloc((2+nel)*sizeof(float));
+  if(E->tracers_track_fse)
+    evgm = (float *) safe_malloc((2+nel)*9*sizeof(float));
+  
   /* calculate the second invariant */
-  strain_rate_2_inv(E,eedot,1);
+  strain_rate_2_inv(E,eedot,1,E->tracers_track_fse,evgm);
 
   max_strain = -1e20;
   min_strain = 1e20;
@@ -1957,17 +1975,30 @@ void evolve_tracer_strain(struct All_variables *E)
 	    E->advection.timestep,min_strain,max_strain);
   max_strain = -1e20;
   min_strain = 1e20;
-  for(imark = 1; imark <= E->advection.markers; imark++){
-    /* increment strain */
-    E->tracer_strain[imark] += eedot[E->CElement[imark]] * E->advection.timestep;
-    if(E->tracer_strain[imark] > max_strain)
-      max_strain = E->tracer_strain[imark];
-    if(E->tracer_strain[imark] < min_strain)
-      min_strain = E->tracer_strain[imark];
+  for(imark = 1; imark <= E->advection.markers; imark++){ /* loop through tracers */
+    /* increment scalar strain */
+    inel = E->CElement[imark];
+    
+    E->tracer_strain[imark*tscol] += eedot[inel] * E->advection.timestep;
+    
+    if(E->tracers_track_fse){
+      /* update FSE matric */
+      /* AVGM = EVGM * TFSE, the time derivative of the FSE */
+      matmul_9_xmc((evgm+inel*9),(E->tracer_strain+imark*tscol+1),avgm);
+      /* Euler increase in FSE,  */
+      for(l=0;l<9;l++)
+	E->tracer_strain[imark*tscol+1+l] += avgm[l] * E->advection.timestep;
+    }
+    if(E->tracer_strain[imark*tscol] > max_strain)
+      max_strain = E->tracer_strain[imark*tscol];
+    if(E->tracer_strain[imark*tscol] < min_strain)
+      min_strain = E->tracer_strain[imark*tscol];
   }
   if(E->parallel.me == 0)
     fprintf(stderr,"min/max strain: %g/%g\n",min_strain,max_strain);
 
   free(eedot);
+  if(E->tracers_track_fse)
+    free(evgm);
 }
 

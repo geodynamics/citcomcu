@@ -76,7 +76,7 @@ void output_velo_related_gzdir(E, file_number)
   int nox, noz, noy, nfx, nfz, nfy1, nfy2, size1, size2,offset;
   static int vtkout = 1;
   char output_file[1000];
-  float cvec[3],locx[3];
+  float cvec[3],locx[3],*fdummy,x[4];
   double rtf[4][9];
   double VV[4][9],lgrad[3][3],isa[3],evel[3];
   static struct CC Cc;
@@ -88,10 +88,9 @@ void output_velo_related_gzdir(E, file_number)
   int vtk_comp_out;
 
   float *SZZ, *SXX, *SYY, *SXY, *SXZ, *SZY;
-
   
-    const int dims = E->mesh.nsd;
-    const int ends = enodes[dims];
+  const int dims = E->mesh.nsd;
+  const int ends = enodes[dims];
   const int vpts = vpoints[dims];
   const int nno = E->mesh.nno;
   const int nel = E->lmesh.nel;
@@ -335,6 +334,30 @@ void output_velo_related_gzdir(E, file_number)
 	if(E->debug && E->parallel.me==0)
 	  fprintf(stderr,"vel out done\n");
 
+	if(E->control.ele_pressure_out){
+	  if(E->control.Rsphere)
+	    myerror("ele_pressure_out not set up for spherical geometry",E);
+	  /*  */
+	  sprintf(output_file,"%s/%d/pe.%d.%d.gz",E->control.data_file2,
+		  file_number, E->parallel.me,file_number);
+	  gzout = safe_gzopen(output_file,"w");
+	  gzprintf(gzout,"%d %d %13.6e\n",file_number,E->lmesh.nno,E->monitor.elapsed_time);
+	  for(i=1;i <= nel;i++){
+	    /* get element centroid location */
+	    x[1]=x[2]=x[3]=0;
+	    for(j=1;j <= ends;j++){
+	      node = E->ien[i].node[j]; /* global node number */
+	      for(k=1;k <= 3;k++)
+		x[k] += E->X[k][node];
+	    }
+	    for(k=1;k <= 3;k++)
+	      x[k] /= (float)ends;
+	    gzprintf(gzout,"%12.8f %12.8f %12.8f %.6e\n",x[1],x[2],x[3],E->P[i]);
+	  } /* end element loop */
+	  gzclose(gzout);
+	}
+
+
 	if(E->control.vtk_pressure_out){
 	  /* 
 	     pressure at nodes 
@@ -423,7 +446,7 @@ void output_velo_related_gzdir(E, file_number)
 	  force_report(E,"second invariant output...");
 	  e2n = (float *)malloc((E->lmesh.nno + 10) * sizeof(float));
 	  e2 = (float *)malloc((E->lmesh.nel + 1) * sizeof(float));
-	  strain_rate_2_inv(E, e2, 1); /* compute strain rate for every element */
+	  strain_rate_2_inv(E, e2, 1,0,fdummy); /* compute strain rate for every element */
 	  e2_to_nodes(E, e2,e2n, E->mesh.levmax); /* project to nodes */
 	  sprintf(output_file,"%s/%d/e2inv.%d.%d.gz",E->control.data_file2,
 		  file_number, E->parallel.me,file_number);

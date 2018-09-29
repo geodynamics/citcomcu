@@ -146,6 +146,7 @@ void read_instructions(struct All_variables *E, int argc, char **argv)
 
 	shutdown_parser(E);
 
+	force_report(E,"ok19");
 /*	if (E->parallel.me==0)
 		fprintf (stderr,"done instruction\n");
 	parallel_process_termination();
@@ -565,7 +566,7 @@ void global_default_values(struct All_variables *E)
 void global_derived_values(struct All_variables *E)
 {
 	int d, lx, lz, ly, i, nox, noz, noy;
-	char logfile[100];
+	char logfile[500];
 	FILE *fp;
 
 	/* As early as possible, set up the log file to 
@@ -685,14 +686,13 @@ void global_derived_values(struct All_variables *E)
 
 void read_initial_settings(struct All_variables *E)
 {
-	char tmp_string[100];
+	char tmp_string[500];
 
 	/* first the problem type (defines subsequent behaviour) */
 	int m;
 	int i;
 
 	m = E->parallel.me;
-	
 	input_string("Problem", E->control.PROBLEM_TYPE, NULL, m);
 	if(strcmp(E->control.PROBLEM_TYPE, "convection") == 0)
 	{
@@ -715,7 +715,6 @@ void read_initial_settings(struct All_variables *E)
 	}
 
 	input_string("Geometry", E->control.GEOMETRY, NULL, m);
-
 
 	if(strcmp(E->control.GEOMETRY, "cart2d") == 0)
 	{
@@ -748,7 +747,6 @@ void read_initial_settings(struct All_variables *E)
 		E->control.CART2D = 1;
 		set_2dc_defaults(E);
 	}
-
 
 	input_string("Solver", E->control.SOLVER_TYPE, NULL, m);
 	if(strcmp(E->control.SOLVER_TYPE, "cgrad") == 0)
@@ -790,8 +788,11 @@ void read_initial_settings(struct All_variables *E)
 #ifdef USE_GZDIR
 	input_boolean("gzdir",&(E->control.gzdir),"on",m);
 #endif
+	input_boolean("ele_pressure_out",&(E->control.ele_pressure_out),"off",m);
+
 	/* control of VTK type of gzdir output */
 	input_boolean("vtk_pressure_out",&(E->control.vtk_pressure_out),"off",m);
+
 	input_boolean("vtk_e2_out",&(E->control.vtk_e2_out),"off",m);
 	input_boolean("vtk_ddpart_out",&(E->control.vtk_ddpart_out),"off",m);
         input_boolean("vtk_stress2_out",&(E->control.vtk_stress2_out),"off",m);	
@@ -801,10 +802,12 @@ void read_initial_settings(struct All_variables *E)
 
 	
 	input_string("use_scratch", tmp_string, "local", m);
-	if(strcmp(tmp_string, "local") == 0)
+	if(strcmp(tmp_string, "local") == 0){
 		strcpy(E->control.data_file2, E->control.data_file);
-	else
-		sprintf(E->control.data_file2, "/scratch_%s/%s/%s", E->parallel.machinename, tmp_string, E->control.data_file);
+	}else{
+	  sprintf(E->control.data_file2, "/scratch_%s/%s/%s",
+		  E->parallel.machinename, tmp_string, E->control.data_file);
+	}
 
 	input_boolean("AVS", &(E->control.AVS), "off", m);
 	input_boolean("CONMAN", &(E->control.CONMAN), "off", m);
@@ -867,6 +870,8 @@ void read_initial_settings(struct All_variables *E)
 	input_double("ggrd_tinit_offset",&(E->control.ggrd.temp.offset),"0.0", m);
 	/* comp */
 	input_boolean("ggrd_cinit",&(E->control.ggrd.use_comp),"off", m);
+
+	
 	input_double("ggrd_cinit_scale",&(E->control.ggrd.comp.scale),"1.0", m);
 
 	input_string("ggrd_cinit_gfile",E->control.ggrd.comp.gfile,"", m);
@@ -1100,9 +1105,8 @@ void read_initial_settings(struct All_variables *E)
 	E->monitor.velo_scale = E->data.therm_diff / (E->monitor.length_scale);
 	E->monitor.tau_scale = (E->data.ref_viscosity/E->monitor.time_scale); /* scaling stress */
 
-
+	/* e.g. convection settings here */
 	(E->problem_settings) (E);
-
 	viscosity_parameters(E);
 	return;
 }

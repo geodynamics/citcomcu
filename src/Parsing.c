@@ -111,6 +111,11 @@ void setup_parser(E,filename)
     int i,j,k;
     int m=E->parallel.me;
 
+    /* without this initialization, the free() upon release stopped
+       working?! */
+    ARGLIST =(AL *)malloc(sizeof(AL));;
+    ARGBUF = (char *)malloc(BUFMAX);
+    
     /* should get file length & cpp &c before any further parsing */
 
     /* for now, read one filename from the command line, we'll parse that ! */
@@ -193,10 +198,10 @@ void shutdown_parser(E)
      struct All_variables *E;
 
 {
-	if(ARGLIST != NULL) free(ARGLIST);
-	if(ARGBUF  != NULL) free(ARGBUF);
-	ARGBUF=  NULL;
-	ARGLIST= NULL;
+  if(ARGLIST != NULL) free(ARGLIST);
+  if(ARGBUF  != NULL) free(ARGBUF);
+  ARGBUF=  NULL;
+  ARGLIST= NULL;
 
 }
 
@@ -213,18 +218,13 @@ void add_to_parameter_list(name,value)
   /* check arglist memory */
   if(NLIST >= LISTMAX)
     { LISTMAX += LISTINC;
-      if(ARGLIST == NULL)
-	ARGLIST= (AL *)safe_malloc(LISTMAX * sizeof(AL));
-      else
-	ARGLIST= (AL *)realloc(ARGLIST,LISTMAX * sizeof(AL));
+      ARGLIST= (AL *)realloc(ARGLIST,LISTMAX * sizeof(AL));
     }
   /* check argbuf memory */
   len= strlen(name) + strlen(value) + 2; /* +2 for terminating nulls */
   if(NBUF+len >= BUFMAX)
     { BUFMAX += BUFINC;
-      if(ARGBUF == NULL)
-	ARGBUF= (char *)safe_malloc(BUFMAX);
-      else	ARGBUF= (char *)realloc(ARGBUF,BUFMAX);
+      ARGBUF= (char *)realloc(ARGBUF,BUFMAX);
     }
   if(ARGBUF == NULL || ARGLIST == NULL)
    fprintf(stderr,"cannot allocate memory\n");

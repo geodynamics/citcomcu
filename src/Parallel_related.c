@@ -1114,13 +1114,16 @@ void exchange_number_rec_markers(struct All_variables *E)
 void exchange_markers(struct All_variables *E)
 {
 	//int target_proc, kk, e, node, i, ii, j, k, bound, type, idb, msginfo[8];
-	int target_proc, kk, k, idb;
+  int target_proc, kk, k, idb, transport_space;
 	int rioff;
 
 	MPI_Status status[CU_MPI_MSG_LIM];
 	MPI_Request request[CU_MPI_MSG_LIM];
 
 	rioff = 2 + E->tracers_add_flavors;
+
+	/* number of items to be passed when tracers cross processors */
+	transport_space = 2 * E->mesh.nsd + E->tracers_track_strain + E->tracers_track_fse * 9;
 
 	idb = 0;
 	for(k = 1; k <= E->parallel.no_neighbors; k++)
@@ -1134,7 +1137,7 @@ void exchange_markers(struct All_variables *E)
 			MPI_Isend(E->PINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 
 			idb++;
-			kk = E->parallel.traces_transfer_number[k] * (2 * E->mesh.nsd + E->tracers_track_strain) + 1;
+			kk = E->parallel.traces_transfer_number[k] * (transport_space) + 1;
 			MPI_Isend(E->PVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
 
 			idb++;
@@ -1154,7 +1157,7 @@ void exchange_markers(struct All_variables *E)
 			MPI_Irecv(E->RINS[k], kk, MPI_INT, target_proc, 1, MPI_COMM_WORLD, &request[idb - 1]);
 
 			idb++;
-			kk = E->parallel.traces_receive_number[k] * (2 * E->mesh.nsd + E->tracers_track_strain) + 1;
+			kk = E->parallel.traces_receive_number[k] * (transport_space) + 1;
 			MPI_Irecv(E->RVV[k], kk, MPI_FLOAT, target_proc, 2, MPI_COMM_WORLD, &request[idb - 1]);
 
 			idb++;
