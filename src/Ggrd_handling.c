@@ -102,7 +102,7 @@ void ggrd_read_vtop_from_file(struct All_variables *E, int is_geographic)
   */
   vscale = 1/(E->monitor.velo_scale*(100*365.25*24*3600));
   if(verbose)
-    fprintf(stderr,"ggrd_read_vtop_from_file: CPU %i expecting velocity grids in cm/yr, scaling factor: %g\n",vscale,E->parallel.me);
+    fprintf(stderr,"ggrd_read_vtop_from_file: CPU %i expecting velocity grids in cm/yr, scaling factor: %g\n",E->parallel.me,vscale);
 
   /*
     if we have not initialized the time history structure, do it now
@@ -234,7 +234,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
   int c1_local,c1_total,n_total,int_unity = 1;
 
   /* twb additions */
-  double rho_prem;
+  double rho_prem,meanC;
   char pfile[1000];
   double t1,f1,r1,tgrad,tadd,tz,tmean;
 
@@ -594,14 +594,21 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
     }
 
     if(E->control.composition){
-
-      if(E->parallel.me==0)
-	fprintf(stderr,"assigned C > 0.5 %i/%i times out of %i/%i, %.1f%%\n",
-		c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
       if(E->control.composition_init_checkerboard) /* override */
 	convection_initial_markers(E,-1);
-      else
+      else if(E->control.cinit_sphere)
+	convection_initial_markers(E,-2);
+      else{
+	if(E->parallel.me==0)
+	  fprintf(stderr,"assigned C > 0.5 %i/%i times out of %i/%i, %.1f%%\n",
+		  c1_local,c1_total,E->lmesh.nno,n_total,E->tracers_dense_frac*100.);
 	convection_initial_markers(E,1);
+      }
+
+      for(meanC=0.,i=0;i<=E->lmesh.nno;i++)
+	meanC+= E->C[i];
+      fprintf(stderr,"%i-2: mean N-C: %g\n",E->parallel.me,meanC/(double)E->lmesh.nno);
+
     }
   }							// end for restart==0
   else if(E->control.restart)
@@ -748,6 +755,7 @@ void ggrd_deal_with_composition_input(struct All_variables *E,
 	}
 	if(assign_composition){
 	  E->C[node] =  E->control.ggrd.comp.offset + tadd *  E->control.ggrd.comp.scale;
+	  //O,fprintf(stderr,"%g\n",E->C[i]);
 	}else{			/* flavor */
 	  
 	  E->CF[0][node] = (int)(tadd+.5);
@@ -1017,8 +1025,7 @@ void ggrd_read_mat_from_file(struct All_variables *E)
     if(E->parallel.me == 0)
       fprintf(stderr,"ggrd_read_mat_from_file: assigning at age %g\n",age);
     if(timedep){
-      ggrd_interpol_time(age,&E->control.ggrd.time_hist,&i1,&i2,&f1,&f2,
-			 E->control.ggrd.time_hist.vstage_transition);
+      ggrd_interpol_time(age,&E->control.ggrd.time_hist,&i1,&i2,&f1,&f2);
       interpolate = 1;
     }else{
       interpolate = 0;
