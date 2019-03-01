@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #ifdef USE_GGRD
+#include "hc_ggrd.h"
 #include "hc.h"
 #endif
 #include "zlib.h"
@@ -90,6 +91,7 @@
 #define LIDE 1
 
 #define CITCOM_TRACER_EPS_MARGIN 1.0e-6
+#define R_EARTH_KM 6371.0
 
 #ifndef COMPRESS_BINARY
 #define COMPRESS_BINARY "/usr/bin/compress"
@@ -574,10 +576,10 @@ struct MESH_DATA
 	int botvbc;
 	int sidevbc;
 
-	char topvbc_file[100];
-	char botvbc_file[100];
-	char sidevbc_file[100];
-	char gridfile[4][100];
+	char topvbc_file[500];
+	char botvbc_file[500];
+	char sidevbc_file[500];
+	char gridfile[4][500];
 
 
 	int periodic_x;
@@ -662,8 +664,8 @@ struct TOTAL
 
 struct MONITOR
 {
-	char node_output[100][6];	/* recording the format of the output data */
-	char sobs_output[100][6];	/* recording the format of the output data */
+	char node_output[500][6];	/* recording the format of the output data */
+	char sobs_output[500][6];	/* recording the format of the output data */
 	int node_output_cols;
 	int sobs_output_cols;
 
@@ -778,6 +780,11 @@ struct CONTROL
 
 	float Ra_670, clapeyron670, transT670, width670;
 	float Ra_410, clapeyron410, transT410, width410;
+
+  #define CINIT_SPHERE_PAR_N 6 /* x,y,z,r,cin,cout = number of sphere parameters */
+  int cinit_sphere;
+  float cinit_sphere_par[CINIT_SPHERE_PAR_N];
+  
 #ifdef USE_GGRD
   struct ggrd_master ggrd;
 
@@ -852,7 +859,7 @@ struct CONTROL
 	int total_v_solver_calls;
 
   int gzdir,vtk_pressure_out,vtk_vgm_out,vtk_viscosity_out,vtk_e2_out,vtk_stress2_out,vtk_stress_3D,
-    vtk_ddpart_out;
+    vtk_ddpart_out,ele_pressure_out;
   
 	int record_every;
 	int record_all_until;
@@ -981,7 +988,8 @@ struct All_variables
 
   int **tflavors;		/* this should also be unsigned short */
   int tracers_add_flavors;
-  int tracers_track_strain;
+  int tracers_track_strain;	/* track scalar strain */
+  int tracers_track_fse;	/* track full FSE */
   CITCOM_XMC_PREC *tracer_strain;
   
   int *tmaxflavor;

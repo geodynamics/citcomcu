@@ -400,7 +400,7 @@ void convection_initial_temperature_and_comp_ggrd(struct All_variables *E)
 					      (double)E->SX[1][node],
 					      (double)E->SX[2][node],
 					      E->control.ggrd.temp.d,&tadd,
-					      FALSE,FALSE);
+					      FALSE,FALSE,R_EARTH_KM);
 	      else{		/* cartesian interpolation */
 		ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],
 					      (double)E->X[2][node],
@@ -747,7 +747,7 @@ void ggrd_deal_with_composition_input(struct All_variables *E,
 	  if(E->control.Rsphere) /* spherical interpolation */
 	    ggrd_grdtrack_interpolate_rtp((double)E->SX[3][node],(double)E->SX[1][node],(double)E->SX[2][node],
 					  E->control.ggrd.comp.d,&tadd,
-					  FALSE,FALSE);
+					  FALSE,FALSE,R_EARTH_KM);
 	  else		/* cartesian interpolation */
 	    ggrd_grdtrack_interpolate_xyz((double)E->X[1][node],(double)E->X[2][node],(double)E->X[3][node],
 					  E->control.ggrd.comp.d,&tadd,
@@ -862,7 +862,7 @@ void assign_flavor_to_tracer_from_grd(struct All_variables *E)
       /* 3-D */
       if(E->control.Rsphere) /* spherical interpolation */
 	ggrd_grdtrack_interpolate_rtp((double)E->XMC[3][i],(double)E->XMC[1][i],(double)E->XMC[2][i],
-				      grd,&tadd,FALSE,FALSE);
+				      grd,&tadd,FALSE,FALSE,R_EARTH_KM);
       else		/* cartesian interpolation */
 	ggrd_grdtrack_interpolate_xyz((double)E->XMC[1][i],(double)E->XMC[2][i],(double)E->XMC[3][i],
 				      grd,&tadd,FALSE);
@@ -1101,9 +1101,9 @@ void ggrd_read_mat_from_file(struct All_variables *E)
 	      if(E->control.ggrd_mat_is_3d){
 		if(!ggrd_grdtrack_interpolate_rtp((double)rout[0],(double)rout[1],(double)rout[2],
 						  (E->control.ggrd.mat+i1),&indbl,
-						  FALSE,shift_to_pos_lon)){
+						  FALSE,shift_to_pos_lon,R_EARTH_KM)){
 		  fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g depth: %g\n",
-			  rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0);
+			  rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * R_EARTH_KM);
 		  parallel_process_termination();
 		}
 	      }else{
@@ -1118,9 +1118,9 @@ void ggrd_read_mat_from_file(struct All_variables *E)
 		if(E->control.ggrd_mat_is_3d){
 		  if(!ggrd_grdtrack_interpolate_rtp((double)rout[0],(double)rout[1],(double)rout[2],
 						    (E->control.ggrd.mat+i2),&indbl2,
-						    FALSE,shift_to_pos_lon)){
+						    FALSE,shift_to_pos_lon,R_EARTH_KM)){
 		    fprintf(stderr,"ggrd_read_mat_from_file: interpolation error at lon: %g lat: %g depth: %g\n",
-			    rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0);
+			    rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * R_EARTH_KM);
 		    parallel_process_termination();
 		  }
 		}else{
@@ -1148,7 +1148,7 @@ void ggrd_read_mat_from_file(struct All_variables *E)
 	      if(vip > 1e5)
 		vip = 1e5;
 	    }
-	    //fprintf(stderr,"lon %11g lat %11g depth %11g vip %11g\n",rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * 6371.0,vip);
+	    //fprintf(stderr,"lon %11g lat %11g depth %11g vip %11g\n",rout[2]*180/M_PI,90-rout[1]*180/M_PI,(1.0-rout[0]) * R_EARTH_KM,vip);
 	    E->VIP[el] = vip;
 	  }
 	}

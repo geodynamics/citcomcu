@@ -1061,10 +1061,11 @@ void read_initial_settings(struct All_variables *E)
 
 //  input_float("layerd",&(E->data.layer_km),"2870000.0", m);
 
-	if(E->control.CART3D)
-		input_float("layerd", &(E->monitor.length_scale), "2870000.0", m);
-	else if(E->control.Rsphere)
-		input_float("radius", &(E->monitor.length_scale), "6370000.0", m);
+	if(E->control.CART3D){
+	  input_float("layerd", &(E->monitor.length_scale), "2870000.0", m);
+	}else if(E->control.Rsphere){
+	  input_float("radius", &(E->monitor.length_scale), "6371000.0", m);
+	}
 
 
 	
