@@ -586,6 +586,9 @@ struct MESH_DATA
 	int periodic_y;
   int slab_influx_side_bc;
   float slab_influx_z1,slab_influx_z2,slab_influx_y2;
+
+  int shear_in_x_bc;
+  float shear_in_x_val;
   
   int periodic_pin_or_filter;	/*  */
 	double volume;

@@ -270,7 +270,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 {
   int i,j,k,l,m,off,p,nel,elx,ely,elz,inode,elxlz,el,ani_layer;
   double vis2,n[3],u,v,s,r,xloc[3],z_top,z_bottom,log_vis;
-  float base[9],rout[3];
+  float base[9],rout[3],av_dir[3];
   char tfilename[1000],gmt_string[50];
   int read_grd;
 #ifdef USE_GGRD
@@ -386,13 +386,36 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
       ggrd_read_anivisc_from_file_cu(E);
 #endif
       break;
-    case 6:		
+    case 6:			/* tapered, radial */
+    case 7:			/* tapered, director from file */
+    case 8:			/* constant in layer, director from
+				   file */
+      if((E->viscosity.anisotropic_init >= 7)&&(E->viscosity.anisotropic_init <= 8)){
+	/* we read in a director */
+	av_dir[0] = E->viscosity.av_dir[0];
+	av_dir[1] = E->viscosity.av_dir[1];
+	av_dir[2] = E->viscosity.av_dir[2];
+      }else{			/* default director */
+#ifdef CitcomS_global_defs_h
+	/* CitcomS */
+	av_dir[0] = 1.0;av_dir[1] = 0.0;av_dir[2] = 0.0;
+#else
+	/* CU */
+	if(E->control.Rsphere){
+	  av_dir[0] = 1.0;av_dir[1] = 0.0;av_dir[2] = 0.0;
+	}else{
+	  av_dir[0] = 0.0;av_dir[1] = 0.0;av_dir[2] = 1.0;
+	}
+#endif
+
+      }
+  
       /* 
 	 
-	 tapered within layer, if ani_vis2_factor < 0, will read from file
-	 for vis2 base. else, will use constant factor everywhere 
+	 tapered or constant within layer, if ani_vis2_factor < 0,
+	 will read from file for vis2 base. else, will use constant
+	 factor everywhere laterally
       */
-      
       if(E->viscosity.ani_vis2_factor >= 0){
 	if(E->parallel.me == 0)
 	  fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic tapered, vis2 min %g, global\n",
@@ -472,11 +495,16 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 	      }
 	      u /= ends;
 	      if(!read_grd){
-		/* 
+		
+		if(E->viscosity.anisotropic_init == 8){
+		  vis2 = E->viscosity.ani_vis2_factor;
+		}else{
+		  /* 
 		   do a log scale decrease of vis2 to ani_vis2_factor from bottom to top of layer 
-		*/
-		vis2 = exp(log(E->viscosity.ani_vis2_factor) * (u-z_bottom)/(z_top-z_bottom));
+		  */
+		  vis2 = exp(log(E->viscosity.ani_vis2_factor) * (u-z_bottom)/(z_top-z_bottom));
 		//fprintf(stderr,"z %g (%g/%g) vis2 %g vis2_o %g frac %g\n",u,z_top,z_bottom,vis2, E->viscosity.ani_vis2_factor,(u-z_bottom)/(z_top-z_bottom));
+		}
 		/* 
 		   1-eta_s/eta 
 		*/
@@ -509,10 +537,11 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 		    vis2 = 1 - exp(log(pow(10.0,log_vis)) * (u-z_bottom)/(z_top-z_bottom));
 		  }
 		  /* 
-		     r,t,p=(1,0,0) convert to Caretsian, reuse rout
+		     r,t,p=(1,0,0) or read in director convert to Caretsian, reuse rout
 		  */
 		  calc_cbase_at_tp(rout[1],rout[2],base);
-		  convert_pvec_to_cvec(1.,0.,0.,base,rout);
+		  /* assign director */
+		  convert_pvec_to_cvec(av_dir[0],av_dir[1],av_dir[2],base,rout);
 		  n[0]=rout[0];n[1]=rout[1];n[2]=rout[2];
 		  for(p=1;p <= vpts;p++){ /* assign to all integration points */
 		    off = (el-1)*vpts + p;
@@ -543,10 +572,10 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 		      vis2 = 1 - exp(log(pow(10.0,log_vis)) * (u-z_bottom)/(z_top-z_bottom));
 		    }
 		    calc_cbase_at_tp(rout[1],rout[2],base);
-		    convert_pvec_to_cvec(1.,0.,0.,base,rout);
+		    convert_pvec_to_cvec(av_dir[0],av_dir[1],av_dir[2],base,rout);
 		    n[0]=rout[0];n[1]=rout[1];n[2]=rout[2];
-		  }else{		/* director in z direction */
-		    n[0] = 0.;n[1] = 0.;n[2] = 1.;
+		  }else{		/* director in z direction or read in*/
+		    n[0] = av_dir[0];n[1] = av_dir[1];n[2] = av_dir[2];
 		    if(read_grd){ /* get the vis2 factors */
 		      rout[0]=rout[1]=rout[2]=0.0;
 		      for(inode=1;inode <= ends;inode++){
@@ -595,7 +624,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 	if(read_grd)
 	ggrd_grdtrack_free_gstruc(vis2_grd);
 	
-      break;			/* end of 6 branch */
+      break;			/* end of 6, 7, or 8 branch */
     default:
       fprintf(stderr,"set_anisotropic_viscosity_at_element_level: anisotropic_init %i undefined\n",
 	      E->viscosity.anisotropic_init);

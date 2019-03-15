@@ -56,10 +56,11 @@ struct VISC_OPT
   int allow_anisotropic_viscosity,anisotropic_viscosity_init;
 #ifdef CITCOM_ALLOW_ANISOTROPIC_VISC
   int anivisc_start_from_iso; /* start from isotropic solution? */
-  int anisotropic_init;	/* 0: isotropic, 1: random, 2: from file 3: align with ISA */
+  int anisotropic_init;	/* see Viscosity_structures */
   char anisotropic_init_dir[1000];
   int anivisc_layer;		/* layer to assign anisotropic viscosity to for mode 2 */
   double ani_vis2_factor;	/* for  mode 3, anisotropy scale factor*/
+  float av_dir[3];		/* director */
 #endif
 
 

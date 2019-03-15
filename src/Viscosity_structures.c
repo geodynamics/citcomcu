@@ -220,14 +220,22 @@ void viscosity_parameters(struct All_variables *E)
 							 viscosity */
 	  input_int("anisotropic_init",&(E->viscosity.anisotropic_init),"0",m); /* 0: isotropic
 										   1: random
-										   2: read in director orientation
-										      and log10(eta_s/eta) 
+										   2: read in director orientation and log10(eta_s/eta) 
 										   3: align with velocity, use ani_vis2_factor for eta_s/eta
 										   4: align with ISA, use ani_vis2_factor for eta_s/eta
 										   5: align mixed depending on deformation state, use ani_vis2_factor for eta_s/eta
-										   6: use radially aligned director and taper eta_s/eta from base (1) to top of layer (ani_vis2_factor)
+										   6: use radially aligned director and 
+										      taper eta_s/eta from base (1) to top of a single layer (ani_vis2_factor) 
+										   7: like 6, but read in director
+										   8: like 7, but no tapering
 										   
 										*/
+	  if((E->viscosity.anisotropic_init == 7)||(E->viscosity.anisotropic_init == 8)){
+	    input_float_vector("av_dir",3,(E->viscosity.av_dir),m); /* director */
+	    if(E->parallel.me == 0)
+	      fprintf(stderr,"avisc modes 7 or 8, read director as %g, %g, %g\n",
+		      E->viscosity.av_dir[0],E->viscosity.av_dir[1],E->viscosity.av_dir[2]);
+	  }
 	  input_string("anisotropic_init_dir",(E->viscosity.anisotropic_init_dir),"",m); /* directory
 											    for
 											    ggrd
@@ -236,8 +244,8 @@ void viscosity_parameters(struct All_variables *E)
 	  input_int("anivisc_layer",&(E->viscosity.anivisc_layer),"1",m); /* >0: assign to layers on top of anivisc_layer
 									     <0: assign to layer = anivisc_layer
 									  */
-	  if((E->viscosity.anisotropic_init == 6) && (E->viscosity.anivisc_layer >= 0))
-	    myerror("anisotropic init mode 6 requires selection of layer where anisotropy applies",E);
+	  if(((E->viscosity.anisotropic_init >= 6)&&(E->viscosity.anisotropic_init <= 8)) && (E->viscosity.anivisc_layer >= 0))
+	    myerror("anisotropic init mode 6, 7, or 8 require selection of layer where anisotropy applies",E);
 	  
 	  input_boolean("anivisc_start_from_iso",
 			&(E->viscosity.anivisc_start_from_iso),"on",m); /* start

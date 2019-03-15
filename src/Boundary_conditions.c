@@ -130,11 +130,13 @@ void velocity_boundary_conditions(struct All_variables *E)
 	    }
 	  }
 	}
-
-	if(E->mesh.slab_influx_side_bc) /* slab in-flux on side */
-	  velocity_apply_slab_influx_side_bc(E);
-
-
+	if(E->mesh.shear_in_x_bc){
+	  apply_shear_in_x_vel_bc(E);
+	}else{
+	  if(E->mesh.slab_influx_side_bc){ /* slab in-flux on side */
+	    velocity_apply_slab_influx_side_bc(E);
+	  }
+	}
 	if(E->control.verbose)
 	{
 		for(node = 1; node <= E->lmesh.nno; node++)
@@ -228,11 +230,11 @@ void temperature_boundary_conditions(struct All_variables *E)
   
 
   
-  if(E->mesh.periodic_x || E->mesh.periodic_y)
+  if(E->mesh.periodic_x || E->mesh.periodic_y){
     temperature_apply_periodic_bcs(E);
-  else
+  }else{
     temperature_refl_vert_bc(E);	/* default */
-  
+  }
   
   temperatures_conform_bcs(E);
   
@@ -371,6 +373,73 @@ void velocity_refl_vert_bc(E)
   
   return;
 }
+/* ========================================== */
+void apply_shear_in_x_vel_bc(E)
+     struct All_variables *E;
+{
+
+  int i,j;
+  int node1,node2;
+  int level,nox,noy,noz;
+  
+
+  if ((E->parallel.me_loc[1]==0) || (E->parallel.me_loc[1]==E->parallel.nprocx-1)){
+    for(j=1;j<=E->lmesh.noy;j++)
+      for(i=1;i<=E->lmesh.noz;i++)  {
+	node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
+	node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+	  
+	if (E->parallel.me_loc[1]==0 )  {
+	  //fprintf(stderr,"left shear: %.3f %.3f %.3f\n",E->X[1][node1],E->X[2][node1],E->X[3][node1]);
+	  E->VB[1][node1] = 0.0;
+	  E->VB[2][node1] = E->mesh.shear_in_x_val;
+	  E->VB[3][node1] = 0.0;  
+	}
+	if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
+	  //fprintf(stderr,"left no-slip: %.3f %.3f %.3f\n",E->X[1][node2],E->X[2][node2],E->X[3][node2]);
+	  E->VB[1][node2] = 0.0;
+	  E->VB[2][node2] = 0.0;
+	  E->VB[3][node2] = 0.0;
+	}
+      }      /* end loop for i and j */
+  }
+
+  return;
+  /* all vbc's apply at all levels  */
+  for(level=E->mesh.levmax;level>=E->mesh.levmin;level--) {
+    nox = E->lmesh.NOX[level] ;
+    noz = E->lmesh.NOZ[level] ;
+    noy = E->lmesh.NOY[level] ;
+    
+    if ((E->parallel.me_loc[1]==0) || (E->parallel.me_loc[1]==E->parallel.nprocx-1)){
+      for(j=1;j<=E->lmesh.noy;j++)
+	for(i=1;i<=E->lmesh.noz;i++)  {
+	  node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
+	  node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+	  
+	  if (E->parallel.me_loc[1]==0)  { /* no slip */
+	    E->NODE[level][node1] = E->NODE[level][node1] | VBY;
+	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
+	    E->NODE[level][node1] = E->NODE[level][node1] | VBX;
+	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBX);
+	    E->NODE[level][node1] = E->NODE[level][node1] | VBZ;
+	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBZ);
+	    
+	  }
+	  if (E->parallel.me_loc[1]==E->parallel.nprocx-1) {
+	    E->NODE[level][node2] = E->NODE[level][node2] | VBY;
+	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
+	    E->NODE[level][node2] = E->NODE[level][node2] | VBX;
+	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBX);
+	    E->NODE[level][node2] = E->NODE[level][node2] | VBZ;
+	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBZ);
+	  }
+	}
+    }
+  }
+  return;
+}
+
 void velocity_apply_slab_influx_side_bc(struct All_variables *E)
 {
   

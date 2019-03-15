@@ -1,5 +1,6 @@
 /* Advection_diffusion.c */
 void advection_diffusion_parameters(struct All_variables *);
+void apply_shear_in_x_vel_bc(struct All_variables *);
 void advection_diffusion_allocate_memory(struct All_variables *);
 void PG_timestep_particle(struct All_variables *);
 void PG_timestep(struct All_variables *);

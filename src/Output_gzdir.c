@@ -416,8 +416,20 @@ void output_velo_related_gzdir(E, file_number)
 	  for(i=1;i<=E->lmesh.nno;i++)
 	    gzprintf(gzout,"%.6e\n",SXZ[i]);
 	  gzclose(gzout);
-	  /* s_yy */
+
 	  if(E->control.vtk_stress_3D){
+	    /* s_xy */
+	    sprintf(output_file,"%s/%d/sXY.%d.%d.gz",
+		    E->control.data_file2,file_number, E->parallel.me,file_number);
+	    gzout = safe_gzopen(output_file,"w");
+	    gzprintf(gzout,"%d %d %13.6e\n",file_number,
+		     E->lmesh.nno,E->monitor.elapsed_time);
+	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	    for(i=1;i<=E->lmesh.nno;i++)
+	      gzprintf(gzout,"%.6e\n",SXY[i]);
+	    gzclose(gzout);
+	    
+	    /* s_yy */
 	    sprintf(output_file,"%s/%d/sYY.%d.%d.gz",
 		    E->control.data_file2,file_number, E->parallel.me,file_number);
 	    gzout = safe_gzopen(output_file,"w");
@@ -427,8 +439,24 @@ void output_velo_related_gzdir(E, file_number)
 	    for(i=1;i<=E->lmesh.nno;i++)
 	      gzprintf(gzout,"%.6e\n",SYY[i]);
 	    gzclose(gzout);
+	    /* s_yz */
+	    sprintf(output_file,"%s/%d/sYZ.%d.%d.gz",
+		    E->control.data_file2,file_number, E->parallel.me,file_number);
+	    gzout = safe_gzopen(output_file,"w");
+	    gzprintf(gzout,"%d %d %13.6e\n",file_number,
+		     E->lmesh.nno,E->monitor.elapsed_time);
+	    gzprintf(gzout,"%3d %7d\n",1,E->lmesh.nno);
+	    for(i=1;i<=E->lmesh.nno;i++)
+	      gzprintf(gzout,"%.6e\n",SZY[i]);
+	    gzclose(gzout);
+
+
+	    
+
 	  }
 
+
+	  
 	  free((void *)SXX);
 	  free((void *)SYY);
 	  free((void *)SXY);

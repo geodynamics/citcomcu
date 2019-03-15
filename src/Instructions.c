@@ -508,11 +508,14 @@ void global_default_values(struct All_variables *E)
 
 	E->mesh.slab_influx_side_bc = 0;
 
+	
 	E->mesh.slab_influx_z1=0.6;		/* above z1, below z2 --> tapered inflow */
 	E->mesh.slab_influx_z2=0.9;			/* above z2 --> lithosphere */
 
 	E->mesh.slab_influx_y2=2.37;			/* y-extent of continental BC */
 
+	E->mesh.shear_in_x_bc = 0;
+	E->mesh.shear_in_x_val = 1.0;
 
 	E->control.VBXtopval = 0.0;
 	E->control.VBYtopval = 0.0;
@@ -966,6 +969,10 @@ void read_initial_settings(struct All_variables *E)
 											   0: filter */
 	input_boolean("slab_influx_side_bc",&(E->mesh.slab_influx_side_bc),"off",m);
 
+	input_boolean("shear_in_x_bc",&(E->mesh.shear_in_x_bc),"off",m);
+	input_float("shear_in_x_val", &(E->mesh.shear_in_x_val), "1.0", m);
+
+	
 	input_boolean("depthdominated", &(E->control.depth_dominated), "off", m);
 	input_boolean("eqnzigzag", &(E->control.eqn_zigzag), "off", m);
 	input_boolean("eqnviscosity", &(E->control.eqn_viscosity), "off", m);
