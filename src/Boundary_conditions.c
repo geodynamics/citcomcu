@@ -43,120 +43,116 @@
 
 void velocity_boundary_conditions(struct All_variables *E)
 {
-	int lv;
-	int node,top;
-	const int bottom = 1;	/* bottom node number */
-
-	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
+  int lv;
+  int node,top;
+  const int bottom = 1;	/* bottom node number */
+  
+  for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
+    {
+      top = E->mesh.NOZ[lv]; /* top for this MG level */
+      if(E->mesh.botvbc != 1) /* free slip on bottom */
 	{
-	  top = E->mesh.NOZ[lv]; /* top for this MG level */
-		if(E->mesh.botvbc != 1) /* free slip on bottom */
-		{
-			horizontal_bc(E, E->VB, bottom, 1, 0.0, VBX, 0, lv);
-			horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, bottom, 2, 0.0, VBY, 0, lv);
-			horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, SBX, 1, lv);
-			horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, SBY, 1, lv);
-		}
-		if(E->mesh.topvbc != 1) /* free slip on top */
-		{
-			horizontal_bc(E, E->VB, top, 1, 0.0, VBX, 0, lv);
-			horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, top, 2, 0.0, VBY, 0, lv);
-			horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, SBX, 1, lv);
-			horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, SBY, 1, lv);
-		}
+	  horizontal_bc(E, E->VB, bottom, 1, 0.0, VBX, 0, lv);
+	  horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
+	  horizontal_bc(E, E->VB, bottom, 2, 0.0, VBY, 0, lv);
+	  horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, SBX, 1, lv);
+	  horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
+	  horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, SBY, 1, lv);
 	}
-
-	if(E->mesh.periodic_x || E->mesh.periodic_y){
-
-		velocity_apply_periodic_bcs(E);
-	
-	}else
-		velocity_refl_vert_bc(E);	/* default */
-
-	for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
+      if(E->mesh.topvbc != 1) /* free slip on top */
 	{
-	  top = E->mesh.NOZ[lv]; /* top node for this MG level */
-		if(E->mesh.botvbc == 1) /* bottom velocity boundary condition */
-		{
-			horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, VBX, 1, lv);
-			horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, VBY, 1, lv);
-			horizontal_bc(E, E->VB, bottom, 1, 0.0, SBX, 0, lv);
-			horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, bottom, 2, 0.0, SBY, 0, lv);
-		}
-		if(E->mesh.topvbc == 1) /* top velocity boundary condition */
-		{
-		        E->control.VBXtopval = E->control.plate_vel; /* this should be more explicit */
-			horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, VBX, 1, lv);
-			horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
-			horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, VBY, 1, lv);
-			horizontal_bc(E, E->VB, top, 1, 0.0, SBX, 0, lv);
-			horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
-			horizontal_bc(E, E->VB, top, 2, 0.0, SBY, 0, lv);
-		}
+	  horizontal_bc(E, E->VB, top, 1, 0.0, VBX, 0, lv);
+	  horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
+	  horizontal_bc(E, E->VB, top, 2, 0.0, VBY, 0, lv);
+	  horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, SBX, 1, lv);
+	  horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
+	  horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, SBY, 1, lv);
 	}
+    }
+  
+  if(E->mesh.periodic_x || E->mesh.periodic_y){
+    velocity_apply_periodic_bcs(E);
+  }else
+    velocity_refl_vert_bc(E);	/* default */
+  
+  for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
+    {
+      top = E->mesh.NOZ[lv]; /* top node for this MG level */
+      if(E->mesh.botvbc == 1) /* bottom velocity boundary condition */
+	{
+	  horizontal_bc(E, E->VB, bottom, 1, E->control.VBXbotval, VBX, 1, lv);
+	  horizontal_bc(E, E->VB, bottom, 3, 0.0, VBZ, 1, lv);
+	  horizontal_bc(E, E->VB, bottom, 2, E->control.VBYbotval, VBY, 1, lv);
+	  horizontal_bc(E, E->VB, bottom, 1, 0.0, SBX, 0, lv);
+	  horizontal_bc(E, E->VB, bottom, 3, 0.0, SBZ, 0, lv);
+	  horizontal_bc(E, E->VB, bottom, 2, 0.0, SBY, 0, lv);
+	}
+      if(E->mesh.topvbc == 1) /* top velocity boundary condition */
+	{
+	  E->control.VBXtopval = E->control.plate_vel; /* this should be more explicit */
+	  horizontal_bc(E, E->VB, top, 1, E->control.VBXtopval, VBX, 1, lv);
+	  horizontal_bc(E, E->VB, top, 3, 0.0, VBZ, 1, lv);
+	  horizontal_bc(E, E->VB, top, 2, E->control.VBYtopval, VBY, 1, lv);
+	  horizontal_bc(E, E->VB, top, 1, 0.0, SBX, 0, lv);
+	  horizontal_bc(E, E->VB, top, 3, 0.0, SBZ, 0, lv);
+	  horizontal_bc(E, E->VB, top, 2, 0.0, SBY, 0, lv);
+	}
+    }
 #ifdef USE_GGRD			/* velocities from grd */
-	if(E->control.ggrd.vtop_control)
-	  ggrd_read_vtop_from_file(E, (int)E->control.Rsphere);
+  if(E->control.ggrd.vtop_control)
+    ggrd_read_vtop_from_file(E, (int)E->control.Rsphere);
 #endif	
-	if(E->mesh.periodic_pin_or_filter == 1){
-	  if(E->mesh.periodic_x || E->mesh.periodic_y){
-	    
-	    
-	    /* 
-	       pin one node at top in lower left corner
-	    */
-	    for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--){
-	      node = E->mesh.NOZ[lv];
-	      if(E->mesh.periodic_x){
-		E->NODE[lv][node] = E->NODE[lv][node] & (~SBX); /* turn of stress */
-		E->NODE[lv][node] = E->NODE[lv][node] | (VBX);/* turn on velocity BC */
-		if(lv == E->mesh.levmax){	/* NB */
-		  E->VB[1][node] = 0;	/* set to zero */
-		}
-	      }
-	      if(E->mesh.periodic_y){
-		E->NODE[lv][node] = E->NODE[lv][node] & (~SBY);
-		E->NODE[lv][node] = E->NODE[lv][node] | (VBY);
-		if(lv == E->mesh.levmax){	/* NB */
-		  E->VB[2][node] = 0;
-		}
-	      }
-	    }
+  if(E->mesh.periodic_pin_or_filter == 1){
+    if(E->mesh.periodic_x || E->mesh.periodic_y){
+      /* 
+	 pin one node at top in lower left corner
+      */
+      for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--){
+	node = E->mesh.NOZ[lv];
+	if(E->mesh.periodic_x){
+	  E->NODE[lv][node] = E->NODE[lv][node] & (~SBX); /* turn of stress */
+	  E->NODE[lv][node] = E->NODE[lv][node] | (VBX);/* turn on velocity BC */
+	  if(lv == E->mesh.levmax){	/* NB */
+	    E->VB[1][node] = 0;	/* set to zero */
 	  }
 	}
-	if(E->mesh.shear_in_x_bc){
-	  apply_shear_in_x_vel_bc(E);
-	}else{
-	  if(E->mesh.slab_influx_side_bc){ /* slab in-flux on side */
-	    velocity_apply_slab_influx_side_bc(E);
+	if(E->mesh.periodic_y){
+	  E->NODE[lv][node] = E->NODE[lv][node] & (~SBY);
+	  E->NODE[lv][node] = E->NODE[lv][node] | (VBY);
+	  if(lv == E->mesh.levmax){	/* NB */
+	    E->VB[2][node] = 0;
 	  }
 	}
-	if(E->control.verbose)
+      }
+    }
+  } /* pin end */
+  if(E->mesh.shear_in_x_bc){
+    apply_shear_in_x_vel_bc(E);
+  }else{
+    if(E->mesh.slab_influx_side_bc){ /* slab in-flux on side */
+      velocity_apply_slab_influx_side_bc(E);
+    }
+  }
+  if(E->control.verbose)
+    {
+      for(node = 1; node <= E->lmesh.nno; node++)
+	fprintf(E->fp, "VB== %d %g %g %g\n", node, E->VB[1][node], E->VB[2][node], E->VB[3][node]);
+      for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
 	{
-		for(node = 1; node <= E->lmesh.nno; node++)
-			fprintf(E->fp, "VB== %d %g %g %g\n", node, E->VB[1][node], E->VB[2][node], E->VB[3][node]);
-		for(lv = E->mesh.levmax; lv >= E->mesh.levmin; lv--)
-		{
-			fprintf(E->fp, "VBB level=%d %d\n", lv, E->lmesh.NNO[lv]);
-			for(node = 1; node <= E->lmesh.NNO[lv]; node++)
-			{
-				fprintf(E->fp, "VB== %d %u %u %u\n", node, E->NODE[lv][node] & VBX, E->NODE[lv][node] & VBY, E->NODE[lv][node] & VBZ);
-				fprintf(E->fp, "SB== %d %u %u %u\n", node, E->NODE[lv][node] & SBX, E->NODE[lv][node] & SBY, E->NODE[lv][node] & SBZ);
-			}
-		}
+	  fprintf(E->fp, "VBB level=%d %d\n", lv, E->lmesh.NNO[lv]);
+	  for(node = 1; node <= E->lmesh.NNO[lv]; node++)
+	    {
+	      fprintf(E->fp, "VB== %d %u %u %u\n", node, E->NODE[lv][node] & VBX, E->NODE[lv][node] & VBY, E->NODE[lv][node] & VBZ);
+	      fprintf(E->fp, "SB== %d %u %u %u\n", node, E->NODE[lv][node] & SBX, E->NODE[lv][node] & SBY, E->NODE[lv][node] & SBZ);
+	    }
 	}
-
-
-	/* If any imposed internal velocity structure it goes here */
-
-
-	return;
+    }
+  
+  
+  /* If any imposed internal velocity structure it goes here */
+  
+  
+  return;
 }
 
 
@@ -378,55 +374,64 @@ void apply_shear_in_x_vel_bc(E)
      struct All_variables *E;
 {
 
-  int i,j;
+  int i,k;
   int node1,node2;
   int level,nox,noy,noz;
+  if(!E->control.CART3D)
+    myerror("apply_shear_in_x_vel_bc only set up for Cartesian",E);
   
+  if(E->parallel.me == 0)
+    fprintf(stderr,"applying shear in x %g, along y (%g)\n",
+	    E->mesh.shear_in_x_val,E->segment.yylayer[E->segment.ylayers-1]);
 
   if ((E->parallel.me_loc[1]==0) || (E->parallel.me_loc[1]==E->parallel.nprocx-1)){
-    for(j=1;j<=E->lmesh.noy;j++)
-      for(i=1;i<=E->lmesh.noz;i++)  {
-	node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
-	node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+    for(i=1;i <= E->lmesh.noz;i++)  {
+      for(k=1;k <= E->lmesh.noy;k++){
+
+	//j=1;node1 = i + (j - 1) * noz + (k - 1) * E->lmesh.nox * E->lmesh.noz;
+	node1 = i +                            (k - 1) * E->lmesh.nox * E->lmesh.noz;
+	//j=E->lmesh.nox;node2 = i + (j - 1) * noz + (k - 1) * E->lmesh.nox * E->lmesh.noz;
+	node2 = node1 + (E->lmesh.nox - 1) * E->lmesh.noz;
 	  
 	if (E->parallel.me_loc[1]==0 )  {
-	  //fprintf(stderr,"left shear: %.3f %.3f %.3f\n",E->X[1][node1],E->X[2][node1],E->X[3][node1]);
+	  //fprintf(stderr,"left shear:     %.3f %.3f %.3f\n",E->X[1][node1],E->X[2][node1],E->X[3][node1]);
 	  E->VB[1][node1] = 0.0;
-	  E->VB[2][node1] = E->mesh.shear_in_x_val;
+	  E->VB[2][node1] = E->mesh.shear_in_x_val * sin(E->X[2][node1]/E->segment.yylayer[E->segment.ylayers-1]*M_PI);
 	  E->VB[3][node1] = 0.0;  
 	}
 	if (E->parallel.me_loc[1]==E->parallel.nprocx-1)  {
-	  //fprintf(stderr,"left no-slip: %.3f %.3f %.3f\n",E->X[1][node2],E->X[2][node2],E->X[3][node2]);
+	  //fprintf(stderr,"right: no-slip: %.3f %.3f %.3f\n",E->X[1][node2],E->X[2][node2],E->X[3][node2]);
 	  E->VB[1][node2] = 0.0;
 	  E->VB[2][node2] = 0.0;
 	  E->VB[3][node2] = 0.0;
 	}
-      }      /* end loop for i and j */
+      }      /* end loop for i and k */
+    }
   }
 
-  return;
-  /* all vbc's apply at all levels  */
-  for(level=E->mesh.levmax;level>=E->mesh.levmin;level--) {
-    nox = E->lmesh.NOX[level] ;
-    noz = E->lmesh.NOZ[level] ;
-    noy = E->lmesh.NOY[level] ;
-    
+  /* 
+     all vbc's apply at all levels  
+  */
+  for(level=E->mesh.levmax;level >= E->mesh.levmin;level--) {
+    nox = E->lmesh.NOX[level];noy = E->lmesh.NOY[level];noz = E->lmesh.NOZ[level];    
     if ((E->parallel.me_loc[1]==0) || (E->parallel.me_loc[1]==E->parallel.nprocx-1)){
-      for(j=1;j<=E->lmesh.noy;j++)
-	for(i=1;i<=E->lmesh.noz;i++)  {
-	  node1 = i  + (j-1)*E->lmesh.noz*E->lmesh.nox;
-	  node2 = node1 + (E->lmesh.nox-1)*E->lmesh.noz;
+      for(i=1;i <= noz;i++)  {
+	for(k=1;k <= noy;k++){
+	  node1 = i  +    (k-1)*noz*nox;
+	  node2 = node1 + (nox-1)*noz;
 	  
-	  if (E->parallel.me_loc[1]==0)  { /* no slip */
+	  if (E->parallel.me_loc[1]==0)  { /* no slip on left*/
 	    E->NODE[level][node1] = E->NODE[level][node1] | VBY;
 	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
 	    E->NODE[level][node1] = E->NODE[level][node1] | VBX;
 	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBX);
 	    E->NODE[level][node1] = E->NODE[level][node1] | VBZ;
 	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBZ);
-	    
 	  }
-	  if (E->parallel.me_loc[1]==E->parallel.nprocx-1) {
+	  if (E->parallel.me_loc[1]==E->parallel.nprocx-1) { /* no
+								slip
+								on
+								right */
 	    E->NODE[level][node2] = E->NODE[level][node2] | VBY;
 	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
 	    E->NODE[level][node2] = E->NODE[level][node2] | VBX;
@@ -435,8 +440,9 @@ void apply_shear_in_x_vel_bc(E)
 	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBZ);
 	  }
 	}
+      }
     }
-  }
+  } /* level loop */
   return;
 }
 
@@ -488,21 +494,22 @@ void velocity_apply_slab_influx_side_bc(struct All_variables *E)
       nox = E->lmesh.NOX[level] ;
       noz = E->lmesh.NOZ[level] ;
       noy = E->lmesh.NOY[level] ;
-      for(j=1;j<=noy;j++)
-	for(i=1;i<=noz;i++) {
+      for(j=1;j<=noy;j++){
+	for(i=1;i<=noz;i++)  {
 	  node = i + (j-1)*noz*nox ;
 	  /* no slip all around */
 	  E->NODE[level][node] = E->NODE[level][node] | (VBX);
 	  E->NODE[level][node] = E->NODE[level][node] & (~SBX);
-
+	  
 	  E->NODE[level][node] = E->NODE[level][node] | (VBY);
 	  E->NODE[level][node] = E->NODE[level][node] & (~SBY);
-
+	  
 	  E->NODE[level][node] = E->NODE[level][node] | (VBZ);
 	  E->NODE[level][node] = E->NODE[level][node] & (~SBZ);
-
+	  
 	}
       }
+    }
   } /* end only left-most processors branch */
 }
 
@@ -708,7 +715,7 @@ void velocity_apply_periodic_bcs(E)
     struct All_variables *E;
 {
 
-  int i,j,ii,jj;
+  int i,j,ii,jj,ixmin,ixmax;
   int node1,node2;
   int level,nox,noy,noz;
   
@@ -743,38 +750,42 @@ void velocity_apply_periodic_bcs(E)
         }      /* end loop for i and j */
 
    }
-
+ 
  if (E->mesh.periodic_x)     {
 
-  /* for two XOZ planes if 3-D */
-
-    if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
-      for(j=1;j<=E->lmesh.nox;j++)
-        for(i=1;i<=E->lmesh.noz;i++)       {
-          node1 = i +(j-1)*E->lmesh.noz;
-          node2 = node1+(E->lmesh.noy-1)*E->lmesh.noz*E->lmesh.nox;
-          ii = i + E->lmesh.nzs - 1;
-
-          if (E->parallel.me_loc[2]==0)  {
-             E->VB[2][node1] = 0.0;
-             if((ii != 1) && (ii != E->mesh.noz))
-                E->VB[3][node1] = 0.0;
-             }
-          if (E->parallel.me_loc[2]==E->parallel.nprocy-1)  {
-             E->VB[2][node2] = 0.0;
-             if((ii != 1) && (ii != E->mesh.noz))
-                E->VB[3][node2] = 0.0;
-             }
-          }    /* end of loop i & j */
+   /* for two XOZ planes if 3-D */
+   if(E->mesh.shear_in_x_bc){
+     ixmin = 2;ixmax = E->lmesh.nox-1;
+   }else{
+     ixmin = 1;ixmax = E->lmesh.nox;
    }
+   if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+     for(j=ixmin;j<=ixmax;j++)
+       for(i=1;i<=E->lmesh.noz;i++)       {
+	 node1 = i +(j-1)*E->lmesh.noz;
+	 node2 = node1+(E->lmesh.noy-1)*E->lmesh.noz*E->lmesh.nox;
+	 ii = i + E->lmesh.nzs - 1;
 
-  /* all vbc's apply at all levels  */
+	 if (E->parallel.me_loc[2]==0)  {
+	   E->VB[2][node1] = 0.0;
+	   if((ii != 1) && (ii != E->mesh.noz))
+	     E->VB[3][node1] = 0.0;
+	 }
+	 if (E->parallel.me_loc[2]==E->parallel.nprocy-1)  {
+	   E->VB[2][node2] = 0.0;
+	   if((ii != 1) && (ii != E->mesh.noz))
+	     E->VB[3][node2] = 0.0;
+	 }
+       }    /* end of loop i & j */
+ }
+ 
+ /* all vbc's apply at all levels  */
  for(level=E->mesh.levmax;level>=E->mesh.levmin;level--) {
-    nox = E->lmesh.NOX[level] ;
-    noz = E->lmesh.NOZ[level] ;
-    noy = E->lmesh.NOY[level] ;
-
-  if (E->mesh.periodic_y)     {
+   nox = E->lmesh.NOX[level] ;
+   noz = E->lmesh.NOZ[level] ;
+   noy = E->lmesh.NOY[level] ;
+   
+   if (E->mesh.periodic_y)     {
 
     if (E->parallel.me_loc[1]==0 || E->parallel.me_loc[1]==E->parallel.nprocx-1)
       for(j=1;j<=noy;j++)
@@ -806,45 +817,49 @@ void velocity_apply_periodic_bcs(E)
      }
 
   if (E->mesh.periodic_x)     {
+    if(E->mesh.shear_in_x_bc){
+      ixmin = 2;ixmax = nox-1;
+    }else{
+      ixmin = 1;ixmax = nox;
+    }
+    if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
+      for(j=ixmin;j <= ixmax;j++)
+	for(i=1;i<=noz;i++) {
+	  node1 = i + (j-1)*noz;
+	  node2 = node1+(noy-1)*noz*nox;
+	  ii = i + E->lmesh.NZS[level] - 1;
+	  jj = j + E->lmesh.NXS[level] - 1;
+	  if (E->parallel.me_loc[2]==0)  {
+	    E->NODE[level][node1] = E->NODE[level][node1] | VBY;
+	    E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
+	    if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+	      E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
+	      E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
+	    }
+	    if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+	      E->NODE[level][node1] = E->NODE[level][node1] & (~VBX);
+	      E->NODE[level][node1] = E->NODE[level][node1] | SBX;
+	    }
+	  }
+	  if (E->parallel.me_loc[2]==E->parallel.nprocy-1) {
+	    E->NODE[level][node2] = E->NODE[level][node2] | VBY;
+	    E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
+	    if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
+	      E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
+	      E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
+	    }
+	    if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
+	      E->NODE[level][node2] = E->NODE[level][node2] & (~VBX);
+	      E->NODE[level][node2] = E->NODE[level][node2] | SBX;
+	    }
+	  }
+	  
+	}    /* end for loop i & j  */
+  }
+  
+ }                   /* end for  level */
 
-      if (E->parallel.me_loc[2]==0 || E->parallel.me_loc[2]==E->parallel.nprocy-1)
-        for(j=1;j<=nox;j++)
-          for(i=1;i<=noz;i++) {
-            node1 = i + (j-1)*noz;
-            node2 = node1+(noy-1)*noz*nox;
-            ii = i + E->lmesh.NZS[level] - 1;
-            jj = j + E->lmesh.NXS[level] - 1;
-            if (E->parallel.me_loc[2]==0)  {
-               E->NODE[level][node1] = E->NODE[level][node1] | VBY;
-               E->NODE[level][node1] = E->NODE[level][node1] & (~SBY);
-               if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
-                  E->NODE[level][node1] = E->NODE[level][node1] & (~VBZ);
-                  E->NODE[level][node1] = E->NODE[level][node1] | SBZ;
-                  }
-               if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
-                  E->NODE[level][node1] = E->NODE[level][node1] & (~VBX);
-                  E->NODE[level][node1] = E->NODE[level][node1] | SBX;
-                  }
-               }
-            if (E->parallel.me_loc[2]==E->parallel.nprocy-1) {
-               E->NODE[level][node2] = E->NODE[level][node2] | VBY;
-               E->NODE[level][node2] = E->NODE[level][node2] & (~SBY);
-               if((ii!= 1) && (ii != E->mesh.NOZ[level]))  {
-                  E->NODE[level][node2] = E->NODE[level][node2] & (~VBZ);
-                  E->NODE[level][node2] = E->NODE[level][node2] | SBZ;
-                  }
-               if((jj!=1) && (jj!=E->mesh.NOX[level]) && (ii!=1) && (ii!=E->mesh.NOZ[level])){
-                  E->NODE[level][node2] = E->NODE[level][node2] & (~VBX);
-                  E->NODE[level][node2] = E->NODE[level][node2] | SBX;
-                  }
-               }
-
-            }    /* end for loop i & j  */
-     }
-
-  }                   /* end for loop level */
-
-    return;
+ return;
 
 }
 

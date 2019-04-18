@@ -418,7 +418,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
       */
       if(E->viscosity.ani_vis2_factor >= 0){
 	if(E->parallel.me == 0)
-	  fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic tapered, vis2 min %g, global\n",
+	  fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic, vis2 min %g, global\n",
 		  E->viscosity.ani_vis2_factor);
 	read_grd = 0;
       }else{
@@ -428,7 +428,7 @@ void set_anisotropic_viscosity_at_element_level(struct All_variables *E,
 	read_grd = 1;
 	sprintf(tfilename,"%s/vis2.grd",E->viscosity.anisotropic_init_dir);
 	if(E->parallel.me == 0)
-	  fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic tapered, reading base vis2 from %s\n",
+	  fprintf(stderr,"set_anisotropic_viscosity_at_element_level: setting orthotropic, reading base vis2 from %s\n",
 		  tfilename);
 	vis2_grd = (struct  ggrd_gt *)calloc(1,sizeof(struct ggrd_gt));
 #ifdef CitcomS_global_defs_h	/* CitcomS */
